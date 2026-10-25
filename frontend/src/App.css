@@ -1,0 +1,340 @@
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+
+:root {
+  font-family: "DM Sans", sans-serif;
+  color: #172b4d;
+  background: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.navbar {
+  max-width: 1200px;
+  margin: auto;
+  padding: 22px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo {
+  font-family: "Manrope", sans-serif;
+  font-size: 23px;
+  font-weight: 800;
+  color: #172b4d;
+}
+
+.logo span {
+  color: #3478f6;
+}
+
+.nav-links,
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-links a {
+  color: #5d6b82;
+  font-size: 14px;
+}
+
+.nav-links a:hover {
+  color: #3478f6;
+}
+
+.login-btn,
+.signup-btn,
+.primary-btn,
+.secondary-btn {
+  padding: 12px 19px;
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+.login-btn {
+  border: none;
+  background: transparent;
+  color: #172b4d;
+}
+
+.signup-btn,
+.primary-btn {
+  background: #3478f6;
+  color: white;
+  border: 1px solid #3478f6;
+}
+
+.hero {
+  max-width: 1200px;
+  margin: 25px auto 0;
+  padding: 70px 48px;
+  border-radius: 24px;
+  background: #f1f6ff;
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  align-items: center;
+  gap: 65px;
+}
+
+.eyebrow {
+  color: #3478f6;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.hero h1 {
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 1.13;
+  letter-spacing: -2px;
+  margin: 18px 0;
+}
+
+.hero h1 span {
+  color: #3478f6;
+}
+
+.hero-description,
+.section-description {
+  color: #62718a;
+  line-height: 1.8;
+  max-width: 540px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.secondary-btn {
+  border: 1px solid #d3deef;
+  background: white;
+  color: #172b4d;
+}
+
+.trust-row {
+  display: flex;
+  gap: 35px;
+  margin-top: 42px;
+}
+
+.trust-row div {
+  display: grid;
+  gap: 6px;
+}
+
+.trust-row strong {
+  font-size: 13px;
+}
+
+.trust-row small {
+  color: #718096;
+  font-size: 11px;
+}
+
+.hero-card {
+  padding: 35px;
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 20px 55px #263f6412;
+}
+
+.card-icon {
+  font-size: 45px;
+}
+
+.card-label {
+  margin-top: 28px;
+  color: #3478f6;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.hero-card h2 {
+  font-family: "Manrope", sans-serif;
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.hero-card > p:not(.card-label) {
+  color: #62718a;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.card-bottom {
+  border-top: 1px solid #e8edf5;
+  margin-top: 25px;
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #62718a;
+  font-size: 11px;
+}
+
+.services,
+.lawyers-section {
+  max-width: 1100px;
+  margin: 95px auto;
+  padding: 0 28px;
+  text-align: center;
+}
+
+.services h2,
+.lawyers-section h2 {
+  font-family: "Manrope", sans-serif;
+  font-size: 34px;
+  margin: 12px 0;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-top: 40px;
+  text-align: left;
+}
+
+.service-card {
+  padding: 28px;
+  border: 1px solid #e5ebf4;
+  border-radius: 16px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px #263f6410;
+}
+
+.service-card span {
+  font-size: 30px;
+}
+
+.service-card h3 {
+  margin-top: 20px;
+}
+
+.service-card p,
+.lawyers-section > p:not(.eyebrow) {
+  color: #62718a;
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.lawyers-section {
+  background: #f7f9fd;
+  padding: 55px 25px;
+  border-radius: 20px;
+}
+
+.lawyers-section .primary-btn {
+  margin-top: 18px;
+}
+
+footer {
+  padding: 35px 25px;
+  border-top: 1px solid #e8edf5;
+  text-align: center;
+}
+
+footer p,
+footer small {
+  color: #718096;
+  font-size: 13px;
+}
+
+@media (max-width: 800px) {
+  .navbar {
+    flex-wrap: wrap;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .hero {
+    margin: 15px;
+    padding: 38px 25px;
+    grid-template-columns: 1fr;
+    gap: 35px;
+  }
+
+  .hero h1 {
+    letter-spacing: -1px;
+  }
+
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trust-row {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 450px) {
+  .nav-actions {
+    gap: 5px;
+  }
+
+  .signup-btn,
+  .login-btn {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .nav-links {
+    font-size: 12px;
+    gap: 14px;
+  }
+
+  .hero-card {
+    padding: 24px;
+  }
+
+  .services h2,
+  .lawyers-section h2 {
+    font-size: 27px;
+  }
+}

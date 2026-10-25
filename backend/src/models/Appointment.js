@@ -1,0 +1,108 @@
+
+const mongoose = require("mongoose");
+
+const appointmentSchema = new mongoose.Schema(
+  {
+    client: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    lawyer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Lawyer",
+      required: true
+    },
+
+
+    slot: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "LawyerAvailability",
+      required: true,
+    },
+
+
+
+    scheduledAt: {
+      type: Date,
+      required: true
+    },
+
+    durationMinutes: {
+      type: Number,
+      default: 30,
+      min: 15,
+      max: 120
+    },
+
+    consultationType: {
+      type: String,
+      enum: ["video", "in-person"],
+      required: true
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "completed",
+        "rejected"
+      ],
+      default: "pending"
+    },
+
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: ""
+    },
+
+    meetingRoomId: {
+      type: String,
+      default: null,
+      sparse: true
+    },
+
+    callStartedAt: {
+      type: Date,
+      default: null
+    },
+
+    callEndedAt: {
+      type: Date,
+      default: null
+    },
+
+    isReviewed: {
+      type: Boolean,
+      default: false
+    }
+  },
+  { timestamps: true }
+);
+
+appointmentSchema.index({ lawyer: 1, scheduledAt: 1 });
+appointmentSchema.index({ client: 1, scheduledAt: -1 });
+
+appointmentSchema.index(
+  { slot: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      slot: { $type: "objectId" },
+      status: { $in: ["pending", "confirmed"] },
+    },
+  }
+);
+
+
+const Appointment = mongoose.model(
+  "Appointment",
+  appointmentSchema
+);
+
+module.exports = Appointment;
