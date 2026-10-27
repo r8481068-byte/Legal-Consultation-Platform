@@ -28,6 +28,7 @@ import MyAppointments from "./pages/MyAppointments";
 import LawyerDashboard from "./pages/LawyerDashboard";
 import LawyerEditProfile from "./pages/LawyerEditProfile";
 import LawyerAvailabilityPage from "./pages/LawyerAvailabilityPage";
+import LawyerAboutUs from "./pages/LawyerAboutUs";
 import AdminVerification from "./pages/AdminVerification";
 import VideoRoom from "./pages/VideoRoom";
 import LawyerSignup from "./pages/LawyerSignup";
@@ -132,6 +133,8 @@ function App() {
             <Route path="/lawyer/edit-profile" element={<LawyerEditProfile />} />
             <Route path="/lawyer/profile" element={<Navigate to="/lawyer/edit-profile" replace />} />
             <Route path="/lawyer/availability" element={<LawyerAvailabilityPage />} />
+            <Route path="/lawyer/about-us" element={<LawyerAboutUs />} />
+            <Route path="/lawyer/about" element={<Navigate to="/lawyer/about-us" replace />} />
           </Route>
 
           {/* Admin-only Routes */}

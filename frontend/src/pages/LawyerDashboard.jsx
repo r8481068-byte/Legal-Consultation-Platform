@@ -41,6 +41,7 @@ import {
   CheckCircle2,
   CalendarCheck,
   Briefcase,
+  ShieldCheck,
 } from "lucide-react";
 
 const statusStyles = {
@@ -234,152 +235,229 @@ export default function LawyerDashboard() {
   const confirmedCount = appointments.filter((a) => a.status === "confirmed").length;
   const completedCount = completedAppointments.length;
 
+  // Profile completeness calculation
+  const calculateCompleteness = (profile) => {
+    if (!profile) return 0;
+    let score = 0;
+    if (profile.user?.name || profile.name) score += 10;
+    if (profile.headline || profile.designation) score += 10;
+    if (profile.city) score += 10;
+    if (profile.bio && profile.bio.trim().length >= 50) score += 20;
+    if (Array.isArray(profile.education) && profile.education.length > 0) score += 15;
+    if (
+      (Array.isArray(profile.specialization) && profile.specialization.length > 0) ||
+      (typeof profile.specialization === "string" && profile.specialization)
+    ) {
+      score += 15;
+    }
+    if (
+      profile.consultationFee !== undefined &&
+      profile.consultationFee !== null &&
+      profile.consultationFee > 0
+    ) {
+      score += 10;
+    }
+    if (
+      (Array.isArray(profile.experiences) && profile.experiences.length > 0) ||
+      profile.barCouncilId
+    ) {
+      score += 10;
+    }
+    return Math.min(100, score);
+  };
+
+  const completenessPercentage = calculateCompleteness(lawyerProfile);
+
+  const lawyerName = lawyerProfile?.user?.name || "Advocate";
+  const initials = lawyerName
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  const isVerified =
+    lawyerProfile?.verificationStatus === "approved" ||
+    lawyerProfile?.verificationStatus === "verified";
+
+  const headline =
+    lawyerProfile?.headline ||
+    `${lawyerProfile?.designation || "Advocate"} | ${
+      Array.isArray(lawyerProfile?.specialization)
+        ? lawyerProfile.specialization.join(", ")
+        : lawyerProfile?.specialization || "Legal Counsel"
+    }`;
+
+  const specializationText = Array.isArray(lawyerProfile?.specialization)
+    ? lawyerProfile.specialization.join(", ")
+    : lawyerProfile?.specialization || "General Practice";
+
+  const experienceText = `${lawyerProfile?.experienceYears || 0} yrs`;
+  const feesText = lawyerProfile?.consultationFee || 0;
+  const barRegText = lawyerProfile?.barCouncilId || "N/A";
+
+  const ratingValue =
+    lawyerProfile?.averageRating > 0
+      ? lawyerProfile.averageRating.toFixed(1)
+      : reviewsData.length > 0
+      ? (
+          reviewsData.reduce((acc, r) => acc + (r.rating || 0), 0) /
+          reviewsData.length
+        ).toFixed(1)
+      : "5.0";
+
+  const reviewCount = lawyerProfile?.totalReviews || reviewsData.length;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar onOpenProfileSettings={() => setProfileModalOpen(true)} />
 
       <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          {/* Dashboard Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
-                  Advocate Practice Hub
-                </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-xs font-medium text-slate-500">
-                  LegalConnect Verified Portal
-                </span>
+        <div className="mx-auto max-w-6xl space-y-6">
+          {/* ========================================================================= */}
+          {/* LAWYER PROFILE SUMMARY CARD                                               */}
+          {/* ========================================================================= */}
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                {/* Profile Avatar with fallback and verification badge */}
+                <div className="relative shrink-0">
+                  {lawyerProfile?.user?.profileImage ? (
+                    <img
+                      src={lawyerProfile.user.profileImage}
+                      alt={lawyerName}
+                      className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-2 border-slate-200 shadow-2xs"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        if (e.currentTarget.nextSibling) {
+                          e.currentTarget.nextSibling.style.display = "flex";
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-2 border-slate-200 shadow-2xs ${
+                      lawyerProfile?.user?.profileImage ? "hidden" : "flex"
+                    }`}
+                  >
+                    {initials}
+                  </div>
+                  {isVerified && (
+                    <div
+                      className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-2xs"
+                      title="Verified Advocate"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Details */}
+                <div className="space-y-1.5">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                    {lawyerName}
+                  </h1>
+
+                  <p className="text-sm font-semibold text-blue-900">
+                    {headline}
+                  </p>
+
+                  {/* Metadata Row: Specialization | Experience | Fees | Bar Reg. No */}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 pt-0.5">
+                    <span>
+                      <strong className="font-semibold text-slate-800">Specialization:</strong> {specializationText}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span>
+                      <strong className="font-semibold text-slate-800">Experience:</strong> {experienceText}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span>
+                      <strong className="font-semibold text-slate-800">Fees:</strong> ₹{feesText}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span>
+                      <strong className="font-semibold text-slate-800">Bar Reg. No:</strong> {barRegText}
+                    </span>
+                  </div>
+
+                  {/* Status Badges Row: Verified | Rating | Profile Completeness */}
+                  <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                    {isVerified ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        Verified Advocate
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
+                        <Clock className="h-3.5 w-3.5 text-amber-600" />
+                        Verification Pending
+                      </span>
+                    )}
+
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50/80 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/80">
+                      <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                      ★ {ratingValue} / 5 ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
+                    </span>
+
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 border border-blue-200">
+                      <CheckCircle className="h-3.5 w-3.5 text-blue-700" />
+                      Profile: {completenessPercentage}% Complete
+                    </span>
+                  </div>
+                </div>
               </div>
-              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900">
-                Lawyer Dashboard
-              </h1>
-              <p className="mt-1 text-xs text-slate-500">
-                Manage your consultation requests, review completed cases, and monitor verified client reviews.
-              </p>
-            </div>
 
-            {/* Quick Actions & Profile Header Widget */}
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                to="/lawyer/edit-profile"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition"
-                title="Edit Complete Professional Profile"
-              >
-                <Edit className="h-4 w-4 text-blue-700" />
-                <span>My Profile</span>
-              </Link>
-
-              <Link
-                to="/lawyer/availability"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/80 px-3.5 py-2 text-xs font-bold text-blue-900 shadow-2xs hover:bg-blue-100 transition"
-                title="Manage 30-Minute Consultation Slots"
-              >
-                <Clock className="h-4 w-4 text-blue-700" />
-                <span>Availability Slots</span>
-              </Link>
-
-              {lawyerProfile?._id && (
-                <a
-                  href={`/lawyers/${lawyerProfile._id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
-                  title="View live public directory profile"
+              {/* Profile Card Action Buttons: Exactly Edit Profile, Availability, About Us */}
+              <div className="flex flex-wrap sm:flex-nowrap lg:flex-col xl:flex-row items-center gap-2.5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                <Link
+                  to="/lawyer/edit-profile"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition"
+                  title="Edit Complete Professional Profile"
                 >
-                  <Eye className="h-4 w-4" />
-                  <span>Public View</span>
-                </a>
-              )}
+                  <Edit className="h-4 w-4 text-blue-700" />
+                  <span>Edit Profile</span>
+                </Link>
+
+                <Link
+                  to="/lawyer/availability"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-2xs hover:bg-blue-100 transition"
+                  title="Manage Availability & 30-Minute Consultation Slots"
+                >
+                  <Clock className="h-4 w-4 text-blue-700" />
+                  <span>Availability</span>
+                </Link>
+
+                <Link
+                  to="/lawyer/about-us"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
+                  title="View Complete Saved Professional Information"
+                >
+                  <User className="h-4 w-4 text-blue-200" />
+                  <span>About Us</span>
+                </Link>
+              </div>
             </div>
-          </div>
+          </section>
 
           {/* Feedback Alerts */}
           {error && (
-            <div className="mt-5 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-xs font-semibold text-red-700 border border-red-200">
+            <div className="flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-xs font-semibold text-red-700 border border-red-200">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {message && (
-            <div className="mt-5 flex items-center gap-2 rounded-2xl bg-green-50 p-4 text-xs font-semibold text-green-800 border border-green-200">
+            <div className="flex items-center gap-2 rounded-2xl bg-green-50 p-4 text-xs font-semibold text-green-800 border border-green-200">
               <CheckCircle className="h-4 w-4 shrink-0" />
               <span>{message}</span>
             </div>
           )}
 
-          {/* Top Metrics Row */}
-          <section className="mt-6 grid gap-4 grid-cols-2 sm:grid-cols-4">
-            <div
-              onClick={() => {
-                handleTabChange("requests");
-                setRequestFilter("pending");
-              }}
-              className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-amber-400 hover:shadow-sm transition"
-            >
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Action Required (Pending)
-              </p>
-              <p className="mt-2 text-3xl font-extrabold text-amber-600">
-                {pendingCount}
-              </p>
-              <p className="mt-1 text-[11px] text-slate-500">Consultation requests</p>
-            </div>
-
-            <div
-              onClick={() => {
-                handleTabChange("requests");
-                setRequestFilter("confirmed");
-              }}
-              className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-blue-400 hover:shadow-sm transition"
-            >
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Upcoming & Confirmed
-              </p>
-              <p className="mt-2 text-3xl font-extrabold text-blue-700">
-                {confirmedCount}
-              </p>
-              <p className="mt-1 text-[11px] text-slate-500">Scheduled sessions</p>
-            </div>
-
-            <div
-              onClick={() => handleTabChange("completed")}
-              className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-emerald-400 hover:shadow-sm transition"
-            >
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Completed Consultations
-              </p>
-              <p className="mt-2 text-3xl font-extrabold text-emerald-600">
-                {completedCount}
-              </p>
-              <p className="mt-1 text-[11px] text-slate-500">Archived cases</p>
-            </div>
-
-            <div
-              onClick={() => handleTabChange("reviews")}
-              className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:border-amber-400 hover:shadow-sm transition"
-            >
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Client Rating
-              </p>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-3xl font-extrabold text-slate-900">
-                  {lawyerProfile?.averageRating > 0
-                    ? lawyerProfile.averageRating.toFixed(1)
-                    : "5.0"}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  / 5.0 ({reviewsData.length} reviews)
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] text-slate-500">Verified client feedback</p>
-            </div>
-          </section>
-
           {/* ================= EXACTLY THREE MAIN TABS NAVIGATION ================= */}
-          <div className="mt-8 border-b border-slate-200">
+          <div className="border-b border-slate-200">
             <nav className="flex flex-wrap gap-2 pb-3" aria-label="Dashboard Tabs">
               {/* TAB 1: Appointment Requests */}
               <button
@@ -393,17 +471,15 @@ export default function LawyerDashboard() {
               >
                 <Inbox className="h-4 w-4" />
                 <span>Appointment Requests</span>
-                {appointmentRequests.length > 0 && (
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      activeTab === "requests"
-                        ? "bg-blue-800 text-white"
-                        : "bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    {appointmentRequests.length}
-                  </span>
-                )}
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                    activeTab === "requests"
+                      ? "bg-blue-800 text-white"
+                      : "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {appointmentRequests.length}
+                </span>
               </button>
 
               {/* TAB 2: Appointments Completed */}
@@ -418,17 +494,15 @@ export default function LawyerDashboard() {
               >
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Appointments Completed</span>
-                {completedCount > 0 && (
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      activeTab === "completed"
-                        ? "bg-blue-800 text-white"
-                        : "bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    {completedCount}
-                  </span>
-                )}
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                    activeTab === "completed"
+                      ? "bg-blue-800 text-white"
+                      : "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {completedCount}
+                </span>
               </button>
 
               {/* TAB 3: Client Reviews */}
@@ -443,17 +517,15 @@ export default function LawyerDashboard() {
               >
                 <Star className="h-4 w-4" />
                 <span>Client Reviews</span>
-                {reviewsData.length > 0 && (
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      activeTab === "reviews"
-                        ? "bg-blue-800 text-white"
-                        : "bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    {reviewsData.length}
-                  </span>
-                )}
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                    activeTab === "reviews"
+                      ? "bg-blue-800 text-white"
+                      : "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {reviewsData.length}
+                </span>
               </button>
             </nav>
           </div>
