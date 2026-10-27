@@ -1,20 +1,28 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
+import ScrollToTop from "./components/ScrollToTop";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyAccount from "./pages/VerifyAccount";
+import ClientProfileCompletion from "./pages/ClientProfileCompletion";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Lawyers from "./pages/Lawyers";
+import LawyersInIndia from "./pages/LawyersInIndia";
+import StateLawyersPage from "./pages/StateLawyersPage";
+import CityDistrictLawyersPage from "./pages/CityDistrictLawyersPage";
 import LawyerProfile from "./pages/LawyerProfile";
 import LegalServices from "./pages/LegalServices";
 import LegalServiceDetail from "./pages/LegalServiceDetail";
 import HowWeWork from "./pages/HowWeWork";
 import Blogs from "./pages/Blogs";
 import BlogDetail from "./pages/BlogDetail";
+import IpcSections from "./pages/IpcSections";
+import IpcSectionDetail from "./pages/IpcSectionDetail";
 import BookAppointment from "./pages/BookAppointment";
 import MyAppointments from "./pages/MyAppointments";
 import LawyerDashboard from "./pages/LawyerDashboard";
@@ -38,16 +46,36 @@ import RoleRoute from "./components/RoleRoute";
 function App() {
   return (
     <BrowserRouter>
+      {/* Restores scroll to top on every navigation/route change */}
+      <ScrollToTop />
       <AuthProvider>
         <Routes>
-          {/* Public Pages with Common Header & 5-Column Footer */}
+          {/* Public Pages with Common Header & Universal Footer */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/lawyers" element={<Lawyers />} />
+            <Route path="/lawyers-in-india" element={<LawyersInIndia />} />
+            
+            {/* Dedicated Reusable State / UT Location Pages */}
+            <Route path="/advocate-lawyer-:stateSlug" element={<StateLawyersPage />} />
+            <Route path="/lawyers-in/:stateSlug" element={<StateLawyersPage />} />
+
+            {/* Dedicated Reusable City / District Location Pages */}
+            <Route path="/advocate-lawyer-:stateSlug/:citySlug" element={<CityDistrictLawyersPage />} />
+            <Route path="/lawyers-in/:stateSlug/:citySlug" element={<CityDistrictLawyersPage />} />
+
             <Route path="/lawyers/:lawyerId" element={<LawyerProfile />} />
             <Route path="/legal-services" element={<LegalServices />} />
             <Route path="/legal-services/:categorySlug" element={<LegalServiceDetail />} />
+            
+            {/* How We Work / Consultation Journey with backward-compatible aliases */}
             <Route path="/how-we-work" element={<HowWeWork />} />
+            <Route path="/consultation-journey" element={<Navigate to="/how-we-work" replace />} />
+            <Route path="/how-it-works" element={<Navigate to="/how-we-work" replace />} />
+            <Route path="/howitworks" element={<Navigate to="/how-we-work" replace />} />
+
+            <Route path="/ipc-sections" element={<IpcSections />} />
+            <Route path="/ipc-sections/:sectionSlug" element={<IpcSectionDetail />} />
             <Route path="/blogs" element={<Blogs />} />
             <Route path="/blogs/:articleSlug" element={<BlogDetail />} />
             <Route path="/legal-advice" element={<LegalAdvice />} />
@@ -64,12 +92,25 @@ function App() {
           {/* Standalone Authentication Pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-account" element={<VerifyAccount />} />
+          <Route path="/verify" element={<Navigate to="/verify-account" replace />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/admin/login" element={<Navigate to="/login?role=admin" replace />} />
           <Route path="/client/dashboard" element={<Navigate to="/dashboard" replace />} />
           <Route path="/lawyer/dashboard" element={<Navigate to="/lawyer-dashboard" replace />} />
           <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+
+          {/* Client Profile Completion */}
+          <Route
+            path="/client/profile-completion"
+            element={
+              <RoleRoute allowedRole="client">
+                <ClientProfileCompletion />
+              </RoleRoute>
+            }
+          />
+          <Route path="/profile-completion" element={<Navigate to="/client/profile-completion" replace />} />
 
           {/* Protected Routes for any authenticated user */}
           <Route element={<ProtectedRoute />}>

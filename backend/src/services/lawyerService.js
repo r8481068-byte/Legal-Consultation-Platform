@@ -112,6 +112,20 @@ const searchLawyersService = async (query) => {
     };
   }
 
+  if (query.courtLevel && query.courtLevel !== "All Courts") {
+    filter.courtLevels = {
+      $regex: query.courtLevel,
+      $options: "i"
+    };
+  }
+
+  if (query.state && query.state !== "All States") {
+    filter.stateOfEnrolment = {
+      $regex: query.state,
+      $options: "i"
+    };
+  }
+
   if (query.minExperience) {
     const minExp = Number(query.minExperience);
     if (Number.isFinite(minExp) && minExp >= 0) {

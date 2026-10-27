@@ -11,6 +11,7 @@ const Lawyer = require("../models/Lawyer");
 const LawyerAvailability = require("../models/LawyerAvailability");
 const Payment = require("../models/Payment");
 const User = require("../models/User");
+const { checkBookingEligibility } = require("./eligibilityService");
 
 // const bookAppointmentService = async (clientId, data) => {
 //   const { lawyerId, scheduledAt, consultationType, notes } = data;
@@ -110,6 +111,18 @@ const withOptionalTransaction = async (operation) => {
 };
 
 const bookAppointmentService = async (clientId, data) => {
+  // Enforce centralized booking eligibility before transaction and slot claim
+  const eligibility = await checkBookingEligibility(clientId);
+  if (!eligibility.eligible) {
+    const error = new Error(
+      `Appointment booking rejected: ${eligibility.reasons.join(" ")}`
+    );
+    error.statusCode = 403;
+    error.code = "BOOKING_INELIGIBLE";
+    error.eligibility = eligibility;
+    throw error;
+  }
+
   return await withOptionalTransaction(async (session) => {
     const opts = session ? { session } : {};
 

@@ -169,6 +169,19 @@ const endConsultationCall = async (req, res, next) => {
   }
 };
 
+const getBookingEligibility = async (req, res, next) => {
+  try {
+    const { checkBookingEligibility } = require("../services/eligibilityService");
+    const result = await checkBookingEligibility(req.user.userId);
+    return res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   bookAppointment,
   getMyAppointments,
@@ -178,6 +191,7 @@ module.exports = {
   completeAppointment,
   rejectAppointment,
   getVideoAccess,
-  endConsultationCall
+  endConsultationCall,
+  getBookingEligibility,
 };
 

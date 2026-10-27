@@ -40,6 +40,19 @@ function Login() {
         password: formData.password,
       });
 
+      // Handle unverified account redirection
+      if (result?.verificationRequired) {
+        const targetUser = result.user || { email: formData.email.trim() };
+        sessionStorage.setItem("pendingVerificationUser", JSON.stringify(targetUser));
+        navigate("/verify-account", {
+          state: {
+            user: targetUser,
+            message: result.message || "Contact verification required.",
+          },
+        });
+        return;
+      }
+
       if (!result || !result.accessToken) {
         throw new Error("Login response did not contain an access token.");
       }

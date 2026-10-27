@@ -120,6 +120,17 @@ const lawyerSchema = new mongoose.Schema(
       default: ["video", "in_person"]
     },
 
+    courtLevels: {
+      type: [String],
+      enum: ["District Court", "High Court", "Supreme Court", "Tribunal"],
+      default: ["District Court", "High Court"]
+    },
+
+    practiceCourts: {
+      type: [String],
+      default: []
+    },
+
     isAvailable: {
       type: Boolean,
       default: true

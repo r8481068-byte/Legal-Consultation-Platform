@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Scale,
@@ -19,6 +20,10 @@ import {
 } from "lucide-react";
 
 export default function HowWeWork() {
+  useEffect(() => {
+    document.title = "How We Work — 7-Step Consultation Journey | LegalConnect";
+  }, []);
+
   const steps = [
     {
       step: 1,

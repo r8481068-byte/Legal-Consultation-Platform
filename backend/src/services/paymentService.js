@@ -3,19 +3,27 @@ const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const Appointment = require("../models/Appointment");
 const razorpay = require("../config/razorpay");
-
-
 const crypto = require("crypto");
-
-
+const { checkBookingEligibility } = require("./eligibilityService");
 
 const createPaymentOrderService = async (clientId, appointmentId) => {
+  // Enforce centralized booking eligibility before initiating payment
+  const eligibility = await checkBookingEligibility(clientId);
+  if (!eligibility.eligible) {
+    const error = new Error(
+      `Payment initiation rejected: ${eligibility.reasons.join(" ")}`
+    );
+    error.statusCode = 403;
+    error.code = "BOOKING_INELIGIBLE";
+    error.eligibility = eligibility;
+    throw error;
+  }
+
   if (!mongoose.isValidObjectId(appointmentId)) {
     const error = new Error("Invalid appointment ID");
     error.statusCode = 400;
     throw error;
   }
-
 
   const appointment = await Appointment.findById(appointmentId)
   .populate({

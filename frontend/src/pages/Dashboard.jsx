@@ -45,13 +45,22 @@ export default function Dashboard() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
+                {user?.role === "client" && (
+                  <Link
+                    to="/client/profile-completion"
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md hover:bg-amber-300 transition"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Booking Profile & Identity
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={() => setProfileModalOpen(true)}
                   className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white backdrop-blur-md border border-white/20 hover:bg-white/20 transition"
                 >
                   <Settings className="h-4 w-4" />
-                  Edit Profile
+                  Account Settings
                 </button>
               </div>
             </div>
@@ -103,21 +112,21 @@ export default function Dashboard() {
 
                 <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between">
                   <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                      <Briefcase className="h-6 w-6" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800">
+                      <ShieldCheck className="h-6 w-6" />
                     </div>
                     <h2 className="mt-4 text-lg font-bold text-slate-900">
-                      Are you a Lawyer?
+                      Booking Eligibility
                     </h2>
                     <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      Apply for verified advocate status to publish your public profile, set consultation fees, and accept clients.
+                      Complete your address and identity verification (Aadhaar & PAN) to unlock appointment booking with panel advocates.
                     </p>
                   </div>
                   <Link
-                    to="/lawyers"
+                    to="/client/profile-completion"
                     className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
                   >
-                    View Community <ArrowRight className="h-4 w-4" />
+                    Complete Profile <ArrowRight className="h-4 w-4" />
                   </Link>
                 </article>
               </>

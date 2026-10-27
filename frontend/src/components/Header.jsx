@@ -12,9 +12,12 @@ import {
   ChevronDown,
   UserPlus,
   ArrowRight,
+  Gavel,
+  BookOpen
 } from "lucide-react";
 import AccountMenu from "./AccountMenu";
 import { LEGAL_SERVICES } from "../data/legalServicesData";
+import { IPC_BNS_SECTIONS } from "../data/ipcSectionsData";
 import { useAuth } from "../context/AuthContext";
 
 export default function Header({ onOpenProfileSettings }) {
@@ -22,13 +25,17 @@ export default function Header({ onOpenProfileSettings }) {
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [ipcDropdownOpen, setIpcDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const [mobileIpcOpen, setMobileIpcOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("EN");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const servicesDropdownRef = useRef(null);
 
-  // Close services dropdown on outside click
+  const servicesDropdownRef = useRef(null);
+  const ipcDropdownRef = useRef(null);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -36,6 +43,12 @@ export default function Header({ onOpenProfileSettings }) {
         !servicesDropdownRef.current.contains(event.target)
       ) {
         setServicesDropdownOpen(false);
+      }
+      if (
+        ipcDropdownRef.current &&
+        !ipcDropdownRef.current.contains(event.target)
+      ) {
+        setIpcDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -51,36 +64,44 @@ export default function Header({ onOpenProfileSettings }) {
     }
   };
 
-  // Featured categories for quick menu display
-  const featuredServices = LEGAL_SERVICES.slice(0, 12);
+  // Group 19 services into 3 balanced columns for the Mega Menu
+  const col1Services = LEGAL_SERVICES.slice(0, 7);
+  const col2Services = LEGAL_SERVICES.slice(7, 13);
+  const col3Services = LEGAL_SERVICES.slice(13, 19);
+
+  // 25 IPC Sections for 5x5 grid
+  const ipcSections25 = IPC_BNS_SECTIONS.slice(0, 25);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white shadow-sm">
-      {/* 1. SLIM TOP UTILITY BAR (Inspired by Reference) */}
+      {/* 1. SLIM TOP UTILITY BAR */}
       <div className="border-b border-slate-200/80 bg-slate-900 text-[11px] text-slate-300">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 sm:px-6 lg:px-8">
-          {/* Left: Quick Legal Links */}
-          <div className="hidden items-center gap-4 md:flex lg:gap-6">
-            <Link
-              to="/legal-advice?tab=kanoon"
-              className="font-medium text-slate-300 hover:text-amber-400 transition"
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between px-4 py-2 sm:px-6 lg:px-8 gap-y-1">
+          {/* Left: Quick Compliance & Helpline */}
+          <div className="flex items-center gap-4 text-[11px]">
+            <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+              <Scale className="h-3.5 w-3.5" />
+              <span>Bar Council of India Compliant Platform</span>
+            </span>
+
+            <span className="hidden sm:inline text-slate-600">|</span>
+
+            <a
+              href="tel:8826669309"
+              className="hidden sm:flex items-center gap-1 font-semibold text-slate-300 hover:text-amber-400 transition"
             >
-              Indian Kanoon
-            </Link>
-            <span className="text-slate-700">|</span>
-            <Link
-              to="/legal-advice?tab=ipc"
-              className="font-medium text-slate-300 hover:text-amber-400 transition"
-            >
-              BNS & Criminal Sections
-            </Link>
-            <span className="text-slate-700">|</span>
+              <PhoneCall className="h-3 w-3 text-amber-400" />
+              <span>Helpline: 8826669309</span>
+            </a>
+
+            <span className="hidden md:inline text-slate-600">|</span>
+
             <Link
               to="/ask-question"
-              className="flex items-center gap-1 font-semibold text-amber-400 hover:text-amber-300 transition"
+              className="hidden md:flex items-center gap-1 font-semibold text-amber-400 hover:text-amber-300 transition"
             >
               <HelpCircle className="h-3 w-3" />
-              Ask a Free Question
+              <span>Ask a Free Question</span>
             </Link>
           </div>
 
@@ -103,6 +124,7 @@ export default function Header({ onOpenProfileSettings }) {
             <div className="flex items-center gap-3">
               <Link
                 to="/how-we-work"
+                id="nav-how-we-work-top"
                 className="hidden sm:inline font-medium text-slate-300 hover:text-white transition"
               >
                 How We Work
@@ -114,7 +136,7 @@ export default function Header({ onOpenProfileSettings }) {
                 to="/blogs"
                 className="hidden sm:inline font-medium text-slate-300 hover:text-white transition"
               >
-                Legal Guide
+                Legal Guides
               </Link>
 
               <span className="hidden sm:inline text-slate-700">|</span>
@@ -183,12 +205,18 @@ export default function Header({ onOpenProfileSettings }) {
             ABOUT US
           </Link>
 
-          {/* Interactive Legal Services Mega Dropdown */}
+          {/* Interactive Legal Services 3-Column Mega Dropdown */}
           <div className="relative" ref={servicesDropdownRef}>
             <button
               type="button"
-              onClick={() => setServicesDropdownOpen((prev) => !prev)}
-              onMouseEnter={() => setServicesDropdownOpen(true)}
+              onClick={() => {
+                setServicesDropdownOpen((prev) => !prev);
+                setIpcDropdownOpen(false);
+              }}
+              onMouseEnter={() => {
+                setServicesDropdownOpen(true);
+                setIpcDropdownOpen(false);
+              }}
               className="flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold tracking-wide uppercase text-slate-700 transition hover:bg-slate-50 hover:text-blue-800"
               aria-expanded={servicesDropdownOpen}
             >
@@ -200,19 +228,19 @@ export default function Header({ onOpenProfileSettings }) {
               />
             </button>
 
-            {/* Mega Dropdown Panel */}
+            {/* 3-Column Mega Dropdown Panel */}
             {servicesDropdownOpen && (
               <div
                 onMouseLeave={() => setServicesDropdownOpen(false)}
-                className="absolute left-1/2 top-full -translate-x-1/2 mt-1 w-[720px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2"
+                className="absolute left-1/2 top-full -translate-x-1/2 mt-1 w-[820px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2"
               >
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      Explore Legal Practice Areas
+                      Our Online Legal Practice Areas
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Consult verified advocates across 19 specialized legal domains
+                      Explore 19 structured legal categories with statutory guidance
                     </p>
                   </div>
                   <Link
@@ -220,38 +248,88 @@ export default function Header({ onOpenProfileSettings }) {
                     onClick={() => setServicesDropdownOpen(false)}
                     className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900"
                   >
-                    View All 19 Services <ArrowRight className="h-3 w-3" />
+                    View All 19 Legal Services <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {featuredServices.map((service) => (
-                    <Link
-                      key={service.slug}
-                      to={`/legal-services/${service.slug}`}
-                      onClick={() => setServicesDropdownOpen(false)}
-                      className="group flex flex-col rounded-xl p-2.5 hover:bg-blue-50/70 transition"
-                    >
-                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-900 transition">
-                        {service.shortTitle || service.title}
-                      </span>
-                      <span className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                        {service.commonIssues[0] || service.summary}
-                      </span>
-                    </Link>
-                  ))}
+                <div className="mt-4 grid grid-cols-3 gap-6">
+                  {/* Column 1 */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-2.5 mb-1">
+                      Personal & Family
+                    </span>
+                    {col1Services.map((service) => (
+                      <Link
+                        key={service.slug}
+                        to={`/legal-services/${service.slug}`}
+                        onClick={() => setServicesDropdownOpen(false)}
+                        className="group flex flex-col rounded-xl px-2.5 py-1.5 hover:bg-blue-50/70 transition"
+                      >
+                        <span className="text-xs font-bold text-slate-800 group-hover:text-blue-900 transition">
+                          {service.shortTitle || service.title}
+                        </span>
+                        <span className="text-[11px] text-slate-500 line-clamp-1">
+                          {service.commonIssues[0]}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Column 2 */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-2.5 mb-1">
+                      Corporate & Commercial
+                    </span>
+                    {col2Services.map((service) => (
+                      <Link
+                        key={service.slug}
+                        to={`/legal-services/${service.slug}`}
+                        onClick={() => setServicesDropdownOpen(false)}
+                        className="group flex flex-col rounded-xl px-2.5 py-1.5 hover:bg-blue-50/70 transition"
+                      >
+                        <span className="text-xs font-bold text-slate-800 group-hover:text-blue-900 transition">
+                          {service.shortTitle || service.title}
+                        </span>
+                        <span className="text-[11px] text-slate-500 line-clamp-1">
+                          {service.commonIssues[0]}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Column 3 */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-2.5 mb-1">
+                      Specialized & Tribunals
+                    </span>
+                    {col3Services.map((service) => (
+                      <Link
+                        key={service.slug}
+                        to={`/legal-services/${service.slug}`}
+                        onClick={() => setServicesDropdownOpen(false)}
+                        className="group flex flex-col rounded-xl px-2.5 py-1.5 hover:bg-blue-50/70 transition"
+                      >
+                        <span className="text-xs font-bold text-slate-800 group-hover:text-blue-900 transition">
+                          {service.shortTitle || service.title}
+                        </span>
+                        <span className="text-[11px] text-slate-500 line-clamp-1">
+                          {service.commonIssues[0]}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs bg-slate-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
                   <span className="text-slate-600 font-medium">
-                    Looking for a specific lawyer or city?
+                    Need advice on another jurisdiction?
                   </span>
                   <Link
-                    to="/lawyers"
+                    to="/legal-services"
                     onClick={() => setServicesDropdownOpen(false)}
-                    className="font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1"
+                    className="font-bold text-blue-900 hover:underline flex items-center gap-1"
                   >
-                    Open Lawyer Discovery Directory →
+                    View All 19 Legal Services Catalog →
                   </Link>
                 </div>
               </div>
@@ -260,24 +338,99 @@ export default function Header({ onOpenProfileSettings }) {
 
           <Link
             to="/how-we-work"
+            id="nav-how-we-work-main"
             className="rounded-lg px-3 py-2 text-xs font-bold tracking-wide uppercase text-slate-700 transition hover:bg-slate-50 hover:text-blue-800"
           >
             HOW WE WORK
           </Link>
 
-          <Link
-            to="/blogs"
-            className="rounded-lg px-3 py-2 text-xs font-bold tracking-wide uppercase text-slate-700 transition hover:bg-slate-50 hover:text-blue-800"
-          >
-            LEGAL GUIDE
-          </Link>
+          {/* Interactive IPC Section 5x5 Mega Dropdown (Replaces Find a Lawyer) */}
+          <div className="relative" ref={ipcDropdownRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIpcDropdownOpen((prev) => !prev);
+                setServicesDropdownOpen(false);
+              }}
+              onMouseEnter={() => {
+                setIpcDropdownOpen(true);
+                setServicesDropdownOpen(false);
+              }}
+              className="flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-bold tracking-wide uppercase text-slate-700 transition hover:bg-slate-50 hover:text-blue-800"
+              aria-expanded={ipcDropdownOpen}
+            >
+              <span>IPC SECTION</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  ipcDropdownOpen ? "rotate-180 text-blue-700" : ""
+                }`}
+              />
+            </button>
 
-          <Link
-            to="/lawyers"
-            className="rounded-lg px-3 py-2 text-xs font-bold tracking-wide uppercase text-slate-700 transition hover:bg-slate-50 hover:text-blue-800"
-          >
-            FIND A LAWYER
-          </Link>
+            {/* 5-Column x 5-Row Desktop Mega Dropdown Panel */}
+            {ipcDropdownOpen && (
+              <div
+                onMouseLeave={() => setIpcDropdownOpen(false)}
+                className="absolute left-1/2 top-full -translate-x-1/2 mt-1 w-[920px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Gavel className="h-4 w-4 text-blue-900" />
+                      IPC (1860) & BNS (2023) Section Directory
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Explore 25 verified Indian criminal provisions and their official BNS counterparts
+                    </p>
+                  </div>
+                  <Link
+                    to="/ipc-sections"
+                    onClick={() => setIpcDropdownOpen(false)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-900"
+                  >
+                    View All IPC Sections <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+
+                {/* 5-Column x 5-Row Grid of 25 Entries */}
+                <div className="mt-4 grid grid-cols-5 gap-2 text-left">
+                  {ipcSections25.map((sec) => (
+                    <Link
+                      key={sec.id}
+                      to={`/ipc-sections/${sec.slug}`}
+                      onClick={() => setIpcDropdownOpen(false)}
+                      className="group flex flex-col rounded-xl p-2 hover:bg-blue-50/70 border border-transparent hover:border-blue-100 transition"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black text-blue-950 group-hover:text-blue-800">
+                          IPC {sec.ipcSection}
+                        </span>
+                        <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1 py-0.2 rounded">
+                          BNS {sec.bnsSection}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-700 truncate mt-0.5 group-hover:text-blue-900">
+                        {sec.ipcTitle.replace("Punishment for ", "").replace("Punishment of ", "")}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs bg-slate-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
+                  <span className="text-slate-600 font-medium">
+                    Note: BNS came into force on 1 July 2024. IPC applies to earlier offences.
+                  </span>
+                  <Link
+                    to="/ipc-sections"
+                    onClick={() => setIpcDropdownOpen(false)}
+                    className="font-bold text-blue-900 hover:underline flex items-center gap-1"
+                  >
+                    Open Complete Criminal Code Search →
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Quick Talk Button with Reference-Inspired Gold Accent */}
           <Link
@@ -377,7 +530,7 @@ export default function Header({ onOpenProfileSettings }) {
                   >
                     View All 19 Legal Services →
                   </Link>
-                  {featuredServices.slice(0, 8).map((serv) => (
+                  {LEGAL_SERVICES.slice(0, 10).map((serv) => (
                     <Link
                       key={serv.slug}
                       to={`/legal-services/${serv.slug}`}
@@ -393,26 +546,57 @@ export default function Header({ onOpenProfileSettings }) {
 
             <Link
               to="/how-we-work"
+              id="nav-how-we-work-mobile"
               onClick={() => setMobileMenuOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm font-semibold uppercase text-slate-800 hover:bg-slate-50 hover:text-blue-800"
             >
               HOW WE WORK
             </Link>
 
+            {/* Mobile IPC Section Collapsible */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setMobileIpcOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold uppercase text-slate-800 hover:bg-slate-50"
+              >
+                <span>IPC & BNS SECTIONS</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    mobileIpcOpen ? "rotate-180 text-blue-700" : ""
+                  }`}
+                />
+              </button>
+
+              {mobileIpcOpen && (
+                <div className="ml-3 mt-1 space-y-1 border-l-2 border-slate-200 pl-3">
+                  <Link
+                    to="/ipc-sections"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block rounded-md px-2 py-1.5 text-xs font-bold text-blue-700"
+                  >
+                    View All 25 Criminal Provisions →
+                  </Link>
+                  {ipcSections25.slice(0, 8).map((sec) => (
+                    <Link
+                      key={sec.id}
+                      to={`/ipc-sections/${sec.slug}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block rounded-md px-2 py-1 text-xs text-slate-600 hover:text-blue-800"
+                    >
+                      IPC {sec.ipcSection} / BNS {sec.bnsSection} — {sec.ipcTitle.replace("Punishment for ", "")}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Link
               to="/blogs"
               onClick={() => setMobileMenuOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm font-semibold uppercase text-slate-800 hover:bg-slate-50 hover:text-blue-800"
             >
-              LEGAL GUIDE
-            </Link>
-
-            <Link
-              to="/lawyers"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-sm font-semibold uppercase text-slate-800 hover:bg-slate-50 hover:text-blue-800"
-            >
-              FIND A LAWYER
+              LEGAL GUIDES
             </Link>
 
             {/* Direct Registration Actions in Mobile Drawer */}
@@ -423,14 +607,14 @@ export default function Header({ onOpenProfileSettings }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs font-bold text-amber-900"
                 >
-                  Advocate Signup
+                  Register Advocate
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
                   className="rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-center text-xs font-bold text-blue-900"
                 >
-                  Client Signup
+                  Register Client
                 </Link>
               </div>
             )}
@@ -470,7 +654,7 @@ export default function Header({ onOpenProfileSettings }) {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by advocate name, specialty (e.g. Criminal, Property, Family) or city..."
+                  placeholder="Search by advocate name, legal area, IPC/BNS section, or city..."
                   className="w-full rounded-xl border border-slate-300 py-3 pl-4 pr-12 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
                   autoFocus
                 />
@@ -484,8 +668,8 @@ export default function Header({ onOpenProfileSettings }) {
             </form>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span>Popular:</span>
-              {["Property Law", "Criminal Law", "Family Law", "Corporate Law", "New Delhi", "Mumbai", "Bangalore"].map((tag) => (
+              <span>Quick links:</span>
+              {["IPC 302", "IPC 420", "Property Law", "Criminal Law", "New Delhi", "High Court"].map((tag) => (
                 <button
                   key={tag}
                   type="button"

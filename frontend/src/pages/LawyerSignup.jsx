@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { applyAsLawyer, getMyLawyerApplication } from "../services/lawyerService";
+import { registerUser } from "../services/authService";
 import {
   Scale,
   Briefcase,
@@ -88,6 +89,8 @@ export default function LawyerSignup() {
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    password: "",
+    confirmPassword: "",
     city: "New Delhi",
     profileImage: user?.profileImage || "",
 
@@ -193,6 +196,19 @@ export default function LawyerSignup() {
     if (step === 1) {
       if (!formData.name.trim()) return "Full name is required.";
       if (!formData.email.trim()) return "Email address is required.";
+      if (!formData.phone.trim()) return "Mobile number is required.";
+      const phoneRegex = /^(?:\+91|91|0)?([6-9]\d{9})$/;
+      if (!phoneRegex.test(formData.phone.replace(/[\s\-()]/g, ""))) {
+        return "Please enter a valid 10-digit Indian mobile number.";
+      }
+      if (!user) {
+        if (!formData.password || formData.password.length < 6) {
+          return "Password must be at least 6 characters.";
+        }
+        if (formData.password !== formData.confirmPassword) {
+          return "Confirm password must match password.";
+        }
+      }
       if (!formData.city) return "City is required.";
       return null;
     }
@@ -239,11 +255,6 @@ export default function LawyerSignup() {
     e.preventDefault();
     setError("");
 
-    if (!user) {
-      setError("Please sign in or create a LegalConnect account before submitting your application.");
-      return;
-    }
-
     const stepErr = validateStep(4);
     if (stepErr) {
       setError(stepErr);
@@ -253,6 +264,27 @@ export default function LawyerSignup() {
     setLoading(true);
 
     try {
+      // If user is not logged in, register account first
+      let activeUser = user;
+      if (!activeUser) {
+        const regRes = await registerUser({
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.trim(),
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          role: "lawyer",
+        });
+
+        activeUser = regRes.user || {
+          id: regRes.id,
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          role: "lawyer",
+        };
+
+        sessionStorage.setItem("pendingVerificationUser", JSON.stringify(activeUser));
+      }
       const docs = [
         {
           title: "Bar Council Enrolment Certificate",
@@ -573,30 +605,19 @@ export default function LawyerSignup() {
               ))}
             </div>
 
-            {/* Not Logged In Warning */}
+            {/* Account Info Banner */}
             {!user && (
-              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
-                  <div className="text-xs text-amber-900">
-                    <p className="font-bold">Authentication Required</p>
-                    <p className="mt-0.5">
-                      You must be logged in to a LegalConnect client account to link your advocate application.
+                  <ShieldCheck className="h-5 w-5 text-blue-700 shrink-0 mt-0.5" />
+                  <div className="text-xs text-blue-950">
+                    <p className="font-bold">New Advocate Account Creation</p>
+                    <p className="mt-0.5 text-blue-900">
+                      You will register your advocate account and submit your Bar Council credentials in this application. Already registered?{" "}
+                      <Link to="/login?role=lawyer" className="font-bold underline text-blue-900">
+                        Log in here
+                      </Link>
                     </p>
-                    <div className="mt-3 flex gap-2">
-                      <Link
-                        to="/login"
-                        className="inline-flex items-center gap-1 rounded-lg bg-blue-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-800"
-                      >
-                        <LogIn className="h-3 w-3" /> Log In
-                      </Link>
-                      <Link
-                        to="/register"
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                      >
-                        Register Account
-                      </Link>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -688,6 +709,40 @@ export default function LawyerSignup() {
                         ))}
                       </select>
                     </div>
+
+                    {!user && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Account Password *
+                          </label>
+                          <input
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            minLength={6}
+                            placeholder="At least 6 characters"
+                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Confirm Password *
+                          </label>
+                          <input
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                            minLength={6}
+                            placeholder="Repeat password"
+                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-bold text-slate-700 mb-1">

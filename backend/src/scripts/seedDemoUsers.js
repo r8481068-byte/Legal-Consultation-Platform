@@ -25,8 +25,21 @@ const DEMO_ACCOUNTS = {
     password: "ClientDemo@123",
     role: "client",
     phone: "+91 98765 43210",
+    emailVerified: true,
+    phoneVerified: true,
     isVerified: true,
     isActive: true,
+    state: "Delhi NCR",
+    district: "South Delhi",
+    subDistrict: "Hauz Khas",
+    locality: "Green Park Extension",
+    cityVillage: "New Delhi",
+    pincode: "110016",
+    addressLine: "Flat 102, Shanti Niketan Apartments",
+    aadhaarMasked: "XXXX-XXXX-9876",
+    aadhaarVerified: true,
+    panMasked: "XXXXX1234F",
+    panVerified: true,
   },
   lawyer: {
     name: "Adv. Rajesh Verma (Demo Lawyer)",
@@ -34,6 +47,8 @@ const DEMO_ACCOUNTS = {
     password: "LawyerDemo@123",
     role: "lawyer",
     phone: "+91 98111 22334",
+    emailVerified: true,
+    phoneVerified: true,
     isVerified: true,
     isActive: true,
   },
@@ -43,6 +58,8 @@ const DEMO_ACCOUNTS = {
     password: "AdminDemo@123",
     role: "admin",
     phone: "+91 99999 88888",
+    emailVerified: true,
+    phoneVerified: true,
     isVerified: true,
     isActive: true,
   },
@@ -72,6 +89,8 @@ const LAWYER_PROFILE = {
   lawCollege: "Faculty of Law, University of Delhi",
   graduationYear: 2010,
   consultationModes: ["video", "in_person"],
+  courtLevels: ["High Court", "District Court", "Tribunal"],
+  practiceCourts: ["Delhi High Court", "NCLT New Delhi", "Saket District Court"],
   verificationStatus: "approved",
   isAvailable: true,
   averageRating: 4.9,
@@ -97,8 +116,25 @@ async function seedUser(accountData) {
     // Update password to match demo password so developer can log in
     existingUser.name = accountData.name;
     existingUser.phone = accountData.phone;
+    existingUser.emailVerified = true;
+    existingUser.phoneVerified = true;
     existingUser.isVerified = true;
     existingUser.isActive = true;
+    if (accountData.state) existingUser.state = accountData.state;
+    if (accountData.district) existingUser.district = accountData.district;
+    if (accountData.subDistrict) existingUser.subDistrict = accountData.subDistrict;
+    if (accountData.locality) existingUser.locality = accountData.locality;
+    if (accountData.cityVillage) existingUser.cityVillage = accountData.cityVillage;
+    if (accountData.pincode) existingUser.pincode = accountData.pincode;
+    if (accountData.addressLine) existingUser.addressLine = accountData.addressLine;
+    if (accountData.aadhaarMasked) {
+      existingUser.aadhaarMasked = accountData.aadhaarMasked;
+      existingUser.aadhaarVerified = true;
+    }
+    if (accountData.panMasked) {
+      existingUser.panMasked = accountData.panMasked;
+      existingUser.panVerified = true;
+    }
     existingUser.password = accountData.password; // Triggers pre("save") bcrypt hashing
     await existingUser.save();
 
@@ -112,8 +148,23 @@ async function seedUser(accountData) {
     password: accountData.password,
     role: accountData.role,
     phone: accountData.phone,
+    emailVerified: true,
+    phoneVerified: true,
     isVerified: true,
     isActive: true,
+    ...(accountData.state ? {
+      state: accountData.state,
+      district: accountData.district,
+      subDistrict: accountData.subDistrict,
+      locality: accountData.locality,
+      cityVillage: accountData.cityVillage,
+      pincode: accountData.pincode,
+      addressLine: accountData.addressLine,
+      aadhaarMasked: accountData.aadhaarMasked,
+      aadhaarVerified: true,
+      panMasked: accountData.panMasked,
+      panVerified: true,
+    } : {}),
   });
 
   await newUser.save();
@@ -133,6 +184,8 @@ async function seedLawyerProfile(lawyerUserId) {
     lawyer.education = LAWYER_PROFILE.education;
     lawyer.languages = LAWYER_PROFILE.languages;
     lawyer.bio = LAWYER_PROFILE.bio;
+    lawyer.courtLevels = LAWYER_PROFILE.courtLevels;
+    lawyer.practiceCourts = LAWYER_PROFILE.practiceCourts;
     await lawyer.save();
     return { lawyer, created: false };
   }

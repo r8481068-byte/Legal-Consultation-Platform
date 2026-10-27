@@ -19,7 +19,8 @@ async function handleResponse(response) {
     const rawText = await response.text().catch(() => "");
     if (!response.ok) {
       throw new Error(
-        rawText || `Server responded with status ${response.status} (${response.statusText || "Error"})`
+        rawText ||
+          `Server responded with status ${response.status} (${response.statusText || "Error"})`
       );
     }
   }
@@ -27,11 +28,18 @@ async function handleResponse(response) {
   if (!response.ok) {
     let errorMessage = data?.message;
     if (Array.isArray(data?.errors) && data.errors.length > 0) {
-      errorMessage = data.errors.map((e) => e.message).filter(Boolean).join(". ");
+      errorMessage = data.errors
+        .map((e) => e.msg || e.message)
+        .filter(Boolean)
+        .join(". ");
     } else if (!errorMessage && data?.error) {
-      errorMessage = typeof data.error === "string" ? data.error : data.error?.message;
+      errorMessage =
+        typeof data.error === "string" ? data.error : data.error?.message;
     }
-    throw new Error(errorMessage || `Request failed with status ${response.status}`);
+    const err = new Error(errorMessage || `Request failed with status ${response.status}`);
+    err.status = response.status;
+    err.data = data;
+    throw err;
   }
 
   return data;
@@ -162,3 +170,132 @@ export async function resetPasswordWithToken({ token, password }) {
   return handleResponse(response);
 }
 
+/**
+ * ==========================================
+ * Verification Services (Resend & MSG91)
+ * ==========================================
+ */
+
+export async function requestEmailOtp(payload = {}) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/verify-email/request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response);
+}
+
+export async function verifyEmailOtp(payload) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/verify-email/confirm`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response);
+}
+
+export async function requestPhoneOtp(payload = {}) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/verify-phone/request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response);
+}
+
+export async function verifyPhoneOtp(payload) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/verify-phone/confirm`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response);
+}
+
+export async function getVerificationStatus(userId = null) {
+  const token = sessionStorage.getItem("accessToken");
+  const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+  const response = await fetch(`${API_BASE_URL}/auth/verification-status${query}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  return handleResponse(response);
+}
+
+/**
+ * ==========================================
+ * Client Profile & Identity Services
+ * ==========================================
+ */
+
+export async function getClientProfileCompletion() {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/profile-completion`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  return handleResponse(response);
+}
+
+export async function updateClientAddress(addressData) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/client-profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(addressData),
+  });
+  return handleResponse(response);
+}
+
+export async function updateClientIdentity({ aadhaar, pan }) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/auth/client-identity`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ aadhaar, pan }),
+  });
+  return handleResponse(response);
+}
+
+/**
+ * Centralized Booking Eligibility Check
+ */
+export async function getBookingEligibility() {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/appointments/eligibility`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  return handleResponse(response);
+}

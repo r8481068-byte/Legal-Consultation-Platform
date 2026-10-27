@@ -8,6 +8,7 @@ const {
   confirmAppointment,
   completeAppointment,
   rejectAppointment,
+  getBookingEligibility,
 } = require("../controllers/appointmentController");
 
 const {
@@ -25,6 +26,14 @@ const {
 const router = express.Router();
 
 // ==================== CLIENT ROUTES ====================
+
+// Check client booking eligibility
+router.get(
+  "/eligibility",
+  protect,
+  authorize("client"),
+  getBookingEligibility
+);
 
 // Book appointment
 router.post(

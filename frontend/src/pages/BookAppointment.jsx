@@ -1,8 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { bookAppointment } from "../services/appointmentService";
 import { getLawyerById } from "../services/lawyerService";
+import { getBookingEligibility } from "../services/authService";
+import BookingEligibilityModal from "../components/BookingEligibilityModal";
+import { ShieldAlert, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 function formatDateTime(value) {
   if (!value) return "Not available";
@@ -28,6 +30,10 @@ export default function BookAppointment() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Eligibility state
+  const [eligibility, setEligibility] = useState(null);
+  const [eligibilityModalOpen, setEligibilityModalOpen] = useState(false);
+
   useEffect(() => {
     let active = true;
 
@@ -49,11 +55,20 @@ export default function BookAppointment() {
           throw new Error("The saved consultation selection is invalid.");
         }
 
-        const lawyerData = await getLawyerById(parsed.lawyerId);
+        const [lawyerData, eligData] = await Promise.all([
+          getLawyerById(parsed.lawyerId),
+          getBookingEligibility().catch(() => null),
+        ]);
 
         if (active) {
           setSelection(parsed);
           setLawyer(lawyerData);
+          if (eligData) {
+            setEligibility(eligData);
+            if (!eligData.eligible) {
+              setEligibilityModalOpen(true);
+            }
+          }
         }
       } catch (err) {
         if (active) {
@@ -80,6 +95,12 @@ export default function BookAppointment() {
       return;
     }
 
+    // Check frontend eligibility status
+    if (eligibility && !eligibility.eligible) {
+      setEligibilityModalOpen(true);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -95,7 +116,12 @@ export default function BookAppointment() {
         state: { message: "Appointment booked successfully." },
       });
     } catch (err) {
-      setError(err.message || "Unable to book appointment.");
+      if (err.data?.code === "BOOKING_INELIGIBLE" || err.data?.eligibility) {
+        setEligibility(err.data.eligibility || { eligible: false, reasons: [err.message] });
+        setEligibilityModalOpen(true);
+      } else {
+        setError(err.message || "Unable to book appointment.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -127,6 +153,30 @@ export default function BookAppointment() {
           <p className="mt-2 text-sm text-gray-600">
             Confirm your selected lawyer and consultation details.
           </p>
+
+          {/* Eligibility Banner if not eligible */}
+          {eligibility && !eligibility.eligible && (
+            <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950 space-y-1">
+                  <p className="font-bold text-sm text-amber-900">
+                    Booking Eligibility Incomplete
+                  </p>
+                  <p className="text-amber-800">
+                    You must verify your contact details and complete client address & identity requirements before confirming this appointment.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setEligibilityModalOpen(true)}
+                    className="mt-2 inline-flex items-center gap-1.5 font-bold text-blue-900 underline hover:text-blue-950"
+                  >
+                    View Missing Requirements Checklist <ArrowRight className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div
@@ -216,13 +266,23 @@ export default function BookAppointment() {
                   </p>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? "Booking..." : "Confirm Appointment"}
-                </button>
+                {eligibility && !eligibility.eligible ? (
+                  <button
+                    type="button"
+                    onClick={() => setEligibilityModalOpen(true)}
+                    className="w-full rounded-lg bg-amber-600 px-4 py-3 font-semibold text-white hover:bg-amber-700 flex items-center justify-center gap-2"
+                  >
+                    Complete Eligibility Requirements to Book <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {submitting ? "Booking..." : "Confirm Appointment"}
+                  </button>
+                )}
 
                 <p className="text-xs leading-5 text-gray-500">
                   Your appointment will be created with pending status.
@@ -233,6 +293,16 @@ export default function BookAppointment() {
           )}
         </section>
       </div>
+
+      {/* Centralized Eligibility Modal */}
+      {eligibilityModalOpen && eligibility && (
+        <BookingEligibilityModal
+          isOpen={eligibilityModalOpen}
+          onClose={() => setEligibilityModalOpen(false)}
+          eligibility={eligibility}
+          pendingSelection={selection}
+        />
+      )}
     </main>
   );
 }

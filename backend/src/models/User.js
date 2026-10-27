@@ -42,7 +42,80 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
+    emailVerified: {
+      type: Boolean,
+      default: false
+    },
+    phoneVerified: {
+      type: Boolean,
+      default: false
+    },
     isVerified: {
+      type: Boolean,
+      default: false
+    },
+
+    // Client Profile Details
+    state: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    district: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    subDistrict: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    locality: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    cityVillage: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    pincode: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    addressLine: {
+      type: String,
+      trim: true,
+      default: null
+    },
+
+    // Sensitive Identity Information (Encrypted at rest, never logged, never returned in plain queries)
+    aadhaarMasked: {
+      type: String,
+      default: null
+    },
+    aadhaarEncrypted: {
+      type: String,
+      default: null,
+      select: false
+    },
+    aadhaarVerified: {
+      type: Boolean,
+      default: false
+    },
+    panMasked: {
+      type: String,
+      default: null
+    },
+    panEncrypted: {
+      type: String,
+      default: null,
+      select: false
+    },
+    panVerified: {
       type: Boolean,
       default: false
     },

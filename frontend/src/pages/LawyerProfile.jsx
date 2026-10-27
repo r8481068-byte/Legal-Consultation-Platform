@@ -2,9 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Star, MessageSquare, Award, Clock, CheckCircle2, ShieldCheck } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { getLawyerById } from "../services/lawyerService";
 import { getAvailableSlots } from "../services/availabilityService";
 import { getLawyerReviews } from "../services/reviewService";
+import { getBookingEligibility } from "../services/authService";
+import BookingEligibilityModal from "../components/BookingEligibilityModal";
 
 function formatDateTime(value) {
   if (!value) return "Time not available";
@@ -40,6 +43,8 @@ function formatEducation(education) {
 export default function LawyerProfile() {
   const { lawyerId } = useParams();
   const navigate = useNavigate();
+  // const { user: currentUser } = useAuth();
+  const { currentUser } = useAuth();
 
   const [lawyer, setLawyer] = useState(null);
   const [slots, setSlots] = useState([]);
@@ -50,6 +55,8 @@ export default function LawyerProfile() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState("");
   const [slotsError, setSlotsError] = useState("");
+  const [eligibilityData, setEligibilityData] = useState(null);
+  const [eligibilityModalOpen, setEligibilityModalOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -171,18 +178,31 @@ export default function LawyerProfile() {
     (slot) => slot._id === selectedSlot
   );
 
-  function handleContinueToBooking() {
+  async function handleContinueToBooking() {
     if (!selectedSlotData) return;
 
-    sessionStorage.setItem(
-      "pendingConsultation",
-      JSON.stringify({
-        lawyerId: lawyer._id,
-        slotId: selectedSlotData._id,
-        startAt: selectedSlotData.startAt,
-        endAt: selectedSlotData.endAt,
-      })
-    );
+    const selectionObj = {
+      lawyerId: lawyer._id,
+      slotId: selectedSlotData._id,
+      startAt: selectedSlotData.startAt,
+      endAt: selectedSlotData.endAt,
+    };
+
+    sessionStorage.setItem("pendingConsultation", JSON.stringify(selectionObj));
+
+    // If client is logged in, check eligibility preemptively
+    if (currentUser?.role === "client") {
+      try {
+        const elig = await getBookingEligibility();
+        if (!elig.eligible) {
+          setEligibilityData(elig);
+          setEligibilityModalOpen(true);
+          return;
+        }
+      } catch {
+        // Fall back to BookAppointment page check
+      }
+    }
 
     navigate("/book-appointment");
   }
@@ -625,6 +645,20 @@ export default function LawyerProfile() {
           </p>
         </aside>
       </section>
+
+      {eligibilityModalOpen && eligibilityData && (
+        <BookingEligibilityModal
+          isOpen={eligibilityModalOpen}
+          onClose={() => setEligibilityModalOpen(false)}
+          eligibility={eligibilityData}
+          pendingSelection={selectedSlotData ? {
+            lawyerId: lawyer._id,
+            slotId: selectedSlotData._id,
+            startAt: selectedSlotData.startAt,
+            endAt: selectedSlotData.endAt,
+          } : null}
+        />
+      )}
     </main>
   );
 }

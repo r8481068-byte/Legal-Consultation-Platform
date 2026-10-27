@@ -31,7 +31,6 @@ import {
   Check,
   Zap,
 } from "lucide-react";
-import LawyerSearch from "../components/LawyerSearch";
 import { LEGAL_SERVICES } from "../data/legalServicesData";
 
 // Icon mapping helper
@@ -329,20 +328,13 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col gap-2">
                     <Link
                       to={`/legal-services/${service.slug}`}
-                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-blue-50 py-2.5 px-3 text-xs font-bold text-blue-900 transition hover:bg-blue-100"
+                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-amber-400 py-2.5 px-3 text-xs font-black text-slate-950 shadow-sm transition hover:bg-amber-300"
                     >
-                      Know More <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
-
-                    <Link
-                      to={`/lawyers?specialization=${encodeURIComponent(service.specialization)}`}
-                      className="inline-flex items-center justify-center rounded-xl bg-blue-900 py-2.5 px-3 text-xs font-bold text-white transition hover:bg-blue-800"
-                      title={`Find ${service.shortTitle} Advocates`}
-                    >
-                      Lawyers
+                      <span>Consult {service.shortTitle || service.title} Lawyer</span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-950" />
                     </Link>
                   </div>
                 </article>
@@ -399,11 +391,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. LAWYER DISCOVERY AND SEARCH */}
-      <div id="search-lawyers">
-        <LawyerSearch />
-      </div>
-
       {/* 5. HOW WE WORK PREVIEW (Step-by-step diagram + button to full page) */}
       <section className="py-20 bg-white border-t border-slate-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -451,8 +438,9 @@ export default function Home() {
             <Link
               to="/how-we-work"
               className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-7 py-3.5 text-xs font-extrabold uppercase tracking-wider text-white shadow-md hover:bg-blue-800 transition"
+              id="how-we-work-home-cta"
             >
-              <span>Explore Complete Consultation Journey</span>
+              <span>How We Work — Explore Complete Consultation Journey</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
