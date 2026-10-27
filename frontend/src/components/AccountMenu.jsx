@@ -78,14 +78,33 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
           >
             <Settings className="h-4 w-4 text-blue-700" /> Dashboard
           </Link>
-          <Link
-            to={getAppointmentsPath()}
-            onClick={handleLinkClick}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-          >
-            <Calendar className="h-4 w-4 text-blue-700" />
-            {user.role === "lawyer" ? "Appointments" : "My Consultations"}
-          </Link>
+          {user.role === "lawyer" && (
+            <>
+              <Link
+                to="/lawyer/edit-profile"
+                onClick={handleLinkClick}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <User className="h-4 w-4 text-blue-700" /> My Profile
+              </Link>
+              <Link
+                to="/lawyer/availability"
+                onClick={handleLinkClick}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <Calendar className="h-4 w-4 text-blue-700" /> Availability
+              </Link>
+            </>
+          )}
+          {user.role !== "lawyer" && (
+            <Link
+              to={getAppointmentsPath()}
+              onClick={handleLinkClick}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              <Calendar className="h-4 w-4 text-blue-700" /> My Consultations
+            </Link>
+          )}
           {user.role === "client" && (
             <Link
               to="/client/profile-completion"
@@ -197,14 +216,37 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
                   Dashboard
                 </Link>
 
-                <Link
-                  to={getAppointmentsPath()}
-                  onClick={handleLinkClick}
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                >
-                  <Calendar className="h-4 w-4 text-slate-500" />
-                  {user.role === "lawyer" ? "Appointments" : "My Consultations"}
-                </Link>
+                {user.role === "lawyer" && (
+                  <>
+                    <Link
+                      to="/lawyer/edit-profile"
+                      onClick={handleLinkClick}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
+                    >
+                      <User className="h-4 w-4 text-slate-500" />
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/lawyer/availability"
+                      onClick={handleLinkClick}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
+                    >
+                      <Calendar className="h-4 w-4 text-slate-500" />
+                      Availability
+                    </Link>
+                  </>
+                )}
+
+                {user.role !== "lawyer" && (
+                  <Link
+                    to={getAppointmentsPath()}
+                    onClick={handleLinkClick}
+                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
+                  >
+                    <Calendar className="h-4 w-4 text-slate-500" />
+                    My Consultations
+                  </Link>
+                )}
 
                 {onOpenProfileSettings && (
                   <button

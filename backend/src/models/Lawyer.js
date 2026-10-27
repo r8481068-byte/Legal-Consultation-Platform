@@ -10,10 +10,24 @@ const lawyerSchema = new mongoose.Schema(
       unique: true
     },
 
+    headline: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+      default: ""
+    },
+
+    designation: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: "Advocate"
+    },
+
     bio: {
       type: String,
       trim: true,
-      maxlength: 1000,
+      maxlength: 10000,
       default: ""
     },
 
@@ -25,6 +39,11 @@ const lawyerSchema = new mongoose.Schema(
           Array.isArray(value) && value.length > 0,
         message: "At least one specialization is required"
       }
+    },
+
+    secondarySpecializations: {
+      type: [String],
+      default: []
     },
 
     experienceYears: {
@@ -45,10 +64,86 @@ const lawyerSchema = new mongoose.Schema(
         required: true,
         trim: true
       },
+      cityState: {
+        type: String,
+        trim: true,
+        default: ""
+      },
       year: {
         type: Number,
         min: 1950,
         max: 2100
+      },
+      certifications: {
+        type: String,
+        trim: true,
+        default: ""
+      }
+    }],
+
+    internships: [{
+      institution: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      role: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      duration: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      practiceArea: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      responsibilities: {
+        type: String,
+        trim: true,
+        default: ""
+      }
+    }],
+
+    experiences: [{
+      organization: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      designation: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      employmentType: {
+        type: String,
+        trim: true,
+        default: "Full-Time"
+      },
+      startDate: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      endDate: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      practiceAreas: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      responsibilities: {
+        type: String,
+        trim: true,
+        default: ""
       }
     }],
 
@@ -73,6 +168,29 @@ const lawyerSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    },
+
+    state: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    officeAddress: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    hidePhone: {
+      type: Boolean,
+      default: false
     },
 
     verificationStatus: {
@@ -115,6 +233,12 @@ const lawyerSchema = new mongoose.Schema(
       default: null
     },
 
+    consultationDuration: {
+      type: Number,
+      enum: [15, 30, 45, 60],
+      default: 30
+    },
+
     consultationModes: {
       type: [String],
       default: ["video", "in_person"]
@@ -129,6 +253,40 @@ const lawyerSchema = new mongoose.Schema(
     practiceCourts: {
       type: [String],
       default: []
+    },
+
+    jurisdictions: {
+      type: [String],
+      default: []
+    },
+
+    achievements: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    website: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    memberships: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    publications: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    isDraft: {
+      type: Boolean,
+      default: false
     },
 
     isAvailable: {

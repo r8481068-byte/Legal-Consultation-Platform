@@ -112,7 +112,8 @@ const verifyLawyer = async (req, res, next) => {
 const getLawyerById = async (req, res, next) => {
   try {
     const lawyer = await getLawyerByIdService(
-      req.params.lawyerId
+      req.params.lawyerId,
+      req.user?.userId
     );
 
     return res.status(200).json({
@@ -170,6 +171,22 @@ const getMyEarnings = async (req, res, next) => {
   }
 };
 
+const getAuthorizedClientDetail = async (req, res, next) => {
+  try {
+    const { getAuthorizedClientDetailService } = require("../services/lawyerService");
+    const result = await getAuthorizedClientDetailService(
+      req.user.userId,
+      req.params.clientId
+    );
+    return res.status(200).json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createLawyerProfile,
   getMyLawyerProfile,
@@ -180,7 +197,8 @@ module.exports = {
   getLawyerById,
   applyAsLawyer,
   getMyLawyerApplication,
-  getMyEarnings
+  getMyEarnings,
+  getAuthorizedClientDetail
 };
 
  

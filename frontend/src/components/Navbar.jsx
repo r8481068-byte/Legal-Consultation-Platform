@@ -159,17 +159,41 @@ export default function Navbar({ onOpenProfileSettings }) {
           )}
 
           {user?.role === "lawyer" && (
-            <Link
-              to="/lawyer-dashboard"
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                isActive("/lawyer-dashboard")
-                  ? "bg-blue-50 text-blue-800 font-semibold"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Briefcase className="h-4 w-4" />
-              Lawyer Dashboard
-            </Link>
+            <>
+              <Link
+                to="/lawyer-dashboard"
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/lawyer-dashboard")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <Briefcase className="h-4 w-4" />
+                Dashboard
+              </Link>
+              <Link
+                to="/lawyer/edit-profile"
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/lawyer/edit-profile")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <UserIcon className="h-4 w-4" />
+                My Profile
+              </Link>
+              <Link
+                to="/lawyer/availability"
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/lawyer/availability")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <Calendar className="h-4 w-4" />
+                Availability
+              </Link>
+            </>
           )}
 
           {user?.role === "admin" && (
@@ -289,14 +313,43 @@ export default function Navbar({ onOpenProfileSettings }) {
                     </div>
 
                     <div className="mt-1 space-y-0.5 text-sm">
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
-                      >
-                        <UserIcon className="h-4 w-4 text-slate-400" />
-                        Account Overview
-                      </Link>
+                      {user.role === "lawyer" ? (
+                        <>
+                          <Link
+                            to="/lawyer-dashboard"
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            <Briefcase className="h-4 w-4 text-slate-400" />
+                            Dashboard
+                          </Link>
+                          <Link
+                            to="/lawyer/edit-profile"
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            <UserIcon className="h-4 w-4 text-slate-400" />
+                            My Profile
+                          </Link>
+                          <Link
+                            to="/lawyer/availability"
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            <Calendar className="h-4 w-4 text-slate-400" />
+                            Availability
+                          </Link>
+                        </>
+                      ) : (
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setProfileDropdownOpen(false)}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
+                        >
+                          <UserIcon className="h-4 w-4 text-slate-400" />
+                          Account Overview
+                        </Link>
+                      )}
 
                       {onOpenProfileSettings && (
                         <button
@@ -387,13 +440,29 @@ export default function Navbar({ onOpenProfileSettings }) {
             )}
 
             {user?.role === "lawyer" && (
-              <Link
-                to="/lawyer-dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Lawyer Dashboard
-              </Link>
+              <>
+                <Link
+                  to="/lawyer-dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/lawyer/edit-profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  My Profile
+                </Link>
+                <Link
+                  to="/lawyer/availability"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Availability
+                </Link>
+              </>
             )}
 
             {user?.role === "admin" && (

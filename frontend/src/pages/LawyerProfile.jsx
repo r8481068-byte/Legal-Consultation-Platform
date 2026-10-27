@@ -258,18 +258,26 @@ export default function LawyerProfile() {
                       ({reviewsData.totalReviews || lawyer.totalReviews || 0} reviews)
                     </span>
                   </span>
+
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    {lawyer.designation || "Advocate"}
+                  </span>
                 </div>
 
                 <h2 className="mt-3 text-2xl font-bold text-gray-900">
                   {name}
                 </h2>
 
-                <p className="mt-2 text-gray-600">
-                  {displayText(lawyer.city, "City not specified")}
-                </p>
+                {lawyer.headline && (
+                  <p className="mt-1 text-sm font-semibold text-blue-900 leading-snug">
+                    {lawyer.headline}
+                  </p>
+                )}
 
-                <p className="mt-2 text-sm text-gray-600">
-                  {Number(lawyer.experienceYears) || 0} years of experience
+                <p className="mt-2 text-gray-600 flex items-center gap-2 text-sm">
+                  <span>{displayText(lawyer.city, "City not specified")}{lawyer.state ? `, ${lawyer.state}` : ""}</span>
+                  <span>•</span>
+                  <span>{Number(lawyer.experienceYears) || 0} years of experience</span>
                 </p>
               </div>
             </div>
@@ -379,6 +387,95 @@ export default function LawyerProfile() {
                 </p>
               </div>
             </div>
+
+            {/* Court Jurisdictions */}
+            {Array.isArray(lawyer.courtLevels) && lawyer.courtLevels.length > 0 && (
+              <div className="mt-6 border-t border-gray-100 pt-5">
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Court Admissions & Jurisdictions
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {lawyer.courtLevels.map((court, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
+                    >
+                      🏛️ {court}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Professional Legal Experience */}
+            {Array.isArray(lawyer.experiences) && lawyer.experiences.length > 0 && (
+              <div className="mt-6 border-t border-gray-100 pt-5">
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  Professional Practice & Chambers History
+                </h3>
+                <div className="space-y-3">
+                  {lawyer.experiences.map((exp, i) => (
+                    <div key={i} className="rounded-xl bg-gray-50 p-4 border border-gray-100">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="font-bold text-gray-900 text-sm">{exp.organization}</h4>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {exp.startDate} – {exp.endDate || "Present"}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-blue-900 mt-0.5">
+                        {exp.designation} {exp.employmentType ? `• ${exp.employmentType}` : ""}
+                      </p>
+                      {exp.responsibilities && (
+                        <p className="mt-2 text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                          {exp.responsibilities}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Internships & Judicial Training */}
+            {Array.isArray(lawyer.internships) && lawyer.internships.length > 0 && (
+              <div className="mt-6 border-t border-gray-100 pt-5">
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  Internships & Judicial Training
+                </h3>
+                <div className="space-y-3">
+                  {lawyer.internships.map((intern, i) => (
+                    <div key={i} className="rounded-xl bg-gray-50 p-4 border border-gray-100">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="font-bold text-gray-900 text-sm">{intern.institution}</h4>
+                        {intern.duration && (
+                          <span className="text-xs text-gray-500">{intern.duration}</span>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-amber-800 mt-0.5">
+                        {intern.role || "Intern"} {intern.practiceArea ? `• ${intern.practiceArea}` : ""}
+                      </p>
+                      {intern.responsibilities && (
+                        <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                          {intern.responsibilities}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Notable Achievements & Awards */}
+            {lawyer.achievements && (
+              <div className="mt-6 border-t border-gray-100 pt-5">
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Notable Achievements & Honors
+                </h3>
+                <p className="text-sm text-gray-700 bg-amber-50/60 border border-amber-100 p-3.5 rounded-xl">
+                  🏆 {lawyer.achievements}
+                </p>
+              </div>
+            )}
           </article>
 
           {/* Availability slots */}

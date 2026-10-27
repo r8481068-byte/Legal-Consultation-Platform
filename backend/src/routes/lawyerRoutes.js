@@ -37,8 +37,6 @@ router.post(
   applyAsLawyer
 );
 
-router.get("/:lawyerId", getLawyerById);
-
 // Admin-only verification routes
 router.get(
   "/admin/pending",
@@ -55,13 +53,19 @@ router.patch(
 );
 
 // Lawyer-only profile routes
-router.use(protect, authorize("lawyer"));
+const { getMyEarnings, getAuthorizedClientDetail } = require("../controllers/lawyerController");
 
-const { getMyEarnings } = require("../controllers/lawyerController");
+router.post("/profile", protect, authorize("lawyer"), createLawyerProfile);
+router.get("/profile/me", protect, authorize("lawyer"), getMyLawyerProfile);
+router.patch("/profile/me", protect, authorize("lawyer"), updateLawyerProfile);
+router.put("/profile/me", protect, authorize("lawyer"), updateLawyerProfile);
+router.get("/me", protect, authorize("lawyer"), getMyLawyerProfile);
+router.patch("/me", protect, authorize("lawyer"), updateLawyerProfile);
+router.put("/me", protect, authorize("lawyer"), updateLawyerProfile);
+router.get("/profile/me/earnings", protect, authorize("lawyer"), getMyEarnings);
+router.get("/clients/:clientId", protect, authorize("lawyer"), getAuthorizedClientDetail);
 
-router.post("/profile", createLawyerProfile);
-router.get("/profile/me", getMyLawyerProfile);
-router.patch("/profile/me", updateLawyerProfile);
-router.get("/profile/me/earnings", getMyEarnings);
+// Public single lawyer profile (defined last to prevent parameterized collision)
+router.get("/:lawyerId", getLawyerById);
 
 module.exports = router;

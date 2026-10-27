@@ -1,6 +1,7 @@
 
 const Lawyer = require("../models/Lawyer");
 const User = require("../models/User");
+const Appointment = require("../models/Appointment");
 
 const createLawyerProfileService = async (userId, data) => {
   const user = await User.findById(userId);
@@ -36,7 +37,7 @@ const createLawyerProfileService = async (userId, data) => {
 
 const getMyLawyerProfileService = async (userId) => {
   const lawyer = await Lawyer.findOne({ user: userId })
-    .populate("user", "name email");
+    .populate("user", "name email phone profileImage");
 
   if (!lawyer) {
     const error = new Error("Lawyer profile not found");
@@ -48,15 +49,51 @@ const getMyLawyerProfileService = async (userId) => {
 };
 
 const updateLawyerProfileService = async (userId, data) => {
+  // Sync name, phone, or profile image to User model if provided
+  const userUpdates = {};
+  if (data.name && typeof data.name === "string" && data.name.trim().length >= 2) {
+    userUpdates.name = data.name.trim();
+  }
+  if (data.userPhone && typeof data.userPhone === "string") {
+    userUpdates.phone = data.userPhone.trim();
+  } else if (data.phone && typeof data.phone === "string") {
+    userUpdates.phone = data.phone.trim();
+  }
+  if (data.profileImage && typeof data.profileImage === "string") {
+    userUpdates.profileImage = data.profileImage.trim();
+  }
+  if (Object.keys(userUpdates).length > 0) {
+    await User.findByIdAndUpdate(userId, { $set: userUpdates });
+  }
+
   const allowedFields = [
+    "headline",
+    "designation",
     "bio",
     "specialization",
+    "secondarySpecializations",
     "experienceYears",
     "education",
+    "internships",
+    "experiences",
     "consultationFee",
+    "consultationDuration",
+    "consultationModes",
     "languages",
     "city",
-    "isAvailable"
+    "state",
+    "officeAddress",
+    "phone",
+    "hidePhone",
+    "courtLevels",
+    "practiceCourts",
+    "jurisdictions",
+    "achievements",
+    "website",
+    "memberships",
+    "publications",
+    "isAvailable",
+    "isDraft"
   ];
 
   const updates = {};
@@ -67,6 +104,36 @@ const updateLawyerProfileService = async (userId, data) => {
     }
   }
 
+  // Normalize string fields if array was provided
+  if (Array.isArray(updates.achievements)) {
+    updates.achievements = updates.achievements.join("\n");
+  }
+  if (Array.isArray(updates.memberships)) {
+    updates.memberships = updates.memberships.join("\n");
+  }
+  if (Array.isArray(updates.publications)) {
+    updates.publications = updates.publications.join("\n");
+  }
+
+  // Normalize education items (accept institution or university)
+  if (Array.isArray(updates.education)) {
+    updates.education = updates.education.map((e) => ({
+      ...e,
+      institution: e.institution || e.university || ""
+    }));
+  }
+
+  // Handle draft vs publish requests
+  if (data.isDraft !== undefined) {
+    updates.isDraft = Boolean(data.isDraft);
+  }
+
+  // Ensure lawyer cannot self-approve or alter verification records
+  delete updates.verificationStatus;
+  delete updates.decisionReason;
+  delete updates.reviewedAt;
+  delete updates.reviewedBy;
+
   const lawyer = await Lawyer.findOneAndUpdate(
     { user: userId },
     { $set: updates },
@@ -74,7 +141,7 @@ const updateLawyerProfileService = async (userId, data) => {
       new: true,
       runValidators: true
     }
-  ).populate("user", "name email");
+  ).populate("user", "name email phone profileImage");
 
   if (!lawyer) {
     const error = new Error("Lawyer profile not found");
@@ -248,23 +315,87 @@ const verifyLawyerService = async (lawyerId, status, decisionReason = "", adminU
   return lawyer;
 };
 
-const getLawyerByIdService = async (lawyerId) => {
-  const lawyer = await Lawyer.findOne({
-    _id: lawyerId,
-    verificationStatus: "approved",
-    isAvailable: true,
-  })
-    .select("-barCouncilId -__v")
-    .populate("user", "name profileImage")
+const getLawyerByIdService = async (lawyerId, requesterUserId = null) => {
+  const lawyer = await Lawyer.findById(lawyerId)
+    .populate("user", "name profileImage email phone")
     .lean();
 
   if (!lawyer) {
+    const error = new Error("Lawyer profile not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isOwner =
+    requesterUserId &&
+    (lawyer.user?._id?.toString() === requesterUserId.toString() ||
+      lawyer.user?.toString() === requesterUserId.toString());
+
+  if (!isOwner && (lawyer.verificationStatus !== "approved" || !lawyer.isAvailable)) {
     const error = new Error("Available lawyer not found");
     error.statusCode = 404;
     throw error;
   }
 
+  // Remove barCouncilId and private verification docs from public view
+  if (!isOwner) {
+    delete lawyer.barCouncilId;
+    delete lawyer.verificationDocuments;
+  }
+  delete lawyer.__v;
+
+  // Contact privacy: hide phone if lawyer configured it private
+  if (lawyer.hidePhone && !isOwner) {
+    delete lawyer.phone;
+    if (lawyer.user) {
+      delete lawyer.user.phone;
+    }
+  }
+
   return lawyer;
+};
+
+const getAuthorizedClientDetailService = async (lawyerUserId, clientId) => {
+  const lawyer = await Lawyer.findOne({ user: lawyerUserId });
+  if (!lawyer) {
+    const error = new Error("Lawyer profile not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Strictly enforce authorization on server: lawyer and client must have at least one appointment
+  const appointments = await Appointment.find({
+    lawyer: lawyer._id,
+    client: clientId
+  })
+    .sort({ scheduledAt: -1 })
+    .select("scheduledAt durationMinutes consultationType status notes meetingRoomId isPaid createdAt")
+    .lean();
+
+  if (!appointments || appointments.length === 0) {
+    const error = new Error("You are not authorized to view this client profile");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const client = await User.findOne({
+    _id: clientId,
+    role: "client"
+  })
+    .select("name email phone profileImage cityVillage district state createdAt")
+    .lean();
+
+  if (!client) {
+    const error = new Error("Client account not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return {
+    client,
+    appointmentsCount: appointments.length,
+    appointments
+  };
 };
 
 const applyAsLawyerService = async (userId, data) => {
@@ -442,6 +573,7 @@ module.exports = {
   getLawyerByIdService,
   applyAsLawyerService,
   getMyLawyerApplicationService,
-  getLawyerEarningsService
+  getLawyerEarningsService,
+  getAuthorizedClientDetailService
 };
 

@@ -26,6 +26,8 @@ import IpcSectionDetail from "./pages/IpcSectionDetail";
 import BookAppointment from "./pages/BookAppointment";
 import MyAppointments from "./pages/MyAppointments";
 import LawyerDashboard from "./pages/LawyerDashboard";
+import LawyerEditProfile from "./pages/LawyerEditProfile";
+import LawyerAvailabilityPage from "./pages/LawyerAvailabilityPage";
 import AdminVerification from "./pages/AdminVerification";
 import VideoRoom from "./pages/VideoRoom";
 import LawyerSignup from "./pages/LawyerSignup";
@@ -127,6 +129,9 @@ function App() {
           {/* Lawyer-only Routes */}
           <Route element={<RoleRoute allowedRole="lawyer" />}>
             <Route path="/lawyer-dashboard" element={<LawyerDashboard />} />
+            <Route path="/lawyer/edit-profile" element={<LawyerEditProfile />} />
+            <Route path="/lawyer/profile" element={<Navigate to="/lawyer/edit-profile" replace />} />
+            <Route path="/lawyer/availability" element={<LawyerAvailabilityPage />} />
           </Route>
 
           {/* Admin-only Routes */}

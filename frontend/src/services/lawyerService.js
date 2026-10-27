@@ -139,4 +139,21 @@ export async function getMyLawyerApplication() {
   return result.application;
 }
 
+export async function getAuthorizedClientDetail(clientId) {
+  const token = sessionStorage.getItem("accessToken");
+  const response = await fetch(`${API_BASE_URL}/lawyers/clients/${clientId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.message || "Unable to fetch client details");
+  }
+  return result;
+}
+
 

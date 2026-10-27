@@ -141,6 +141,7 @@ const getLawyerReviewsService = async (lawyerId, query = {}) => {
   const [reviews, total] = await Promise.all([
     Review.find(filter)
       .populate("client", "name profileImage")
+      .populate("appointment", "scheduledAt consultationType durationMinutes")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

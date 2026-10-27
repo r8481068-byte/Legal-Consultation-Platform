@@ -10,6 +10,7 @@ const Appointment = require("../models/Appointment");
 const Lawyer = require("../models/Lawyer");
 const LawyerAvailability = require("../models/LawyerAvailability");
 const Payment = require("../models/Payment");
+const Review = require("../models/Review");
 const User = require("../models/User");
 const { checkBookingEligibility } = require("./eligibilityService");
 
@@ -306,21 +307,28 @@ const getLawyerAppointmentsService = async (lawyerUserId) => {
   }
 
   const appointments = await Appointment.find({ lawyer: lawyer._id })
-    .populate("client", "name email profileImage")
+    .populate("client", "name email phone profileImage cityVillage state")
     .sort({ scheduledAt: 1 })
     .lean();
 
   const appointmentIds = appointments.map((a) => a._id);
-  const payments = await Payment.find({
-    appointment: { $in: appointmentIds },
-    status: { $in: ["captured", "authorized"] },
-  }).lean();
+  const [payments, reviews] = await Promise.all([
+    Payment.find({
+      appointment: { $in: appointmentIds },
+      status: { $in: ["captured", "authorized"] },
+    }).lean(),
+    Review.find({
+      appointment: { $in: appointmentIds },
+    }).lean(),
+  ]);
 
   const paidSet = new Set(payments.map((p) => p.appointment.toString()));
+  const reviewMap = new Map(reviews.map((r) => [r.appointment.toString(), r]));
 
   return appointments.map((app) => ({
     ...app,
     isPaid: paidSet.has(app._id.toString()),
+    review: reviewMap.get(app._id.toString()) || null,
   }));
 };
 

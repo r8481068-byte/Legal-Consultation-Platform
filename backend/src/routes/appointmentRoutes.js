@@ -73,6 +73,13 @@ router.get(
   getLawyerAppointments
 );
 
+router.get(
+  "/lawyer",
+  protect,
+  authorize("lawyer"),
+  getLawyerAppointments
+);
+
 // Confirm appointment
 router.patch(
   "/:appointmentId/confirm",
