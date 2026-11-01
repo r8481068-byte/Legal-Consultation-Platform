@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, authFetch } from "./apiClient";
 
 export async function getAvailableSlots(lawyerId) {
   const response = await fetch(
@@ -22,13 +21,10 @@ export async function getAvailableSlots(lawyerId) {
 }
 
 export async function createAvailabilitySlot(startAt) {
-  const token = sessionStorage.getItem("accessToken");
-
-  const response = await fetch(`${API_BASE_URL}/availability`, {
+  const response = await authFetch(`${API_BASE_URL}/availability`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ startAt }),
   });
@@ -43,13 +39,8 @@ export async function createAvailabilitySlot(startAt) {
 }
 
 export async function getMySlots() {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/availability/my/slots`, {
+  const response = await authFetch(`${API_BASE_URL}/availability/my/slots`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   const result = await response.json().catch(() => ({}));
@@ -60,13 +51,8 @@ export async function getMySlots() {
 }
 
 export async function deleteSlot(slotId) {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/availability/${slotId}`, {
+  const response = await authFetch(`${API_BASE_URL}/availability/${slotId}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   const result = await response.json().catch(() => ({}));

@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getCurrentUser, updateProfile } from "../services/authService";
+import { getMyAppointments } from "../services/appointmentService";
 import Navbar from "../components/Navbar";
 import ProfileSettingsModal from "../components/ProfileSettingsModal";
 import {
@@ -13,223 +15,596 @@ import {
   Search,
   FileText,
   Clock,
-  Sparkles
+  Sparkles,
+  Camera,
+  CheckCircle2,
+  AlertCircle,
+  Video,
+  MapPin,
+  X,
+  UploadCloud,
+  Loader2,
+  ChevronRight,
+  UserCheck,
 } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Profile Image Upload Modal state
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [uploadError, setUploadError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const updateUserRef = useRef(updateUser);
+  useEffect(() => {
+    updateUserRef.current = updateUser;
+  }, [updateUser]);
+
+  const loadDashboardData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [userRes, apptRes] = await Promise.allSettled([
+        getCurrentUser(),
+        getMyAppointments(),
+      ]);
+
+      if (userRes.status === "fulfilled" && userRes.value?.user) {
+        setProfileData(userRes.value.user);
+        // Sync context
+        updateUserRef.current?.(userRes.value.user);
+      }
+
+      if (apptRes.status === "fulfilled" && Array.isArray(apptRes.value)) {
+        setAppointments(apptRes.value);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  // Derived Client Information
+  const clientName = profileData?.name || user?.name || "Client";
+  const clientEmail = profileData?.email || user?.email || "";
+  const clientPhone = profileData?.phone || user?.phone || "Not provided";
+  const clientImage = profileData?.profileImage || user?.profileImage || null;
+
+  const initials = clientName
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "C";
+
+  // Profile Completeness calculation
+  const completeness = profileData?.completeness?.percentage ??
+    (profileData?.pincode && profileData?.state ? 100 : 70);
+
+  // Certified Client Badge Logic:
+  // ONLY display "Certified Client" if genuinely verified (e.g. user.isCertified === true).
+  // Otherwise display "Profile Complete" or "Identity Submitted".
+  const isGenuinelyCertified = Boolean(profileData?.isCertified);
+  const isProfileComplete = completeness === 100;
+
+  // Appointment counts from actual MongoDB data
+  const totalAppointments = appointments.length;
+  const upcomingAppointments = appointments.filter(
+    (a) => a.status === "confirmed" && new Date(a.scheduledAt) > new Date()
+  );
+  const completedAppointments = appointments.filter(
+    (a) => a.status === "completed"
+  );
+  const pendingAppointments = appointments.filter(
+    (a) => a.status === "pending"
+  );
+
+  // Profile Image Selection Handler
+  const handleFileSelect = (e) => {
+    setUploadError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate type
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Only JPG, PNG, and WebP images are supported.");
+      return;
+    }
+
+    // Validate size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("Image size must be less than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreviewImage(reader.result);
+      setImageModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    // Reset file input value so re-selecting same file triggers onChange
+    e.target.value = "";
+  };
+
+  // Profile Image Save Handler
+  const handleSaveProfileImage = async () => {
+    if (!previewImage) return;
+
+    setUploading(true);
+    setUploadError("");
+
+    try {
+      const response = await updateProfile({ profileImage: previewImage });
+
+      if (response?.user) {
+        setProfileData((prev) => ({
+          ...prev,
+          profileImage: response.user.profileImage,
+        }));
+
+        if (updateUser) {
+          updateUser({ profileImage: response.user.profileImage });
+        }
+
+        setSuccessMessage("Profile photo updated successfully!");
+        setImageModalOpen(false);
+        setPreviewImage(null);
+
+        setTimeout(() => setSuccessMessage(""), 4000);
+      } else {
+        throw new Error(response?.message || "Failed to update profile photo.");
+      }
+    } catch (err) {
+      setUploadError(err.message || "Failed to upload profile photo.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Navbar onOpenProfileSettings={() => setProfileModalOpen(true)} />
 
       <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-5xl">
-          {/* Welcome Banner */}
-          <div className="rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-8 text-white shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+        <div className="mx-auto max-w-6xl space-y-7">
+          {/* Success Banner */}
+          {successMessage && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-semibold text-emerald-800 flex items-center justify-between shadow-xs">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                {successMessage}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSuccessMessage("")}
+                className="text-emerald-700 hover:text-emerald-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-              <div>
-                <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold text-blue-300 border border-blue-400/30">
-                  {user?.role ? user.role.toUpperCase() : "CLIENT"} PORTAL
-                </span>
-                <h1 className="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight">
-                  Welcome back, {user?.name || "Client"}!
-                </h1>
-                <p className="mt-2 text-sm text-blue-200 max-w-md">
-                  Access your scheduled legal appointments, communicate with counsel, and track consultations.
-                </p>
-              </div>
+          {/* ========================================================================= */}
+          {/* CLIENT PROFILE CARD (Inspired by Lawyer Dashboard profile layout)          */}
+          {/* ========================================================================= */}
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                {/* Profile Image with Edit Profile Image button directly underneath */}
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <div className="relative">
+                    {clientImage ? (
+                      <img
+                        src={clientImage}
+                        alt={clientName}
+                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-2 border-slate-200 shadow-sm"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          if (e.currentTarget.nextSibling) {
+                            e.currentTarget.nextSibling.style.display = "flex";
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-2 border-slate-200 shadow-sm ${
+                        clientImage ? "hidden" : "flex"
+                      }`}
+                    >
+                      {initials}
+                    </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                {user?.role === "client" && (
-                  <Link
-                    to="/client/profile-completion"
-                    className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md hover:bg-amber-300 transition"
+                    {/* Verification Indicator Icon */}
+                    {isGenuinelyCertified ? (
+                      <div
+                        className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-xs"
+                        title="Certified Client"
+                      >
+                        <ShieldCheck className="h-4 w-4" />
+                      </div>
+                    ) : isProfileComplete ? (
+                      <div
+                        className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-1 text-white ring-2 ring-white shadow-xs"
+                        title="Profile Complete"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Edit Profile Image Button immediately below */}
+                  <label
+                    htmlFor="client-photo-input"
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-900 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-3 py-1 rounded-lg border border-slate-200 shadow-2xs transition"
                   >
-                    <ShieldCheck className="h-4 w-4" />
-                    Booking Profile & Identity
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setProfileModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold text-white backdrop-blur-md border border-white/20 hover:bg-white/20 transition"
-                >
-                  <Settings className="h-4 w-4" />
-                  Account Settings
-                </button>
+                    <Camera className="h-3.5 w-3.5" />
+                    <span>Edit Profile Image</span>
+                    <input
+                      id="client-photo-input"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                </div>
+
+                {/* Client Details */}
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                      {clientName}
+                    </h1>
+
+                    {/* Client Role Badge */}
+                    <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800 border border-blue-200 uppercase">
+                      Client
+                    </span>
+
+                    {/* Suitable Client Status Badge */}
+                    {isGenuinelyCertified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+                        <ShieldCheck className="h-3.5 w-3.5" /> Certified Client
+                      </span>
+                    ) : isProfileComplete ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800 border border-blue-200">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Profile Complete
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+                        <Clock className="h-3.5 w-3.5" /> Profile in Progress
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Email & Phone */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-medium pt-0.5">
+                    <span className="truncate">
+                      <strong>Email:</strong> {clientEmail}
+                    </span>
+                    <span>•</span>
+                    <span>
+                      <strong>Phone:</strong> {clientPhone}
+                    </span>
+                    {profileData?.cityVillage && (
+                      <>
+                        <span>•</span>
+                        <span>
+                          <strong>Location:</strong> {profileData.cityVillage}, {profileData.state}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Profile Completion Bar */}
+                  <div className="pt-2 max-w-sm">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-semibold text-slate-600">Profile Completion</span>
+                      <span className="font-bold text-blue-900">{completeness}%</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200">
+                      <div
+                        className="h-full rounded-full bg-linear-to-r from-blue-700 to-indigo-600 transition-all duration-500"
+                        style={{ width: `${completeness}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Role Navigation Cards */}
-          <section className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {user?.role === "client" && (
-              <>
-                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between">
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-900">
-                      <Calendar className="h-6 w-6" />
-                    </div>
-                    <h2 className="mt-4 text-lg font-bold text-slate-900">
-                      My Consultations
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      View your booked sessions, confirm status, join online video meetings, and review past legal advice.
-                    </p>
-                  </div>
-                  <Link
-                    to="/my-appointments"
-                    className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
-                  >
-                    Open Appointments <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-
-                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between">
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-                      <Search className="h-6 w-6" />
-                    </div>
-                    <h2 className="mt-4 text-lg font-bold text-slate-900">
-                      Find Advocates
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      Search certified lawyers by specialization, city, experience, ratings, and book available calendar slots.
-                    </p>
-                  </div>
-                  <Link
-                    to="/lawyers"
-                    className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
-                  >
-                    Browse Directory <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-
-                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between">
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800">
-                      <ShieldCheck className="h-6 w-6" />
-                    </div>
-                    <h2 className="mt-4 text-lg font-bold text-slate-900">
-                      Booking Eligibility
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      Complete your address and identity verification (Aadhaar & PAN) to unlock appointment booking with panel advocates.
-                    </p>
-                  </div>
-                  <Link
-                    to="/client/profile-completion"
-                    className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
-                  >
-                    Complete Profile <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-              </>
-            )}
-
-            {user?.role === "lawyer" && (
-              <>
-                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between">
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-900">
-                      <Briefcase className="h-6 w-6" />
-                    </div>
-                    <h2 className="mt-4 text-lg font-bold text-slate-900">
-                      Lawyer Dashboard
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      Manage client booking requests, confirm upcoming sessions, and host video consultations.
-                    </p>
-                  </div>
-                  <Link
-                    to="/lawyer-dashboard"
-                    className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
-                  >
-                    Launch Dashboard <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-
-                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between">
-                  <div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                      <Clock className="h-6 w-6" />
-                    </div>
-                    <h2 className="mt-4 text-lg font-bold text-slate-900">
-                      Manage Availability
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      Open 30-minute bookable consultation slots on your calendar for prospective clients.
-                    </p>
-                  </div>
-                  <Link
-                    to="/lawyer-dashboard"
-                    className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
-                  >
-                    Manage Slots <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </article>
-              </>
-            )}
-
-            {user?.role === "admin" && (
-              <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between sm:col-span-2 lg:col-span-3">
-                <div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
-                    <ShieldCheck className="h-6 w-6" />
-                  </div>
-                  <h2 className="mt-4 text-lg font-bold text-slate-900">
-                    Administrator Control Center
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                    Verify advocate applications, manage user accounts, oversee payments, handle refunds, and moderate client reviews.
-                  </p>
-                </div>
-                <Link
-                  to="/admin"
-                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:underline"
-                >
-                  Enter Admin Portal <ArrowRight className="h-4 w-4" />
-                </Link>
-              </article>
-            )}
           </section>
 
-          {/* Account Details Overview */}
-          <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-xs">
-            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-900" />
-              Account Credentials
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                <span className="text-slate-400 font-bold uppercase tracking-wider">Account Name</span>
-                <p className="font-bold text-slate-900 mt-1 text-sm">{user?.name || "Client"}</p>
+          {/* ========================================================================= */}
+          {/* DASHBOARD SUMMARY CARDS (Exact 4 Requirements from live MongoDB data)     */}
+          {/* ========================================================================= */}
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {/* 1. Total Appointments */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Total Appointments
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-900">
+                  <Calendar className="h-5 w-5" />
+                </div>
               </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                <span className="text-slate-400 font-bold uppercase tracking-wider">Email Address</span>
-                <p className="font-bold text-slate-900 mt-1 text-sm truncate">{user?.email || "—"}</p>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                <span className="text-slate-400 font-bold uppercase tracking-wider">Assigned Role</span>
-                <p className="font-bold text-blue-900 mt-1 text-sm capitalize">{user?.role || "client"}</p>
-              </div>
+              <p className="mt-4 text-3xl font-black text-slate-900">
+                {totalAppointments}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Total sessions booked</p>
             </div>
+
+            {/* 2. Upcoming Appointments */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Upcoming
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                  <Clock className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="mt-4 text-3xl font-black text-emerald-700">
+                {upcomingAppointments.length}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Confirmed & upcoming</p>
+            </div>
+
+            {/* 3. Completed Consultations */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-purple-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Completed
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-50 text-purple-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="mt-4 text-3xl font-black text-purple-700">
+                {completedAppointments.length}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Successfully conducted</p>
+            </div>
+
+            {/* 4. Pending Appointment Requests */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-amber-300 transition">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Pending Requests
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                  <Clock className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="mt-4 text-3xl font-black text-amber-600">
+                {pendingAppointments.length}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Awaiting lawyer confirmation</p>
+            </div>
+          </section>
+
+
+          {/* Recent Appointments Preview */}
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Recent Appointment History
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Latest consultations booked under your client account.
+                </p>
+              </div>
+              <Link
+                to="/my-appointments"
+                className="text-xs font-bold text-blue-900 hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
+
+            {appointments.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500">
+                <p className="font-semibold text-slate-700">No appointments scheduled yet.</p>
+                <p className="mt-1">Book your first legal consultation with a verified advocate.</p>
+                <Link
+                  to="/client/lawyers"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 font-bold text-white shadow-xs hover:bg-blue-800 transition"
+                >
+                  <Search className="h-3.5 w-3.5" /> Find Advocate
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {appointments.slice(0, 3).map((appt) => {
+                  const lawyerName = appt.lawyer?.user?.name || "Verified Counsel";
+                  const lawyerImage = appt.lawyer?.user?.profileImage;
+                  return (
+                    <div
+                      key={appt._id}
+                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        {lawyerImage ? (
+                          <img
+                            src={lawyerImage}
+                            alt={lawyerName}
+                            className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-900 font-bold text-sm">
+                            {lawyerName.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">
+                            Advocate {lawyerName}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(appt.scheduledAt).toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}{" "}
+                            • <span className="capitalize">{appt.consultationType}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold capitalize ${
+                            appt.status === "confirmed"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : appt.status === "pending"
+                              ? "bg-amber-100 text-amber-800"
+                              : appt.status === "completed"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                          {appt.status}
+                        </span>
+                        <Link
+                          to="/my-appointments"
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Details
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </div>
       </main>
 
+      {/* ========================================================================= */}
+      {/* PROFILE IMAGE UPLOAD & PREVIEW MODAL                                      */}
+      {/* ========================================================================= */}
+      {imageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Camera className="h-5 w-5 text-blue-900" />
+                Edit Profile Image
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setImageModalOpen(false);
+                  setPreviewImage(null);
+                }}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {uploadError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {/* Image Preview Box */}
+            <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-300">
+              {previewImage ? (
+                <div className="relative">
+                  <img
+                    src={previewImage}
+                    alt="Preview"
+                    className="h-36 w-36 rounded-full object-cover border-4 border-white shadow-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 rounded-full bg-blue-900 p-2 text-white shadow-md hover:bg-blue-800 transition"
+                    title="Choose different photo"
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-xs text-slate-500">
+                  <UploadCloud className="h-10 w-10 text-slate-400 mx-auto mb-2" />
+                  <p>No photo selected</p>
+                </div>
+              )}
+              <p className="mt-3 text-xs text-slate-500 text-center">
+                Supported formats: JPG, PNG, WebP (Max size: 2MB)
+              </p>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setImageModalOpen(false);
+                  setPreviewImage(null);
+                }}
+                disabled={uploading}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveProfileImage}
+                disabled={uploading || !previewImage}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Saving Photo...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Save Photo</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Settings Modal */}
       {profileModalOpen && (
         <ProfileSettingsModal
           isOpen={profileModalOpen}
-          onClose={() => setProfileModalOpen(false)}
+          onClose={() => {
+            setProfileModalOpen(false);
+            loadDashboardData();
+          }}
         />
       )}
     </div>

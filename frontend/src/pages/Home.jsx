@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Scale,
   PhoneCall,
@@ -49,6 +50,7 @@ const iconMap = {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [openFaq, setOpenFaq] = useState(null);
 
   const toggleFaq = (idx) => {
@@ -202,7 +204,7 @@ export default function Home() {
             {/* Action Buttons */}
             <div className="pt-2 flex flex-col items-center justify-center gap-3 sm:flex-row flex-wrap">
               <Link
-                to="/lawyers"
+                to={user ? "/lawyers" : "/talk-to-lawyer"}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-7 py-3.5 text-sm font-extrabold text-slate-950 shadow-lg shadow-amber-400/20 transition hover:bg-amber-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-300"
               >
                 <PhoneCall className="h-4 w-4 text-slate-950" />

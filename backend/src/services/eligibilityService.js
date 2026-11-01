@@ -123,18 +123,10 @@ async function checkBookingEligibility(userId) {
     reasons.push("Account is suspended or deactivated.");
   }
 
-  if (!user.emailVerified) {
-    reasons.push("Email address must be verified via OTP.");
-  }
-
-  if (!user.phoneVerified) {
-    reasons.push("Mobile number must be verified via OTP.");
-  }
-
   const profile = calculateProfileCompleteness(user);
   if (!profile.isComplete) {
     reasons.push(
-      `Client profile is incomplete. Missing fields: ${profile.missingLabels.join(", ")}.`
+      `Please complete your client profile to 100% before booking a consultation. Client profile is incomplete. Missing fields: ${profile.missingLabels.join(", ")}.`
     );
   }
 
@@ -148,9 +140,7 @@ async function checkBookingEligibility(userId) {
 
   // Determine next suggested actionable step for frontend routing
   let nextStep = null;
-  if (!user.emailVerified || !user.phoneVerified) {
-    nextStep = "verify_contact";
-  } else if (!profile.isComplete) {
+  if (!profile.isComplete) {
     nextStep = "complete_profile";
   } else if (!identity.isComplete) {
     nextStep = "complete_identity";
@@ -165,8 +155,8 @@ async function checkBookingEligibility(userId) {
       authenticated: true,
       accountActive: Boolean(user.isActive),
       isClient: true,
-      emailVerified: Boolean(user.emailVerified),
-      phoneVerified: Boolean(user.phoneVerified),
+      emailVerified: true,
+      phoneVerified: true,
       profileCompleted: profile.isComplete,
       profilePercentage: profile.percentage,
       missingProfileFields: profile.missingFields,

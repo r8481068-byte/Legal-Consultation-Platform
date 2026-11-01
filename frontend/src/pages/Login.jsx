@@ -40,18 +40,7 @@ function Login() {
         password: formData.password,
       });
 
-      // Handle unverified account redirection
-      if (result?.verificationRequired) {
-        const targetUser = result.user || { email: formData.email.trim() };
-        sessionStorage.setItem("pendingVerificationUser", JSON.stringify(targetUser));
-        navigate("/verify-account", {
-          state: {
-            user: targetUser,
-            message: result.message || "Contact verification required.",
-          },
-        });
-        return;
-      }
+
 
       if (!result || !result.accessToken) {
         throw new Error("Login response did not contain an access token.");
@@ -61,13 +50,16 @@ function Login() {
       login(result);
 
       // Role-aware redirection
+      const redirectParam = searchParams.get("redirect");
       const userRole = result.user?.role;
-      if (userRole === "lawyer") {
+      if (redirectParam && userRole === "client") {
+        navigate(redirectParam, { replace: true });
+      } else if (userRole === "lawyer") {
         navigate("/lawyer-dashboard", { replace: true });
       } else if (userRole === "admin") {
         navigate("/admin", { replace: true });
       } else {
-        navigate("/my-appointments", { replace: true });
+        navigate("/dashboard", { replace: true });
       }
     } catch (err) {
       const isNetworkError =
@@ -235,7 +227,7 @@ function Login() {
         <p className="mt-6 text-center text-xs text-slate-600">
           New client?{" "}
           <Link
-            to="/register"
+            to={searchParams.get("redirect") ? `/register?redirect=${encodeURIComponent(searchParams.get("redirect"))}` : "/register"}
             className="font-bold text-blue-800 hover:underline"
           >
             Create an Account

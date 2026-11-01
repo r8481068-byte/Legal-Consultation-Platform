@@ -8,11 +8,6 @@ const {
   logoutUser,
   forgotPassword,
   resetPassword,
-  requestEmailOtp,
-  verifyEmailOtp,
-  requestPhoneOtp,
-  verifyPhoneOtp,
-  getVerificationStatus,
   getCurrentUser,
   updateProfile,
   updateClientAddress,
@@ -27,7 +22,6 @@ const { protect } = require("../middleware/authMiddleware");
 const {
   registerValidator,
   loginValidator,
-  otpValidator,
   clientProfileValidator,
   identityValidator,
 } = require("../validators/authValidator");
@@ -61,16 +55,7 @@ const loginLimiter = rateLimit({
   },
 });
 
-const otpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "production" ? 15 : 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: "Too many verification requests, please try again after 15 minutes.",
-  },
-});
+
 
 // ==========================================
 // Authentication Routes
@@ -82,33 +67,6 @@ router.post("/refresh", refreshAccessToken);
 router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
-
-// ==========================================
-// Contact Verification Routes (Email & Mobile)
-// ==========================================
-
-// Email OTP
-router.post("/verify-email/request", otpLimiter, requestEmailOtp);
-router.post(
-  "/verify-email/confirm",
-  otpLimiter,
-  otpValidator,
-  validate,
-  verifyEmailOtp
-);
-
-// Mobile OTP
-router.post("/verify-phone/request", otpLimiter, requestPhoneOtp);
-router.post(
-  "/verify-phone/confirm",
-  otpLimiter,
-  otpValidator,
-  validate,
-  verifyPhoneOtp
-);
-
-// Verification Status
-router.get("/verification-status", getVerificationStatus);
 
 // ==========================================
 // Profile and Settings Routes

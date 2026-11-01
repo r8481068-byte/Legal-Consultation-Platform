@@ -7,7 +7,8 @@ const {
   getPendingLawyersService,
   verifyLawyerService,
   getLawyerByIdService,
-  applyAsLawyerService // new import
+  applyAsLawyerService,
+  getDirectorySummaryService
 } = require("../services/lawyerService");
 
 const searchLawyers = async (req, res, next) => {
@@ -17,6 +18,18 @@ const searchLawyers = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       ...result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getDirectorySummary = async (req, res, next) => {
+  try {
+    const summary = await getDirectorySummaryService();
+    return res.status(200).json({
+      success: true,
+      ...summary
     });
   } catch (error) {
     next(error);
@@ -198,7 +211,8 @@ module.exports = {
   applyAsLawyer,
   getMyLawyerApplication,
   getMyEarnings,
-  getAuthorizedClientDetail
+  getAuthorizedClientDetail,
+  getDirectorySummary
 };
 
  

@@ -51,12 +51,18 @@ const { body, param } = require("express-validator");
 
 const validateBookAppointment = [
   body("slotId")
+    .optional({ nullable: true, checkFalsy: true })
     .isMongoId()
     .withMessage("A valid availability slot ID is required"),
 
+  body("lawyerId")
+    .optional({ nullable: true, checkFalsy: true })
+    .isMongoId()
+    .withMessage("A valid lawyer ID is required"),
+
   body("consultationType")
-    .isIn(["video", "in-person"])
-    .withMessage("Consultation type must be video or in-person"),
+    .isIn(["video", "chat", "both", "in-person"])
+    .withMessage("Consultation type must be video, chat, both, or in-person"),
 
   body("notes")
     .optional()
@@ -65,6 +71,13 @@ const validateBookAppointment = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage("Notes cannot exceed 1000 characters"),
+
+  body().custom((value) => {
+    if (!value.slotId && !value.lawyerId) {
+      throw new Error("Either an availability slot ID or lawyer ID is required to book an appointment");
+    }
+    return true;
+  }),
 ];
 
 const validateAppointmentId = [

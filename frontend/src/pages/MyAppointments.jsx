@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   getMyAppointments,
@@ -26,7 +26,17 @@ import {
   CreditCard,
   Calendar,
   Clock,
-  MapPin
+  MapPin,
+  ExternalLink,
+  ShieldCheck,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle2,
+  Filter,
+  Eye,
+  X,
+  Scale,
+  RefreshCw,
 } from "lucide-react";
 
 function formatDateTime(value) {
@@ -39,20 +49,45 @@ function formatDateTime(value) {
   });
 }
 
-function getLawyerName(appointment) {
-  const lawyer = appointment.lawyer;
-  return lawyer?.user?.name || "Verified Advocate";
-}
-
-function getStatusClasses(status) {
-  const styles = {
-    pending: "bg-amber-100 text-amber-800 border-amber-200",
-    confirmed: "bg-green-100 text-green-800 border-green-200",
-    cancelled: "bg-slate-100 text-slate-700 border-slate-200",
-    completed: "bg-blue-100 text-blue-800 border-blue-200",
-    rejected: "bg-red-100 text-red-800 border-red-200",
-  };
-  return styles[status] || "bg-slate-100 text-slate-700 border-slate-200";
+function getStatusBadge(status) {
+  switch (status) {
+    case "confirmed":
+      return {
+        label: "Confirmed",
+        classes: "bg-emerald-50 text-emerald-800 border-emerald-200",
+        icon: CheckCircle2,
+      };
+    case "pending":
+      return {
+        label: "Pending Confirmation",
+        classes: "bg-amber-50 text-amber-800 border-amber-200",
+        icon: Clock,
+      };
+    case "completed":
+      return {
+        label: "Completed",
+        classes: "bg-blue-50 text-blue-800 border-blue-200",
+        icon: CheckCircle2,
+      };
+    case "cancelled":
+      return {
+        label: "Cancelled",
+        classes: "bg-slate-100 text-slate-700 border-slate-200",
+        icon: XCircle,
+      };
+    case "rejected":
+      return {
+        label: "Rejected",
+        classes: "bg-red-50 text-red-800 border-red-200",
+        icon: XCircle,
+      };
+    default:
+      return {
+        label: status,
+        classes: "bg-slate-100 text-slate-700 border-slate-200",
+        icon: Clock,
+      };
+  }
 }
 
 export default function MyAppointments() {
@@ -67,11 +102,16 @@ export default function MyAppointments() {
   const [cancellingId, setCancellingId] = useState("");
   const [payingId, setPayingId] = useState("");
 
+  // Category Tab state: "all" | "upcoming" | "pending" | "completed" | "cancelled"
+  const [activeTab, setActiveTab] = useState("all");
+
   // Modals state
   const [reviewAppointment, setReviewAppointment] = useState(null);
   const [chatAppointment, setChatAppointment] = useState(null);
   const [documentAppointment, setDocumentAppointment] = useState(null);
   const [receiptAppointment, setReceiptAppointment] = useState(null);
+  const [detailAppointment, setDetailAppointment] = useState(null);
+  const [cancelModalAppointment, setCancelModalAppointment] = useState(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const loadAppointments = useCallback(async () => {
@@ -80,9 +120,9 @@ export default function MyAppointments() {
 
     try {
       const data = await getMyAppointments();
-      setAppointments(data);
+      setAppointments(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Unable to load appointments.");
+      setError(err.message || "Unable to load client appointments.");
     } finally {
       setLoading(false);
     }
@@ -92,12 +132,49 @@ export default function MyAppointments() {
     loadAppointments();
   }, [loadAppointments]);
 
-  async function handleCancel(appointmentId) {
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this appointment?"
-    );
-    if (!confirmed) return;
+  // Tab Filtering
+  const filteredAppointments = useMemo(() => {
+    const now = new Date();
+    return appointments.filter((appt) => {
+      if (activeTab === "all") return true;
+      if (activeTab === "upcoming") {
+        return (
+          appt.status === "confirmed" && new Date(appt.scheduledAt) > now
+        );
+      }
+      if (activeTab === "pending") {
+        return appt.status === "pending";
+      }
+      if (activeTab === "completed") {
+        return appt.status === "completed";
+      }
+      if (activeTab === "cancelled") {
+        return appt.status === "cancelled" || appt.status === "rejected";
+      }
+      return true;
+    });
+  }, [appointments, activeTab]);
 
+  // Tab Counts for badges
+  const counts = useMemo(() => {
+    const now = new Date();
+    return {
+      all: appointments.length,
+      upcoming: appointments.filter(
+        (a) => a.status === "confirmed" && new Date(a.scheduledAt) > now
+      ).length,
+      pending: appointments.filter((a) => a.status === "pending").length,
+      completed: appointments.filter((a) => a.status === "completed").length,
+      cancelled: appointments.filter(
+        (a) => a.status === "cancelled" || a.status === "rejected"
+      ).length,
+    };
+  }, [appointments]);
+
+  async function handleConfirmCancel() {
+    if (!cancelModalAppointment) return;
+
+    const appointmentId = cancelModalAppointment._id;
     setCancellingId(appointmentId);
     setError("");
     setSuccess("");
@@ -105,7 +182,9 @@ export default function MyAppointments() {
     try {
       await cancelAppointment(appointmentId);
       setSuccess("Appointment cancelled successfully.");
+      setCancelModalAppointment(null);
       await loadAppointments();
+      setTimeout(() => setSuccess(""), 4000);
     } catch (err) {
       setError(err.message || "Unable to cancel appointment.");
     } finally {
@@ -133,13 +212,15 @@ export default function MyAppointments() {
       }
 
       const { keyId, orderId, amount, currency } = orderData.data;
+      const lawyerName =
+        appointment.lawyer?.user?.name || "Verified Legal Advocate";
 
       const options = {
         key: keyId,
         amount,
         currency: currency || "INR",
         name: "LegalConnect",
-        description: `Consultation Fee with ${getLawyerName(appointment)}`,
+        description: `Consultation Fee with Advocate ${lawyerName}`,
         order_id: orderId,
         handler: async function (response) {
           setPayingId(appointment._id);
@@ -152,6 +233,7 @@ export default function MyAppointments() {
 
             setSuccess("Payment verified successfully! Your consultation fee is recorded.");
             await loadAppointments();
+            setTimeout(() => setSuccess(""), 4000);
           } catch (verifyErr) {
             setError(
               verifyErr.message ||
@@ -191,301 +273,436 @@ export default function MyAppointments() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Navbar onOpenProfileSettings={() => setProfileModalOpen(true)} />
 
       <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-5xl">
-          {/* Header */}
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <h1 className="text-3xl font-extrabold text-slate-900">
-                My Consultations
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                Manage your scheduled appointments, join video calls, and access legal advice.
-              </p>
-            </div>
+        <div className="mx-auto max-w-6xl space-y-6">
+          {/* Header Banner */}
+          <div className="rounded-3xl bg-linear-to-r from-slate-950 via-blue-950 to-slate-900 p-8 sm:p-10 text-white shadow-xl relative overflow-hidden border border-slate-800">
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/15 blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <span className="inline-block rounded-full bg-blue-500/20 px-3.5 py-1 text-xs font-bold text-blue-300 border border-blue-400/30">
+                  Client Appointment Manager
+                </span>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+                  My Consultations
+                </h1>
+                <p className="text-sm text-slate-300 max-w-xl leading-relaxed">
+                  Track scheduled sessions with legal counsel, enter video rooms, manage payments, and submit reviews.
+                </p>
+              </div>
 
-            <div className="flex items-center gap-3">
-              <Link
-                to="/lawyers"
-                className="inline-flex items-center rounded-xl bg-blue-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 transition"
-              >
-                Find Another Lawyer
-              </Link>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to="/client/lawyers"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-5 py-3 text-xs font-bold text-slate-950 shadow-md hover:bg-amber-300 transition"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Book New Consultation</span>
+                </Link>
+              </div>
             </div>
           </div>
 
-          {/* Feedback banners */}
-          {success && (
-            <div
-              role="status"
-              className="mt-6 rounded-2xl bg-green-50 p-4 text-sm font-semibold text-green-800 border border-green-200"
-            >
-              {success}
+          {/* Toast / Notification messages */}
+          {error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                <span>{error}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={loadAppointments}
+                  disabled={loading}
+                  className="rounded-lg bg-red-600 px-3 py-1 font-semibold text-white hover:bg-red-700 transition"
+                >
+                  Retry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setError("")}
+                  className="text-red-600 hover:text-red-800 p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           )}
 
-          {error && (
-            <div
-              role="alert"
-              className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700 border border-red-200"
-            >
-              <p className="font-semibold">{error}</p>
+          {success && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{success}</span>
+              </div>
               <button
                 type="button"
-                onClick={loadAppointments}
-                className="mt-1 text-xs underline font-semibold text-red-800"
+                onClick={() => setSuccess("")}
+                className="text-emerald-700 hover:text-emerald-900"
               >
-                Try refreshing
+                <X className="h-4 w-4" />
               </button>
             </div>
           )}
 
-          {/* Appointments Content */}
-          {loading ? (
-            <div className="mt-8 rounded-3xl bg-white p-12 text-center text-slate-500 shadow-sm border border-slate-200">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-              <p className="mt-3 text-sm">Loading your consultations...</p>
+          {/* ========================================================================= */}
+          {/* CATEGORY TABS: Upcoming, Pending, Completed, Cancelled, All               */}
+          {/* ========================================================================= */}
+          <div className="flex border-b border-slate-200 overflow-x-auto gap-2 text-xs font-bold scrollbar-none">
+            {[
+              { id: "all", label: "All Appointments", count: counts.all },
+              { id: "upcoming", label: "Upcoming", count: counts.upcoming },
+              { id: "pending", label: "Pending Requests", count: counts.pending },
+              { id: "completed", label: "Completed", count: counts.completed },
+              { id: "cancelled", label: "Cancelled", count: counts.cancelled },
+            ].map((tab) => {
+              const isSelected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-3 border-b-2 transition whitespace-nowrap ${
+                    isSelected
+                      ? "border-blue-900 text-blue-900"
+                      : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                      isSelected
+                        ? "bg-blue-900 text-white"
+                        : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Loading State */}
+          {loading && (
+            <div className="rounded-3xl border border-slate-200 bg-white p-14 text-center shadow-xs">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-900 border-r-transparent align-[-0.125em]" />
+              <p className="mt-4 text-sm font-semibold text-slate-600">
+                Loading your appointments...
+              </p>
             </div>
-          ) : appointments.length === 0 ? (
-            <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-                <Calendar className="h-7 w-7" />
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && filteredAppointments.length === 0 && (
+            <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-xs space-y-4">
+              <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <Calendar className="h-8 w-8" />
               </div>
-              <h3 className="mt-4 text-lg font-bold text-slate-900">
-                No consultations booked yet
+              <h3 className="text-lg font-bold text-slate-900">
+                No appointments found in this section
               </h3>
-              <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
-                Connect with verified legal experts and book your first consultation in minutes.
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                {activeTab === "all"
+                  ? "You have not booked any appointments yet. Search our legal panel to find the advocate best suited for your case."
+                  : `There are currently no ${activeTab} appointments recorded for your account.`}
               </p>
               <Link
-                to="/lawyers"
-                className="mt-5 inline-block rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-800 transition"
+                to="/client/lawyers"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
               >
-                Browse Available Lawyers
+                <Scale className="h-4 w-4" /> Find an Advocate
               </Link>
             </div>
-          ) : (
-            <div className="mt-8 space-y-5">
-              {appointments.map((appointment) => {
-                const lawyer = appointment.lawyer || {};
+          )}
+
+          {/* ========================================================================= */}
+          {/* APPOINTMENT CARDS LIST                                                    */}
+          {/* ========================================================================= */}
+          {!loading && filteredAppointments.length > 0 && (
+            <div className="space-y-5">
+              {filteredAppointments.map((appt) => {
+                const lawyer = appt.lawyer || {};
                 const lawyerUser = lawyer.user || {};
-                const lawyerName = lawyerUser.name || "Verified Lawyer";
-                const isVideo = appointment.consultationType === "video";
-                const canJoinVideo = isVideo && appointment.status === "confirmed";
-                const canReview = appointment.status === "completed" && !appointment.isReviewed;
+                const lawyerName = lawyerUser.name || lawyer.name || "Advocate";
+                const lawyerImage = lawyerUser.profileImage || null;
+                const lawyerId = lawyer._id;
+
+                const initials = lawyerName
+                  .split(" ")
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "A";
+
+                const specializations = Array.isArray(lawyer.specialization)
+                  ? lawyer.specialization
+                  : lawyer.specialization
+                  ? [lawyer.specialization]
+                  : ["General Practice"];
+
+                const ratingValue = lawyer.averageRating > 0
+                  ? lawyer.averageRating.toFixed(1)
+                  : "5.0";
+                const reviewCount = lawyer.totalReviews || 0;
+
+                const statusInfo = getStatusBadge(appt.status);
+                const StatusIcon = statusInfo.icon;
+
+                const bookingRef = `#LC-${appt._id.slice(-6).toUpperCase()}`;
+                const isPaid = appt.isPaid || Boolean(appt.payment);
+                const isPending = appt.status === "pending";
+                const isConfirmed = appt.status === "confirmed";
+                const isCompleted = appt.status === "completed";
 
                 return (
                   <article
-                    key={appointment._id}
-                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-slate-300 transition"
+                    key={appt._id}
+                    className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs hover:border-blue-300 hover:shadow-md transition-all duration-200"
                   >
-                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                      <div className="flex items-start gap-4">
-                        {lawyerUser.profileImage ? (
-                          <img
-                            src={lawyerUser.profileImage}
-                            alt={lawyerName}
-                            className="h-14 w-14 rounded-2xl object-cover"
-                          />
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      {/* Left: Lawyer & Appointment Information */}
+                      <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0">
+                        {/* Clickable Lawyer Profile Avatar */}
+                        {lawyerId ? (
+                          <Link
+                            to={`/lawyers/${lawyerId}`}
+                            className="relative shrink-0 block group"
+                            title="View Public Profile"
+                          >
+                            {lawyerImage ? (
+                              <img
+                                src={lawyerImage}
+                                alt={lawyerName}
+                                className="h-18 w-18 sm:h-20 sm:w-20 rounded-2xl object-cover border-2 border-slate-200 shadow-2xs group-hover:border-blue-600 transition"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  if (e.currentTarget.nextSibling) {
+                                    e.currentTarget.nextSibling.style.display = "flex";
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`h-18 w-18 sm:h-20 sm:w-20 rounded-2xl bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl border-2 border-slate-200 shadow-2xs group-hover:border-blue-600 transition ${
+                                lawyerImage ? "hidden" : "flex"
+                              }`}
+                            >
+                              {initials}
+                            </div>
+                            <span
+                              className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-xs"
+                              title="Verified Advocate"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                            </span>
+                          </Link>
                         ) : (
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl font-bold text-blue-900">
-                            {lawyerName.charAt(0)}
+                          <div className="h-18 w-18 sm:h-20 sm:w-20 rounded-2xl bg-blue-900 text-white flex items-center justify-center font-extrabold text-2xl shrink-0">
+                            {initials}
                           </div>
                         )}
 
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900">
-                            {lawyerName}
-                          </h2>
-                          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {lawyer.city || "City not available"}
-                          </p>
+                        {/* Lawyer & Consultation Metadata */}
+                        <div className="space-y-2 min-w-0 flex-1">
+                          {/* Top row: Status Badge & Reference ID */}
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${statusInfo.classes}`}
+                            >
+                              <StatusIcon className="h-3.5 w-3.5" />
+                              {statusInfo.label}
+                            </span>
+
+                            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                              Ref: {bookingRef}
+                            </span>
+
+                            <span className="text-xs font-semibold text-slate-600 capitalize bg-blue-50 text-blue-900 px-2.5 py-1 rounded-lg border border-blue-100 flex items-center gap-1">
+                              {appt.consultationType === "video" ? (
+                                <Video className="h-3 w-3" />
+                              ) : (
+                                <MapPin className="h-3 w-3" />
+                              )}
+                              {appt.consultationType} Consultation
+                            </span>
+                          </div>
+
+                          {/* Lawyer Full Name (Clickable link to Public Profile) */}
+                          <div>
+                            {lawyerId ? (
+                              <Link
+                                to={`/lawyers/${lawyerId}`}
+                                className="text-lg font-bold text-slate-900 hover:text-blue-900 hover:underline transition inline-flex items-center gap-1.5"
+                              >
+                                Advocate {lawyerName}
+                                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                              </Link>
+                            ) : (
+                              <h2 className="text-lg font-bold text-slate-900">
+                                Advocate {lawyerName}
+                              </h2>
+                            )}
+
+                            {/* Rating and Reviews */}
+                            <div className="flex items-center gap-2 mt-0.5 text-xs">
+                              <span className="flex items-center gap-1 font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                {ratingValue}
+                              </span>
+                              <span className="text-slate-500 font-medium">
+                                ({reviewCount} reviews)
+                              </span>
+                              {lawyer.city && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="text-slate-600 font-medium flex items-center gap-1">
+                                    <MapPin className="h-3 w-3 text-slate-400" />
+                                    {lawyer.city}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Specialization Badges */}
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {specializations.slice(0, 3).map((spec) => (
+                              <span
+                                key={spec}
+                                className="rounded-lg bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                              >
+                                {spec}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Short Professional Description / Bio */}
+                          {(lawyer.headline || lawyer.bio) && (
+                            <p className="text-xs text-slate-500 line-clamp-1 leading-relaxed max-w-xl">
+                              {lawyer.headline || lawyer.bio}
+                            </p>
+                          )}
+
+                          {/* Scheduled Date & Time highlight */}
+                          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-700 pt-1">
+                            <span className="flex items-center gap-1.5 text-blue-900 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
+                              <Calendar className="h-4 w-4 text-blue-700" />
+                              {formatDateTime(appt.scheduledAt)}
+                            </span>
+
+                            <span className="flex items-center gap-1 text-slate-500">
+                              <Clock className="h-3.5 w-3.5" />
+                              {appt.durationMinutes || 30} mins session
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        {appointment.isPaid ? (
-                          <span className="rounded-full bg-emerald-100 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-800">
-                            Fee Paid
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-800">
-                            Payment Pending
-                          </span>
+                      {/* Right: Appointment Actions */}
+                      <div className="flex flex-wrap lg:flex-col items-center lg:items-end justify-between sm:justify-start gap-2.5 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
+                        {/* View Public Lawyer Profile Button */}
+                        {lawyerId && (
+                          <Link
+                            to={`/lawyers/${lawyerId}`}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition"
+                          >
+                            <Scale className="h-3.5 w-3.5" />
+                            <span>View Lawyer Profile</span>
+                          </Link>
                         )}
 
-                        <span
-                          className={`rounded-full border px-3 py-1 text-xs font-bold capitalize ${getStatusClasses(
-                            appointment.status
-                          )}`}
-                        >
-                          {appointment.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Consultation Meta Grid */}
-                    <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-4">
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                          Date & Time
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {formatDateTime(appointment.scheduledAt)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                          Type
-                        </p>
-                        <p className="mt-1 text-sm font-semibold capitalize text-slate-900 flex items-center gap-1.5">
-                          {isVideo ? (
-                            <>
-                              <Video className="h-4 w-4 text-blue-700" />
-                              Video Call
-                            </>
-                          ) : (
-                            "In-Person"
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                          Duration
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-                          <Clock className="h-4 w-4 text-slate-400" />
-                          {appointment.durationMinutes || 30} mins
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                          Consultation Fee
-                        </p>
-                        <p className="mt-1 text-sm font-bold text-blue-900">
-                          {lawyer.consultationFee != null
-                            ? `₹${Number(lawyer.consultationFee).toLocaleString("en-IN")}`
-                            : "Contact"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {appointment.notes && (
-                      <div className="mt-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                          Your Case Notes
-                        </p>
-                        <p className="mt-1 text-xs text-slate-700 whitespace-pre-wrap">
-                          {appointment.notes}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Interactive Action Buttons */}
-                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                      {/* Secondary Quick Actions */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        {/* Chat button */}
+                        {/* View Appointment Details Modal Button */}
                         <button
                           type="button"
-                          onClick={() => setChatAppointment(appointment)}
-                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition"
+                          onClick={() => setDetailAppointment(appt)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
                         >
-                          <MessageSquare className="h-4 w-4" />
-                          Chat
+                          <Eye className="h-3.5 w-3.5 text-slate-400" />
+                          <span>View Details</span>
                         </button>
 
-                        {/* Case Documents button */}
-                        <button
-                          type="button"
-                          onClick={() => setDocumentAppointment(appointment)}
-                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition"
-                        >
-                          <FileText className="h-4 w-4" />
-                          Case Documents
-                        </button>
-
-                        {/* View Receipt button */}
-                        {appointment.isPaid && (
-                          <button
-                            type="button"
-                            onClick={() => setReceiptAppointment(appointment)}
-                            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition"
+                        {/* Join Consultation Button (For Confirmed Video Calls) */}
+                        {isConfirmed && appt.consultationType === "video" && (
+                          <Link
+                            to={`/video-room/${appt._id}`}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
                           >
-                            <Receipt className="h-4 w-4 text-emerald-600" />
-                            Receipt
-                          </button>
+                            <Video className="h-4 w-4" />
+                            <span>Join Video Meeting</span>
+                          </Link>
                         )}
-                      </div>
 
-                      {/* Primary Lifecycle Actions */}
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        {/* Join Video Consultation */}
-                        {canJoinVideo && (
+                        {/* Submit Review Button (For Completed Sessions) */}
+                        {isCompleted && (
                           <button
                             type="button"
-                            onClick={() => navigate(`/video-room/${appointment._id}`)}
-                            className="flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-blue-800 transition"
+                            onClick={() => setReviewAppointment(appt)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 shadow-xs hover:bg-amber-300 transition"
                           >
-                            <Video className="h-4 w-4 animate-pulse" />
-                            Join Video Consultation
+                            <Star className="h-4 w-4" />
+                            <span>Leave Review</span>
                           </button>
                         )}
 
-                        {/* Pay Consultation Fee */}
-                        {appointment.status === "pending" && !appointment.isPaid && (
+                        {/* Cancel Appointment Button (Only Permitted for Pending Status) */}
+                        {isPending && (
                           <button
                             type="button"
-                            disabled={payingId === appointment._id}
-                            onClick={() => handlePay(appointment)}
-                            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition disabled:opacity-60"
-                          >
-                            <CreditCard className="h-4 w-4" />
-                            {payingId === appointment._id
-                              ? "Connecting Razorpay..."
-                              : `Pay Fee (₹${lawyer.consultationFee || 0})`}
-                          </button>
-                        )}
-
-                        {/* Review Lawyer Button */}
-                        {canReview && (
-                          <button
-                            type="button"
-                            onClick={() => setReviewAppointment(appointment)}
-                            className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-900 shadow-sm hover:bg-amber-400 transition"
-                          >
-                            <Star className="h-4 w-4 fill-slate-900" />
-                            Review Lawyer
-                          </button>
-                        )}
-
-                        {/* Already Reviewed Tag */}
-                        {appointment.status === "completed" && appointment.isReviewed && (
-                          <span className="flex items-center gap-1 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            Reviewed
-                          </span>
-                        )}
-
-                        {/* Cancel Appointment Button */}
-                        {appointment.status === "pending" && (
-                          <button
-                            type="button"
-                            disabled={cancellingId === appointment._id}
-                            onClick={() => handleCancel(appointment._id)}
-                            className="flex items-center gap-1 rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                            onClick={() => setCancelModalAppointment(appt)}
+                            disabled={cancellingId === appt._id}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-50 transition"
                           >
                             <XCircle className="h-3.5 w-3.5" />
-                            {cancellingId === appointment._id ? "Cancelling..." : "Cancel"}
+                            <span>Cancel Request</span>
                           </button>
                         )}
+
+                        {/* Payment Button if not paid */}
+                        {!isPaid && !appt.isPaid && appt.status !== "cancelled" && appt.status !== "rejected" && (
+                          <button
+                            type="button"
+                            onClick={() => handlePay(appt)}
+                            disabled={payingId === appt._id}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 transition"
+                          >
+                            <CreditCard className="h-3.5 w-3.5" />
+                            <span>{payingId === appt._id ? "Processing..." : "Pay Fee"}</span>
+                          </button>
+                        )}
+
+                        {/* Additional Modals Access (Chat, Docs, Receipt) */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setChatAppointment(appt)}
+                            className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 hover:text-blue-900 transition"
+                            title="Open Consultation Chat"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDocumentAppointment(appt)}
+                            className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 hover:text-blue-900 transition"
+                            title="Shared Documents"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setReceiptAppointment(appt)}
+                            className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 hover:text-blue-900 transition"
+                            title="Consultation Receipt"
+                          >
+                            <Receipt className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -496,54 +713,183 @@ export default function MyAppointments() {
         </div>
       </main>
 
-      {/* Interactive Modals */}
-      {reviewAppointment && (
-        <ReviewModal
-          appointment={reviewAppointment}
-          isOpen={!!reviewAppointment}
-          onClose={() => setReviewAppointment(null)}
-          onReviewSubmitted={() => {
-            setReviewAppointment(null);
-            loadAppointments();
-          }}
-        />
+      {/* ========================================================================= */}
+      {/* APPOINTMENT DETAIL MODAL                                                  */}
+      {/* ========================================================================= */}
+      {detailAppointment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-900" />
+                Appointment Details
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDetailAppointment(null)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-slate-500">Booking Reference:</span>
+                  <span className="font-bold text-slate-900">
+                    #LC-{detailAppointment._id.slice(-6).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-slate-500">Scheduled Date & Time:</span>
+                  <span className="font-bold text-blue-900">
+                    {formatDateTime(detailAppointment.scheduledAt)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-slate-500">Consultation Format:</span>
+                  <span className="font-bold text-slate-800 capitalize">
+                    {detailAppointment.consultationType} Consultation
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-slate-500">Status:</span>
+                  <span className="font-bold capitalize text-slate-900">
+                    {detailAppointment.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Counsel Info */}
+              <div className="rounded-2xl border border-slate-200 p-4 space-y-2">
+                <span className="font-bold text-slate-900 block">Counsel Information</span>
+                <p className="text-sm font-bold text-slate-800">
+                  Advocate {detailAppointment.lawyer?.user?.name || "Verified Legal Advocate"}
+                </p>
+                <p className="text-slate-600">
+                  {detailAppointment.lawyer?.city || "High Court Panel"}, India
+                </p>
+                {detailAppointment.lawyer?._id && (
+                  <Link
+                    to={`/lawyers/${detailAppointment.lawyer._id}`}
+                    className="inline-flex items-center gap-1 font-bold text-blue-900 hover:underline pt-1"
+                  >
+                    View Complete Public Profile →
+                  </Link>
+                )}
+              </div>
+
+              {/* Notes */}
+              {detailAppointment.notes && (
+                <div className="rounded-2xl border border-slate-200 p-4 space-y-1">
+                  <span className="font-bold text-slate-900 block">Client Consultation Notes</span>
+                  <p className="text-slate-600 leading-relaxed">{detailAppointment.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDetailAppointment(null)}
+                className="rounded-xl bg-slate-100 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {chatAppointment && (
-        <ChatModal
-          appointment={chatAppointment}
-          isOpen={!!chatAppointment}
-          onClose={() => setChatAppointment(null)}
-          onOpenDocuments={() => {
-            const current = chatAppointment;
-            setChatAppointment(null);
-            setDocumentAppointment(current);
-          }}
-        />
+      {/* ========================================================================= */}
+      {/* CANCEL CONFIRMATION DIALOG                                                */}
+      {/* ========================================================================= */}
+      {cancelModalAppointment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-100">
+                <XCircle className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Cancel Appointment?
+                </h3>
+                <p className="text-xs text-slate-500">
+                  This action will release the reserved time slot.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Are you sure you want to cancel your consultation with Advocate{" "}
+              <strong>
+                {cancelModalAppointment.lawyer?.user?.name || "the advocate"}
+              </strong>{" "}
+              scheduled for{" "}
+              <strong>{formatDateTime(cancelModalAppointment.scheduledAt)}</strong>?
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3">
+              <button
+                type="button"
+                onClick={() => setCancelModalAppointment(null)}
+                disabled={Boolean(cancellingId)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+              >
+                Keep Appointment
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={Boolean(cancellingId)}
+                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-50 transition"
+              >
+                {cancellingId ? "Cancelling..." : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {documentAppointment && (
-        <DocumentModal
-          appointment={documentAppointment}
-          isOpen={!!documentAppointment}
-          onClose={() => setDocumentAppointment(null)}
-        />
-      )}
+      {/* ========================================================================= */}
+      {/* EXISTING WORKING MODALS PRESERVED                                         */}
+      {/* ========================================================================= */}
+      <ReviewModal
+        isOpen={Boolean(reviewAppointment)}
+        appointment={reviewAppointment}
+        onClose={() => setReviewAppointment(null)}
+        onReviewSubmitted={() => {
+          setReviewAppointment(null);
+          setSuccess("Thank you! Your review was submitted successfully.");
+          loadAppointments();
+        }}
+      />
 
-      {receiptAppointment && (
-        <ReceiptModal
-          appointment={receiptAppointment}
-          isOpen={!!receiptAppointment}
-          onClose={() => setReceiptAppointment(null)}
-        />
-      )}
+      <ChatModal
+        isOpen={Boolean(chatAppointment)}
+        appointment={chatAppointment}
+        onClose={() => setChatAppointment(null)}
+      />
 
-      {profileModalOpen && (
-        <ProfileSettingsModal
-          isOpen={profileModalOpen}
-          onClose={() => setProfileModalOpen(false)}
-        />
-      )}
+      <DocumentModal
+        isOpen={Boolean(documentAppointment)}
+        appointment={documentAppointment}
+        onClose={() => setDocumentAppointment(null)}
+      />
+
+      <ReceiptModal
+        isOpen={Boolean(receiptAppointment)}
+        appointment={receiptAppointment}
+        onClose={() => setReceiptAppointment(null)}
+      />
+
+      <ProfileSettingsModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+      />
     </div>
   );
 }

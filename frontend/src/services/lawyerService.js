@@ -1,6 +1,4 @@
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, authFetch } from "./apiClient";
 
 export async function getLawyers(filters = {}) {
   const params = new URLSearchParams();
@@ -49,14 +47,20 @@ export async function getLawyerById(lawyerId) {
   return result.lawyer;
 }
 
-export async function applyAsLawyer(data) {
-  const token = sessionStorage.getItem("accessToken");
+export async function getDirectorySummary() {
+  const response = await fetch(`${API_BASE_URL}/lawyers/directory-summary`);
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to load directory summary");
+  }
+  return result;
+}
 
-  const response = await fetch(`${API_BASE_URL}/lawyers/apply`, {
+export async function applyAsLawyer(data) {
+  const response = await authFetch(`${API_BASE_URL}/lawyers/apply`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(data),
   });
@@ -71,13 +75,8 @@ export async function applyAsLawyer(data) {
 }
 
 export async function getMyLawyerProfile() {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/lawyers/profile/me`, {
+  const response = await authFetch(`${API_BASE_URL}/lawyers/profile/me`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   const result = await response.json().catch(() => ({}));
@@ -88,12 +87,10 @@ export async function getMyLawyerProfile() {
 }
 
 export async function updateLawyerProfile(data) {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/lawyers/profile/me`, {
+  const response = await authFetch(`${API_BASE_URL}/lawyers/profile/me`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(data),
   });
@@ -106,13 +103,8 @@ export async function updateLawyerProfile(data) {
 }
 
 export async function getMyEarnings() {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/lawyers/profile/me/earnings`, {
+  const response = await authFetch(`${API_BASE_URL}/lawyers/profile/me/earnings`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   const result = await response.json().catch(() => ({}));
@@ -123,13 +115,8 @@ export async function getMyEarnings() {
 }
 
 export async function getMyLawyerApplication() {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/lawyers/application/status`, {
+  const response = await authFetch(`${API_BASE_URL}/lawyers/application/status`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   const result = await response.json().catch(() => ({}));
@@ -140,13 +127,8 @@ export async function getMyLawyerApplication() {
 }
 
 export async function getAuthorizedClientDetail(clientId) {
-  const token = sessionStorage.getItem("accessToken");
-  const response = await fetch(`${API_BASE_URL}/lawyers/clients/${clientId}`, {
+  const response = await authFetch(`${API_BASE_URL}/lawyers/clients/${clientId}`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
   });
 
   const result = await response.json().catch(() => ({}));
@@ -155,5 +137,6 @@ export async function getAuthorizedClientDetail(clientId) {
   }
   return result;
 }
+
 
 

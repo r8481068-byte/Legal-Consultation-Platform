@@ -12,41 +12,10 @@ const {
   changePasswordService,
 } = require("../services/authService");
 const {
-  initiateEmailVerification,
-  verifyEmailOtp,
-  initiatePhoneVerification,
-  verifyPhoneOtp,
-  getVerificationStatus,
-} = require("../services/verificationService");
-const {
   calculateProfileCompleteness,
   calculateIdentityStatus,
 } = require("../services/eligibilityService");
 const { normalizeEmail } = require("../utils/cryptoUtils");
-
-// Helper to resolve target user ID from auth token or request body
-async function resolveUserId(req) {
-  if (req.user?.userId || req.user?._id || req.user?.id) {
-    return req.user.userId || req.user._id || req.user.id;
-  }
-
-  if (req.query?.userId) {
-    return req.query.userId;
-  }
-
-  if (req.body?.userId) {
-    return req.body.userId;
-  }
-
-  if (req.body?.email) {
-    const user = await User.findOne({
-      email: normalizeEmail(req.body.email),
-    });
-    if (user) return user._id;
-  }
-
-  return null;
-}
 
 // ==========================================
 // REGISTER USER
@@ -73,15 +42,6 @@ const registerUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
   try {
     const result = await loginUserService(req.body);
-
-    if (result.verificationRequired) {
-      return res.status(200).json({
-        success: false,
-        verificationRequired: true,
-        message: result.message,
-        user: result.user,
-      });
-    }
 
     return res.status(200).json({
       success: true,
@@ -135,15 +95,6 @@ const refreshAccessToken = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: "User is not active",
-      });
-    }
-
-    // Security: Unverified accounts cannot bypass verification via refresh
-    if (!user.emailVerified || !user.phoneVerified) {
-      return res.status(403).json({
-        success: false,
-        verificationRequired: true,
-        message: "Contact verification is required to refresh authentication session",
       });
     }
 
@@ -283,100 +234,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// ==========================================
-// CONTACT VERIFICATION ENDPOINTS
-// ==========================================
 
-const requestEmailOtp = async (req, res, next) => {
-  try {
-    const targetUserId = await resolveUserId(req);
-    if (!targetUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User identifier or email is required",
-      });
-    }
-
-    const result = await initiateEmailVerification(targetUserId);
-    return res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyEmailOtpController = async (req, res, next) => {
-  try {
-    const targetUserId = await resolveUserId(req);
-    if (!targetUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User identifier is required",
-      });
-    }
-
-    const { otp } = req.body;
-    const result = await verifyEmailOtp(targetUserId, otp);
-    return res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const requestPhoneOtp = async (req, res, next) => {
-  try {
-    const targetUserId = await resolveUserId(req);
-    if (!targetUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User identifier is required",
-      });
-    }
-
-    const { phone } = req.body;
-    const result = await initiatePhoneVerification(targetUserId, phone);
-    return res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const verifyPhoneOtpController = async (req, res, next) => {
-  try {
-    const targetUserId = await resolveUserId(req);
-    if (!targetUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User identifier is required",
-      });
-    }
-
-    const { otp } = req.body;
-    const result = await verifyPhoneOtp(targetUserId, otp);
-    return res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getVerificationStatusController = async (req, res, next) => {
-  try {
-    const targetUserId = await resolveUserId(req);
-    if (!targetUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User identifier is required",
-      });
-    }
-
-    const status = await getVerificationStatus(targetUserId);
-    return res.status(200).json({
-      success: true,
-      ...status,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // ==========================================
 // CLIENT PROFILE & IDENTITY ENDPOINTS
@@ -471,11 +329,6 @@ module.exports = {
   logoutUser,
   forgotPassword,
   resetPassword,
-  requestEmailOtp,
-  verifyEmailOtp: verifyEmailOtpController,
-  requestPhoneOtp,
-  verifyPhoneOtp: verifyPhoneOtpController,
-  getVerificationStatus: getVerificationStatusController,
   getCurrentUser,
   updateProfile,
   updateClientAddress,

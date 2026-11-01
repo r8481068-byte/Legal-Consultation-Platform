@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { applyAsLawyer, getMyLawyerApplication } from "../services/lawyerService";
-import { registerUser } from "../services/authService";
+import { registerUser, loginUser } from "../services/authService";
 import {
   Scale,
   Briefcase,
@@ -74,7 +74,7 @@ const STATE_BAR_COUNCILS = [
 ];
 
 export default function LawyerSignup() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
 
   // Wizard Step: 1 = Personal, 2 = Professional, 3 = Consultation, 4 = Documents
@@ -124,7 +124,7 @@ export default function LawyerSignup() {
 
   // Load existing application if user is logged in
   const checkApplicationStatus = useCallback(async () => {
-    if (!user || user.role === "lawyer" || user.role === "admin") return;
+    if (!user || user.role === "admin") return;
 
     setCheckingStatus(true);
     try {
@@ -255,36 +255,46 @@ export default function LawyerSignup() {
     e.preventDefault();
     setError("");
 
-    const stepErr = validateStep(4);
-    if (stepErr) {
-      setError(stepErr);
-      return;
+    // Validate all 4 registration steps to guarantee data completeness
+    for (let s = 1; s <= 4; s++) {
+      const stepErr = validateStep(s);
+      if (stepErr) {
+        setError(stepErr);
+        setCurrentStep(s);
+        return;
+      }
     }
 
     setLoading(true);
 
     try {
-      // If user is not logged in, register account first
+      // If user is not logged in, register account first and authenticate
       let activeUser = user;
       if (!activeUser) {
-        const regRes = await registerUser({
+        // 1. Create account using existing registration API
+        await registerUser({
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim(),
           password: formData.password,
           confirmPassword: formData.confirmPassword,
-          role: "lawyer",
+          role: "client",
         });
 
-        activeUser = regRes.user || {
-          id: regRes.id,
-          email: formData.email.trim(),
-          phone: formData.phone.trim(),
-          role: "lawyer",
-        };
+        // 2. Log in using the newly created credentials to obtain JWT session tokens
+        const loginRes = await loginUser({
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        });
 
-        sessionStorage.setItem("pendingVerificationUser", JSON.stringify(activeUser));
+        if (loginRes && loginRes.accessToken) {
+          login(loginRes);
+          activeUser = loginRes.user;
+        } else {
+          throw new Error("Advocate account created, but automatic sign-in failed. Please log in to complete your application.");
+        }
       }
+
       const docs = [
         {
           title: "Bar Council Enrolment Certificate",
@@ -293,7 +303,7 @@ export default function LawyerSignup() {
         },
       ];
 
-      if (formData.idProofUrl.trim()) {
+      if (formData.idProofUrl && formData.idProofUrl.trim()) {
         docs.push({
           title: "Identity Proof (Bar ID / Govt ID)",
           url: formData.idProofUrl.trim(),
@@ -301,7 +311,7 @@ export default function LawyerSignup() {
         });
       }
 
-      if (formData.degreeCertUrl.trim()) {
+      if (formData.degreeCertUrl && formData.degreeCertUrl.trim()) {
         docs.push({
           title: "Law Degree Certificate",
           url: formData.degreeCertUrl.trim(),
@@ -309,7 +319,7 @@ export default function LawyerSignup() {
         });
       }
 
-      if (formData.supportingDocUrl.trim()) {
+      if (formData.supportingDocUrl && formData.supportingDocUrl.trim()) {
         docs.push({
           title: "Additional Supporting Document",
           url: formData.supportingDocUrl.trim(),
@@ -467,7 +477,7 @@ export default function LawyerSignup() {
         </div>
 
         {/* 2. ALREADY APPROVED LAWYER BANNER */}
-        {user?.role === "lawyer" && (
+        {user?.role === "lawyer" && existingApplication?.verificationStatus === "approved" && (
           <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-900 shadow-sm sm:flex sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -488,7 +498,7 @@ export default function LawyerSignup() {
         )}
 
         {/* 3. APPLICATION STATUS CARD (IF ALREADY SUBMITTED) */}
-        {user && user.role === "client" && existingApplication && (
+        {user && existingApplication && existingApplication.verificationStatus !== "approved" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
@@ -561,7 +571,7 @@ export default function LawyerSignup() {
         )}
 
         {/* 4. MULTI-STEP APPLICATION FORM WIZARD */}
-        {(!user || user.role === "client") && (
+        {(!user || !existingApplication || existingApplication.verificationStatus === "additional_info_required" || existingApplication.verificationStatus === "rejected") && (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm" id="application-wizard">
             {/* Wizard Header */}
             <div className="border-b border-slate-100 pb-5">
@@ -1098,7 +1108,7 @@ export default function LawyerSignup() {
                 ) : (
                   <button
                     type="submit"
-                    disabled={loading || !user}
+                    disabled={loading}
                     className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-8 py-3 text-xs font-extrabold text-slate-950 shadow-md hover:bg-amber-300 disabled:opacity-50"
                   >
                     {loading

@@ -6,52 +6,10 @@ const crypto = require("crypto");
 function getEncryptionKey() {
   const secret =
     process.env.IDENTITY_ENCRYPTION_KEY ||
-    process.env.OTP_PEPPER_SECRET ||
     process.env.JWT_SECRET ||
     "legalconnect_secure_identity_salt_2026_dev_key";
 
   return crypto.createHash("sha256").update(secret).digest();
-}
-
-/**
- * Cryptographically secure 6-digit numeric OTP generator.
- */
-function generateSixDigitOtp() {
-  return crypto.randomInt(100000, 1000000).toString();
-}
-
-/**
- * Computes a keyed HMAC-SHA256 hash for OTP values to prevent brute-force attacks if DB is leaked.
- *
- * @param {string} otp - The plain 6-digit OTP
- * @param {string} purpose - "email_verification" | "phone_verification"
- * @param {string} userId - Mongo ObjectId string of user
- * @returns {string} Hex encoded HMAC hash
- */
-function hashOtp(otp, purpose, userId) {
-  const pepper =
-    process.env.OTP_PEPPER_SECRET ||
-    process.env.JWT_SECRET ||
-    "legalconnect_otp_pepper_2026";
-
-  return crypto
-    .createHmac("sha256", pepper)
-    .update(`${otp}:${purpose}:${userId}`)
-    .digest("hex");
-}
-
-/**
- * Compares an OTP submission against stored HMAC using constant-time equality.
- */
-function verifyOtpHash(otp, purpose, userId, storedHash) {
-  if (!otp || !storedHash) return false;
-
-  const expectedHash = hashOtp(otp, purpose, userId);
-  const a = Buffer.from(expectedHash, "hex");
-  const b = Buffer.from(storedHash, "hex");
-
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
 }
 
 /**
@@ -175,9 +133,6 @@ function isValidPinCode(pincode) {
 }
 
 module.exports = {
-  generateSixDigitOtp,
-  hashOtp,
-  verifyOtpHash,
   encryptSensitive,
   decryptSensitive,
   normalizeEmail,

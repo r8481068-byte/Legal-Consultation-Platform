@@ -1,15 +1,5 @@
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem("accessToken");
-
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-};
+import { API_BASE_URL, authFetch } from "./apiClient";
 
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
@@ -23,11 +13,10 @@ const handleResponse = async (response) => {
 
 // Fetch appointments for the logged-in lawyer
 export const getLawyerAppointments = async () => {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE_URL}/appointments/lawyer/my`,
     {
       method: "GET",
-      headers: getAuthHeaders(),
     }
   );
 
@@ -36,11 +25,10 @@ export const getLawyerAppointments = async () => {
 
 // Update appointment status
 const updateAppointmentStatus = async (appointmentId, action) => {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE_URL}/appointments/${appointmentId}/${action}`,
     {
       method: "PATCH",
-      headers: getAuthHeaders(),
     }
   );
 

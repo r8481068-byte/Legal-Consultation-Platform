@@ -16,18 +16,13 @@ const {
   isValidPAN,
 } = require("../utils/cryptoUtils");
 const {
-  initiateEmailVerification,
-  initiatePhoneVerification,
-} = require("./verificationService");
-const {
   calculateProfileCompleteness,
   calculateIdentityStatus,
 } = require("./eligibilityService");
 
 /**
  * Registers a new user (Client or Lawyer).
- * Validates, normalizes email and Indian phone number, disallows admin role,
- * and initiates verification OTP challenges.
+ * Validates, normalizes email and Indian phone number, and disallows admin role.
  */
 const registerUserService = async ({
   name,
@@ -71,34 +66,18 @@ const registerUserService = async ({
     throw error;
   }
 
-  // Create unverified user account
+  // Create user account
   const user = await User.create({
     name: cleanName,
     email: normalizedEmail,
     password, // Handled by pre-save bcrypt hook in User.js
     phone: normalizedPhone,
     role: assignedRole,
-    emailVerified: false,
-    phoneVerified: false,
-    isVerified: false,
+    emailVerified: true,
+    phoneVerified: true,
+    isVerified: true,
     isActive: true,
   });
-
-  // Automatically initiate verification challenges
-  let emailChallengeInfo = null;
-  let phoneChallengeInfo = null;
-
-  try {
-    emailChallengeInfo = await initiateEmailVerification(user._id);
-  } catch (emailErr) {
-    console.error("Auto-initiate email verification error:", emailErr.message);
-  }
-
-  try {
-    phoneChallengeInfo = await initiatePhoneVerification(user._id);
-  } catch (phoneErr) {
-    console.error("Auto-initiate phone verification error:", phoneErr.message);
-  }
 
   return {
     id: user._id,
@@ -106,20 +85,15 @@ const registerUserService = async ({
     email: user.email,
     phone: user.phone,
     role: user.role,
-    emailVerified: false,
-    phoneVerified: false,
-    verificationRequired: true,
-    message:
-      "Registration successful! Please verify your email address and mobile number with the OTPs sent.",
-    emailChallenge: emailChallengeInfo,
-    phoneChallenge: phoneChallengeInfo,
+    emailVerified: true,
+    phoneVerified: true,
+    message: "Registration successful! You can now log in.",
   };
 };
 
 /**
  * Logins an existing user.
- * Enforces contact verification before issuing sessions.
- * Gracefully handles legacy accounts with isVerified = true.
+ * Issues sessions directly without requiring OTP verification.
  */
 const loginUserService = async ({ email, password }) => {
   const normalizedEmail = normalizeEmail(email);
@@ -144,33 +118,6 @@ const loginUserService = async ({ email, password }) => {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;
     throw error;
-  }
-
-  // Backfill/Grace handling for legacy accounts or admins:
-  // If legacy account has isVerified = true and missing verification flags, migrate them
-  if (user.isVerified && (!user.emailVerified || !user.phoneVerified)) {
-    user.emailVerified = true;
-    user.phoneVerified = true;
-    await user.save();
-  }
-
-  // Enforce verification check: If contact verification is incomplete
-  if (!user.emailVerified || !user.phoneVerified) {
-    return {
-      success: false,
-      verificationRequired: true,
-      message:
-        "Account verification is incomplete. Please verify your contact details to continue.",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        emailVerified: Boolean(user.emailVerified),
-        phoneVerified: Boolean(user.phoneVerified),
-      },
-    };
   }
 
   // Generate tokens for verified users
@@ -224,10 +171,24 @@ const getUserProfileService = async (userId) => {
 };
 
 /**
- * Updates basic profile info (name, phone, profileImage).
+ * Updates basic profile info (name, phone, profileImage, about, gender, dob) and address fields.
  */
 const updateUserProfileService = async (userId, data) => {
-  const allowedUpdates = ["name", "phone", "profileImage"];
+  const allowedUpdates = [
+    "name",
+    "phone",
+    "profileImage",
+    "about",
+    "gender",
+    "dob",
+    "state",
+    "district",
+    "subDistrict",
+    "locality",
+    "cityVillage",
+    "pincode",
+    "addressLine",
+  ];
   const updates = {};
 
   for (const field of allowedUpdates) {
@@ -240,6 +201,26 @@ const updateUserProfileService = async (userId, data) => {
   delete updates.email;
   delete updates.password;
 
+  if (updates.about !== undefined) {
+    updates.about = typeof updates.about === "string" ? updates.about.trim().slice(0, 1000) : "";
+  }
+
+  if (updates.gender !== undefined) {
+    const validGenders = ["male", "female", "other", "prefer_not_to_say", null, ""];
+    if (!validGenders.includes(updates.gender)) {
+      updates.gender = null;
+    }
+  }
+
+  if (updates.dob !== undefined) {
+    if (updates.dob) {
+      const parsedDate = new Date(updates.dob);
+      updates.dob = isNaN(parsedDate.getTime()) ? null : parsedDate;
+    } else {
+      updates.dob = null;
+    }
+  }
+
   if (updates.phone) {
     const normalized = normalizeIndianMobile(updates.phone);
     if (!normalized) {
@@ -248,6 +229,38 @@ const updateUserProfileService = async (userId, data) => {
       throw error;
     }
     updates.phone = normalized;
+  }
+
+  if (updates.state !== undefined) {
+    updates.state = typeof updates.state === "string" && updates.state.trim() ? updates.state.trim() : null;
+  }
+  if (updates.district !== undefined) {
+    updates.district = typeof updates.district === "string" && updates.district.trim() ? updates.district.trim() : null;
+  }
+  if (updates.subDistrict !== undefined) {
+    updates.subDistrict = typeof updates.subDistrict === "string" && updates.subDistrict.trim() ? updates.subDistrict.trim() : null;
+  }
+  if (updates.locality !== undefined) {
+    updates.locality = typeof updates.locality === "string" && updates.locality.trim() ? updates.locality.trim() : null;
+  }
+  if (updates.cityVillage !== undefined) {
+    updates.cityVillage = typeof updates.cityVillage === "string" && updates.cityVillage.trim() ? updates.cityVillage.trim() : null;
+  }
+  if (updates.addressLine !== undefined) {
+    updates.addressLine = typeof updates.addressLine === "string" && updates.addressLine.trim() ? updates.addressLine.trim() : null;
+  }
+  if (updates.pincode !== undefined) {
+    if (updates.pincode && typeof updates.pincode === "string" && updates.pincode.trim()) {
+      const pin = updates.pincode.trim();
+      if (!isValidPinCode(pin)) {
+        const error = new Error("Please enter a valid 6-digit Indian PIN code");
+        error.statusCode = 400;
+        throw error;
+      }
+      updates.pincode = pin;
+    } else {
+      updates.pincode = null;
+    }
   }
 
   const user = await User.findByIdAndUpdate(
@@ -262,7 +275,14 @@ const updateUserProfileService = async (userId, data) => {
     throw error;
   }
 
-  return user;
+  const completeness = calculateProfileCompleteness(user);
+  const identityStatus = calculateIdentityStatus(user);
+
+  return {
+    ...user.toObject(),
+    completeness,
+    identityStatus,
+  };
 };
 
 /**
@@ -350,10 +370,10 @@ const updateClientIdentityService = async (userId, { aadhaar, pan }) => {
       $set: {
         aadhaarMasked,
         aadhaarEncrypted,
-        aadhaarVerified: true, // format validated
+        aadhaarVerified: false,
         panMasked,
         panEncrypted,
-        panVerified: true, // format validated
+        panVerified: false,
       },
     },
     { new: true }
@@ -369,6 +389,12 @@ const updateClientIdentityService = async (userId, { aadhaar, pan }) => {
     success: true,
     message: "Identity details saved and encrypted securely.",
     identityStatus: calculateIdentityStatus(user),
+    user: {
+      aadhaarMasked,
+      panMasked,
+      aadhaarVerified: user.aadhaarVerified,
+      panVerified: user.panVerified,
+    },
   };
 };
 

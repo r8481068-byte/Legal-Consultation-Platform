@@ -31,6 +31,13 @@ const lawyerSchema = new mongoose.Schema(
       default: ""
     },
 
+    describeUs: {
+      type: String,
+      trim: true,
+      maxlength: 10000,
+      default: ""
+    },
+
     specialization: {
       type: [String],
       required: true,
@@ -182,6 +189,22 @@ const lawyerSchema = new mongoose.Schema(
       default: ""
     },
 
+    district: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    latitude: {
+      type: Number,
+      default: null
+    },
+
+    longitude: {
+      type: Number,
+      default: null
+    },
+
     phone: {
       type: String,
       trim: true,
@@ -195,11 +218,24 @@ const lawyerSchema = new mongoose.Schema(
 
     verificationStatus: {
       type: String,
-      enum: ["pending", "approved", "rejected", "additional_info_required"],
+      enum: [
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+        "additional_info_required",
+        "suspended"
+      ],
       default: "pending"
     },
 
     decisionReason: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
+    internalNotes: {
       type: String,
       trim: true,
       default: ""
@@ -215,6 +251,19 @@ const lawyerSchema = new mongoose.Schema(
       ref: "User",
       default: null
     },
+
+    verificationHistory: [
+      {
+        status: { type: String, required: true },
+        decisionReason: { type: String, default: "" },
+        internalNotes: { type: String, default: "" },
+        reviewedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User"
+        },
+        reviewedAt: { type: Date, default: Date.now }
+      }
+    ],
 
     stateOfEnrolment: {
       type: String,
@@ -265,6 +314,31 @@ const lawyerSchema = new mongoose.Schema(
       trim: true,
       default: ""
     },
+
+    awards: [
+      {
+        name: {
+          type: String,
+          trim: true,
+          default: ""
+        },
+        organization: {
+          type: String,
+          trim: true,
+          default: ""
+        },
+        year: {
+          type: Number,
+          min: 1900,
+          max: 2100
+        },
+        description: {
+          type: String,
+          trim: true,
+          default: ""
+        }
+      }
+    ],
 
     website: {
       type: String,

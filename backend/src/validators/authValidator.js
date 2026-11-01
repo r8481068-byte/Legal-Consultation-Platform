@@ -68,15 +68,6 @@ const loginValidator = [
     .withMessage("Password is required"),
 ];
 
-const otpValidator = [
-  body("otp")
-    .trim()
-    .notEmpty()
-    .withMessage("Verification code is required")
-    .matches(/^\d{6}$/)
-    .withMessage("Verification code must be exactly 6 digits"),
-];
-
 const clientProfileValidator = [
   body("state")
     .trim()
@@ -159,7 +150,6 @@ const identityValidator = [
 module.exports = {
   registerValidator,
   loginValidator,
-  otpValidator,
   clientProfileValidator,
   identityValidator,
 };

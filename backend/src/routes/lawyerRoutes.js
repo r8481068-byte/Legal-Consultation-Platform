@@ -9,7 +9,8 @@ const {
   verifyLawyer,
   getLawyerById,
   applyAsLawyer,
-  getMyLawyerApplication
+  getMyLawyerApplication,
+  getDirectorySummary
 } = require("../controllers/lawyerController");
 
 const {
@@ -22,18 +23,18 @@ const router = express.Router();
 // Public search
 router.get("/", searchLawyers);
 
-// Client-only lawyer application & status routes
+// Client & Lawyer application & status routes
 router.get(
   "/application/status",
   protect,
-  authorize("client"),
+  authorize("client", "lawyer"),
   getMyLawyerApplication
 );
 
 router.post(
   "/apply",
   protect,
-  authorize("client"),
+  authorize("client", "lawyer"),
   applyAsLawyer
 );
 
@@ -64,6 +65,9 @@ router.patch("/me", protect, authorize("lawyer"), updateLawyerProfile);
 router.put("/me", protect, authorize("lawyer"), updateLawyerProfile);
 router.get("/profile/me/earnings", protect, authorize("lawyer"), getMyEarnings);
 router.get("/clients/:clientId", protect, authorize("lawyer"), getAuthorizedClientDetail);
+
+// Public directory state counts summary
+router.get("/directory-summary", getDirectorySummary);
 
 // Public single lawyer profile (defined last to prevent parameterized collision)
 router.get("/:lawyerId", getLawyerById);

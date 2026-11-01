@@ -70,15 +70,15 @@ export default function Footer() {
 
   // Initial 9 high-utility State Links for "Lawyers in India" section
   const footerStateLinks = [
-    { name: "Lawyers in Delhi", to: "/advocate-lawyer-delhi" },
-    { name: "Lawyers in Uttar Pradesh", to: "/advocate-lawyer-uttar-pradesh" },
-    { name: "Lawyers in Haryana", to: "/advocate-lawyer-haryana" },
-    { name: "Lawyers in Rajasthan", to: "/advocate-lawyer-rajasthan" },
-    { name: "Lawyers in Madhya Pradesh", to: "/advocate-lawyer-madhya-pradesh" },
-    { name: "Lawyers in Punjab", to: "/advocate-lawyer-punjab" },
-    { name: "Lawyers in Bihar", to: "/advocate-lawyer-bihar" },
-    { name: "Lawyers in Maharashtra", to: "/advocate-lawyer-maharashtra" },
-    { name: "Lawyers in Karnataka", to: "/advocate-lawyer-karnataka" },
+    { name: "Lawyers in Delhi", to: "/lawyers-in-india/delhi" },
+    { name: "Lawyers in Uttar Pradesh", to: "/lawyers-in-india/uttar-pradesh" },
+    { name: "Lawyers in Haryana", to: "/lawyers-in-india/haryana" },
+    { name: "Lawyers in Rajasthan", to: "/lawyers-in-india/rajasthan" },
+    { name: "Lawyers in Madhya Pradesh", to: "/lawyers-in-india/madhya-pradesh" },
+    { name: "Lawyers in Punjab", to: "/lawyers-in-india/punjab" },
+    { name: "Lawyers in Bihar", to: "/lawyers-in-india/bihar" },
+    { name: "Lawyers in Maharashtra", to: "/lawyers-in-india/maharashtra" },
+    { name: "Lawyers in Karnataka", to: "/lawyers-in-india/karnataka" },
   ];
 
   // Configurable Social Links (Official WhatsApp is known, others configurable via env or placeholder)

@@ -42,6 +42,25 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
+    about: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: ""
+    },
+
+    gender: {
+      type: String,
+      trim: true,
+      enum: ["male", "female", "other", "prefer_not_to_say", null, ""],
+      default: null
+    },
+
+    dob: {
+      type: Date,
+      default: null
+    },
+
     emailVerified: {
       type: Boolean,
       default: false
@@ -123,6 +142,29 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    blockReason: {
+      type: String,
+      trim: true,
+      default: null
+    },
+    blockedAt: {
+      type: Date,
+      default: null
+    },
+    blockedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+    unblockedAt: {
+      type: Date,
+      default: null
+    },
+    unblockedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
     },
     resetPasswordToken: {
       type: String,

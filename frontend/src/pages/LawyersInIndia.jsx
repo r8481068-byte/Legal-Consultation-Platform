@@ -258,48 +258,54 @@ export default function LawyersInIndia() {
 
           {/* Location Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredLocations.map((loc) => (
-              <Link
-                key={loc.id}
-                to={`/advocate-lawyer-${loc.slug}`}
-                className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-500 hover:shadow-md"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <span className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                      loc.type === "state" ? "bg-blue-50 text-blue-900 border border-blue-100" : "bg-purple-50 text-purple-900 border border-purple-100"
-                    }`}>
-                      {loc.type === "state" ? "State" : "Union Territory"}
+            {filteredLocations.map((loc) => {
+              const displayName = loc.slug === "delhi" ? "Delhi" : loc.name;
+              return (
+                <Link
+                  key={loc.id}
+                  to={`/lawyers-in-india/${loc.slug}`}
+                  className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition duration-200 hover:border-blue-600 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`inline-block rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        loc.type === "state"
+                          ? "bg-blue-50 text-blue-900 border border-blue-200"
+                          : "bg-purple-50 text-purple-900 border border-purple-200"
+                      }`}>
+                        {loc.type === "state" ? "State" : "Union Territory"}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 group-hover:text-blue-900 transition-all" />
+                    </div>
+
+                    <h3 className="mt-3 text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
+                      {displayName}
+                    </h3>
+
+                    <div className="mt-2.5 space-y-1.5 text-xs text-slate-600">
+                      <p className="flex items-center gap-1.5">
+                        <Gavel className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate font-medium">{loc.highCourt.name}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>Seat: <strong className="text-slate-800">{loc.highCourt.principalSeat}</strong></span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-500">
+                      {loc.districts.length} Districts
                     </span>
-                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 group-hover:text-blue-900 transition-all" />
+                    <span className="font-bold text-blue-900 group-hover:underline flex items-center gap-1">
+                      <span>View Advocates</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </span>
                   </div>
-
-                  <h3 className="mt-2.5 text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
-                    {loc.name}
-                  </h3>
-
-                  <div className="mt-2 space-y-1 text-xs text-slate-500">
-                    <p className="flex items-center gap-1.5">
-                      <Gavel className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{loc.highCourt.name}</span>
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>Seat: {loc.highCourt.principalSeat}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-slate-600">
-                    {loc.districts.length} District{loc.districts.length === 1 ? "" : "s"}
-                  </span>
-                  <span className="font-bold text-blue-900 group-hover:underline">
-                    View Advocates →
-                  </span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
 
           {filteredLocations.length === 0 && (
@@ -339,7 +345,7 @@ export default function LawyersInIndia() {
             {MAJOR_CITIES_DIRECTORY.map((city) => (
               <Link
                 key={city.slug}
-                to={`/advocate-lawyer-${city.stateSlug}/${city.slug}`}
+                to={`/lawyers-in-india/${city.stateSlug}/${city.slug}`}
                 className="group rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 transition hover:bg-white hover:border-blue-400 hover:shadow-sm"
               >
                 <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs group-hover:text-blue-900">

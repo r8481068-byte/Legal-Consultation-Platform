@@ -3,6 +3,8 @@ import {
   createContext,
   useContext,
   useState,
+  useCallback,
+  useMemo,
 } from "react";
 import { logoutUser as logoutUserApi } from "../services/authService";
 
@@ -20,15 +22,15 @@ export function AuthProvider({ children }) {
     }
   });
 
-  function login(result) {
+  const login = useCallback((result) => {
     sessionStorage.setItem("accessToken", result.accessToken);
     sessionStorage.setItem("refreshToken", result.refreshToken);
     sessionStorage.setItem("user", JSON.stringify(result.user));
 
     setUser(result.user);
-  }
+  }, []);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     const refreshToken = sessionStorage.getItem("refreshToken");
 
     try {
@@ -43,10 +45,43 @@ export function AuthProvider({ children }) {
       sessionStorage.removeItem("user");
       setUser(null);
     }
-  }
+  }, []);
+
+  const updateUser = useCallback((partialUser) => {
+    if (!partialUser || typeof partialUser !== "object") return;
+
+    setUser((prev) => {
+      if (!prev) {
+        sessionStorage.setItem("user", JSON.stringify(partialUser));
+        return partialUser;
+      }
+
+      // Check if any value actually changed to prevent render loops
+      let hasChanges = false;
+      for (const [key, value] of Object.entries(partialUser)) {
+        if (prev[key] !== value) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      if (!hasChanges) {
+        return prev;
+      }
+
+      const merged = { ...prev, ...partialUser };
+      sessionStorage.setItem("user", JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ user, isAuthenticated: Boolean(user), login, logout, updateUser }),
+    [user, login, logout, updateUser]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

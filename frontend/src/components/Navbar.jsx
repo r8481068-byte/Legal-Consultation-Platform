@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   CheckCircle,
-  FileText
+  FileText,
+  Info,
 } from "lucide-react";
 
 export default function Navbar({ onOpenProfileSettings }) {
@@ -49,8 +50,9 @@ export default function Navbar({ onOpenProfileSettings }) {
   }, []);
 
   // Fetch notifications for logged-in user
+  const authIdentifier = user?._id || user?.id || user?.email;
   useEffect(() => {
-    if (!user) return;
+    if (!authIdentifier) return;
 
     let mounted = true;
     const fetchNotifs = async () => {
@@ -66,12 +68,12 @@ export default function Navbar({ onOpenProfileSettings }) {
     };
 
     fetchNotifs();
-    const interval = setInterval(fetchNotifs, 15000); // 15s refresh
+    const interval = setInterval(fetchNotifs, 30000); // 30s refresh
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, [user]);
+  }, [authIdentifier]);
 
   const handleMarkAllRead = async () => {
     try {
@@ -107,7 +109,18 @@ export default function Navbar({ onOpenProfileSettings }) {
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 transition hover:opacity-90">
+        <Link
+          to={
+            user?.role === "client"
+              ? "/"
+              : user?.role === "lawyer"
+              ? "/lawyer-dashboard"
+              : user?.role === "admin"
+              ? "/admin"
+              : "/"
+          }
+          className="flex items-center gap-2.5 transition hover:opacity-90"
+        >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-900 via-blue-800 to-indigo-700 text-white shadow-md shadow-blue-900/20">
             <Scale className="h-5 w-5" />
           </div>
@@ -123,58 +136,53 @@ export default function Navbar({ onOpenProfileSettings }) {
 
         {/* Desktop Navigation Links */}
         <nav className="hidden items-center gap-1 md:flex">
-          <Link
-            to="/"
-            className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-              isActive("/")
-                ? "bg-blue-50 text-blue-800 font-semibold"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            Home
-          </Link>
-          <Link
-            to="/lawyers"
-            className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-              isActive("/lawyers")
-                ? "bg-blue-50 text-blue-800 font-semibold"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            Find Lawyers
-          </Link>
-
-          {user?.role === "client" && (
-            <Link
-              to="/my-appointments"
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                isActive("/my-appointments")
-                  ? "bg-blue-50 text-blue-800 font-semibold"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Calendar className="h-4 w-4" />
-              My Appointments
-            </Link>
-          )}
-
-          {user?.role === "lawyer" && (
+          {user?.role === "client" ? (
             <>
               <Link
-                to="/lawyer-dashboard"
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                  isActive("/lawyer-dashboard")
+                to="/"
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/")
                     ? "bg-blue-50 text-blue-800 font-semibold"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
-                <Briefcase className="h-4 w-4" />
+                Home
+              </Link>
+              <Link
+                to="/client/lawyers"
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/client/lawyers")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                Find Lawyer
+              </Link>
+              <Link
+                to="/dashboard"
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/dashboard")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
                 Dashboard
               </Link>
               <Link
-                to="/lawyer/edit-profile"
+                to="/my-appointments"
                 className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                  isActive("/lawyer/edit-profile")
+                  isActive("/my-appointments")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <Calendar className="h-4 w-4" />
+                My Appointment
+              </Link>
+              <Link
+                to="/client/profile"
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/client/profile") || isActive("/my-profile")
                     ? "bg-blue-50 text-blue-800 font-semibold"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
@@ -182,32 +190,93 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <UserIcon className="h-4 w-4" />
                 My Profile
               </Link>
+            </>
+          ) : (
+            <>
               <Link
-                to="/lawyer/availability"
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                  isActive("/lawyer/availability")
+                to="/"
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/")
                     ? "bg-blue-50 text-blue-800 font-semibold"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
-                <Calendar className="h-4 w-4" />
-                Availability
+                Home
               </Link>
-            </>
-          )}
+              <Link
+                to="/lawyers"
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  isActive("/lawyers") || isActive("/client/lawyers")
+                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                Find Lawyer
+              </Link>
 
-          {user?.role === "admin" && (
-            <Link
-              to="/admin"
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                isActive("/admin")
-                  ? "bg-blue-50 text-blue-800 font-semibold"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <ShieldAlert className="h-4 w-4 text-amber-600" />
-              Admin Portal
-            </Link>
+              {user?.role === "lawyer" && (
+                <>
+                  <Link
+                    to="/lawyer-dashboard"
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                      isActive("/lawyer-dashboard")
+                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/lawyer/edit-profile"
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                      isActive("/lawyer/edit-profile")
+                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <UserIcon className="h-4 w-4" />
+                    My Profile
+                  </Link>
+                  <Link
+                    to="/lawyer/availability"
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                      isActive("/lawyer/availability")
+                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Availability
+                  </Link>
+                  <Link
+                    to="/lawyer/about-us"
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                      isActive("/lawyer/about-us") || isActive("/lawyer/about")
+                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <Info className="h-4 w-4" />
+                    About Us
+                  </Link>
+                </>
+              )}
+
+              {user?.role === "admin" && (
+                <Link
+                  to="/admin"
+                  className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                    isActive("/admin")
+                      ? "bg-blue-50 text-blue-800 font-semibold"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <ShieldAlert className="h-4 w-4 text-amber-600" />
+                  Admin
+                </Link>
+              )}
+            </>
           )}
         </nav>
 
@@ -287,16 +356,24 @@ export default function Navbar({ onOpenProfileSettings }) {
                 )}
               </div>
 
-              {/* User Dropdown */}
-              <div className="relative" ref={profileRef}>
+              {/* User Section */}
+              <div className="relative flex items-center gap-2" ref={profileRef}>
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 transition hover:bg-slate-100 focus:outline-none"
+                  className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 transition hover:bg-slate-100 cursor-pointer focus:outline-none"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-900 text-xs font-bold text-white uppercase">
-                    {user.name ? user.name.charAt(0) : "U"}
-                  </div>
+                  {user.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt={user.name || "User"}
+                      className="h-7 w-7 rounded-lg object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-900 text-xs font-bold text-white uppercase">
+                      {user.name ? user.name.charAt(0) : "U"}
+                    </div>
+                  )}
                   <span className="hidden text-sm font-semibold text-slate-800 sm:inline max-w-[120px] truncate">
                     {user.name}
                   </span>
@@ -305,15 +382,57 @@ export default function Navbar({ onOpenProfileSettings }) {
                   </span>
                 </button>
 
+                {/* Dropdown Menu */}
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50">
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50">
                     <div className="border-b border-slate-100 px-3 py-2">
                       <p className="text-xs font-semibold text-slate-400">Signed in as</p>
                       <p className="truncate text-sm font-bold text-slate-900">{user.email}</p>
                     </div>
 
                     <div className="mt-1 space-y-0.5 text-sm">
-                      {user.role === "lawyer" ? (
+                      {user.role === "client" && (
+                        <>
+                          <Link
+                            to="/client/profile"
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            <UserIcon className="h-4 w-4 text-slate-400" />
+                            My Profile
+                          </Link>
+                          <Link
+                            to="/dashboard"
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            <Briefcase className="h-4 w-4 text-slate-400" />
+                            Dashboard
+                          </Link>
+                          <Link
+                            to="/my-appointments"
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            <Calendar className="h-4 w-4 text-slate-400" />
+                            My Appointments
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProfileDropdownOpen(false);
+                              logout();
+                              navigate("/");
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50 font-medium transition border-t border-slate-100 mt-1"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Logout
+                          </button>
+                        </>
+                      )}
+
+                      {user.role === "lawyer" && (
                         <>
                           <Link
                             to="/lawyer-dashboard"
@@ -340,18 +459,20 @@ export default function Navbar({ onOpenProfileSettings }) {
                             Availability
                           </Link>
                         </>
-                      ) : (
+                      )}
+
+                      {user.role === "admin" && (
                         <Link
-                          to="/dashboard"
+                          to="/admin"
                           onClick={() => setProfileDropdownOpen(false)}
                           className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
                         >
-                          <UserIcon className="h-4 w-4 text-slate-400" />
-                          Account Overview
+                          <ShieldAlert className="h-4 w-4 text-slate-400" />
+                          Admin Portal
                         </Link>
                       )}
 
-                      {onOpenProfileSettings && (
+                      {user.role !== "client" && onOpenProfileSettings && (
                         <button
                           type="button"
                           onClick={() => {
@@ -365,17 +486,19 @@ export default function Navbar({ onOpenProfileSettings }) {
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          logout();
-                        }}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign Out
-                      </button>
+                      {user.role !== "client" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            logout();
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -414,75 +537,146 @@ export default function Navbar({ onOpenProfileSettings }) {
       {mobileMenuOpen && (
         <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
           <div className="flex flex-col gap-2">
-            <Link
-              to="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-            >
-              Home
-            </Link>
-            <Link
-              to="/lawyers"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-            >
-              Find Lawyers
-            </Link>
-
-            {user?.role === "client" && (
-              <Link
-                to="/my-appointments"
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                My Appointments
-              </Link>
-            )}
-
-            {user?.role === "lawyer" && (
+            {user?.role === "client" ? (
               <>
                 <Link
-                  to="/lawyer-dashboard"
+                  to="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isActive("/")
+                      ? "bg-blue-50 text-blue-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/client/lawyers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isActive("/client/lawyers")
+                      ? "bg-blue-50 text-blue-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  Find Lawyer
+                </Link>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isActive("/dashboard")
+                      ? "bg-blue-50 text-blue-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
                 >
                   Dashboard
                 </Link>
                 <Link
-                  to="/lawyer/edit-profile"
+                  to="/my-appointments"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isActive("/my-appointments")
+                      ? "bg-blue-50 text-blue-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  My Appointment
+                </Link>
+                <Link
+                  to="/client/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    isActive("/client/profile") || isActive("/my-profile")
+                      ? "bg-blue-50 text-blue-800 font-bold"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
                 >
                   My Profile
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                    navigate("/");
+                  }}
+                  className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
                 <Link
-                  to="/lawyer/availability"
+                  to="/"
                   onClick={() => setMobileMenuOpen(false)}
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
-                  Availability
+                  Home
                 </Link>
+                <Link
+                  to="/lawyers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Find Lawyer
+                </Link>
+
+                {user?.role === "lawyer" && (
+                  <>
+                    <Link
+                      to="/lawyer-dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/lawyer/edit-profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/lawyer/availability"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Availability
+                    </Link>
+                    <Link
+                      to="/lawyer/about-us"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      About Us
+                    </Link>
+                  </>
+                )}
+
+                {user?.role === "admin" && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    Admin Portal
+                  </Link>
+                )}
+
+                {user && (
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    Account Overview
+                  </Link>
+                )}
               </>
-            )}
-
-            {user?.role === "admin" && (
-              <Link
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Admin Portal
-              </Link>
-            )}
-
-            {user && (
-              <Link
-                to="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Account Overview
-              </Link>
             )}
           </div>
         </div>

@@ -12,6 +12,7 @@ import {
   Settings,
   ChevronDown,
   ShieldCheck,
+  Info,
 } from "lucide-react";
 
 export default function AccountMenu({ onOpenProfileSettings, isMobile = false, onCloseMobile }) {
@@ -94,6 +95,13 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
               >
                 <Calendar className="h-4 w-4 text-blue-700" /> Availability
               </Link>
+              <Link
+                to="/lawyer/about-us"
+                onClick={handleLinkClick}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <Info className="h-4 w-4 text-blue-700" /> About Us
+              </Link>
             </>
           )}
           {user.role !== "lawyer" && (
@@ -106,13 +114,22 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
             </Link>
           )}
           {user.role === "client" && (
-            <Link
-              to="/client/profile-completion"
-              onClick={handleLinkClick}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              <ShieldCheck className="h-4 w-4 text-emerald-600" /> Booking Eligibility & Profile
-            </Link>
+            <>
+              <Link
+                to="/client/profile"
+                onClick={handleLinkClick}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <User className="h-4 w-4 text-blue-700" /> My Profile
+              </Link>
+              <Link
+                to="/client/profile-completion"
+                onClick={handleLinkClick}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <ShieldCheck className="h-4 w-4 text-emerald-600" /> Booking Eligibility & Profile
+              </Link>
+            </>
           )}
           {onOpenProfileSettings && (
             <button
@@ -234,6 +251,14 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
                       <Calendar className="h-4 w-4 text-slate-500" />
                       Availability
                     </Link>
+                    <Link
+                      to="/lawyer/about-us"
+                      onClick={handleLinkClick}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
+                    >
+                      <Info className="h-4 w-4 text-slate-500" />
+                      About Us
+                    </Link>
                   </>
                 )}
 
@@ -263,14 +288,24 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
                 )}
 
                 {user.role === "client" && (
-                  <Link
-                    to="/client/profile-completion"
-                    onClick={handleLinkClick}
-                    className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                  >
-                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                    Booking Eligibility & Profile
-                  </Link>
+                  <>
+                    <Link
+                      to="/client/profile"
+                      onClick={handleLinkClick}
+                      className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
+                    >
+                      <User className="h-4 w-4 text-slate-500" />
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/client/profile-completion"
+                      onClick={handleLinkClick}
+                      className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
+                    >
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      Booking Eligibility & Profile
+                    </Link>
+                  </>
                 )}
               </div>
 

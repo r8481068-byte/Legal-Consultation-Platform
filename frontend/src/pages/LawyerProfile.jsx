@@ -1,50 +1,59 @@
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Star, MessageSquare, Award, Clock, CheckCircle2, ShieldCheck } from "lucide-react";
+import {
+  Star,
+  MessageSquare,
+  Award,
+  Clock,
+  CheckCircle2,
+  ShieldCheck,
+  MapPin,
+  Calendar,
+  Briefcase,
+  GraduationCap,
+  Scale,
+  ArrowRight,
+  AlertCircle,
+  HelpCircle,
+  Check,
+  Camera,
+  Loader2
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getLawyerById } from "../services/lawyerService";
 import { getAvailableSlots } from "../services/availabilityService";
 import { getLawyerReviews } from "../services/reviewService";
-import { getBookingEligibility } from "../services/authService";
-import BookingEligibilityModal from "../components/BookingEligibilityModal";
+import { getBookingEligibility, updateProfile } from "../services/authService";
 
 function formatDateTime(value) {
   if (!value) return "Time not available";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Invalid date";
-  }
-
+  if (Number.isNaN(date.getTime())) return "Invalid date";
   return date.toLocaleString("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",
   });
 }
 
-function displayText(value, fallback = "Not specified") {
-  if (typeof value === "string" || typeof value === "number") {
-    return String(value);
-  }
-
-  return fallback;
-}
-
-function formatEducation(education) {
-  if (!Array.isArray(education)) {
-    return typeof education === "string" ? education : "";
-  }
-
-  return education;
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-IN", {
+    dateStyle: "medium",
+  });
 }
 
 export default function LawyerProfile() {
   const { lawyerId } = useParams();
   const navigate = useNavigate();
-  // const { user: currentUser } = useAuth();
-  const { currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
+
+  // Profile image upload state
+  const fileInputRef = useRef(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
   const [lawyer, setLawyer] = useState(null);
   const [slots, setSlots] = useState([]);
@@ -55,8 +64,13 @@ export default function LawyerProfile() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState("");
   const [slotsError, setSlotsError] = useState("");
-  const [eligibilityData, setEligibilityData] = useState(null);
-  const [eligibilityModalOpen, setEligibilityModalOpen] = useState(false);
+
+  // Preferred time state if no slots configured
+  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredTime, setPreferredTime] = useState("");
+  const [isFlexibleTime, setIsFlexibleTime] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -95,7 +109,7 @@ export default function LawyerProfile() {
       const data = await getLawyerReviews(lawyerId);
       setReviewsData(data || { reviews: [], averageRating: 0, totalReviews: 0 });
     } catch {
-      // silently fallback to empty reviews
+      setReviewsData({ reviews: [], averageRating: 0, totalReviews: 0 });
     } finally {
       setReviewsLoading(false);
     }
@@ -107,42 +121,238 @@ export default function LawyerProfile() {
     loadReviews();
   }, [loadProfile, loadSlots, loadReviews]);
 
+  // Selected slot lookup
+  const selectedSlotData = useMemo(() => {
+    return slots.find((s) => s._id === selectedSlot) || null;
+  }, [slots, selectedSlot]);
+
+  // Calculated Reviews & Rating statistics from actual reviews
+  const reviewStats = useMemo(() => {
+    const list = Array.isArray(reviewsData.reviews) ? reviewsData.reviews : [];
+    const count = list.length;
+    if (count === 0) {
+      const fallbackRating = lawyer?.averageRating > 0 ? Number(lawyer.averageRating).toFixed(1) : "5.0";
+      const fallbackCount = lawyer?.totalReviews || 0;
+      return { count: fallbackCount, average: fallbackRating, reviews: [] };
+    }
+    const sum = list.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+    const avg = (sum / count).toFixed(1);
+    return { count, average: avg, reviews: list };
+  }, [reviewsData, lawyer]);
+
+  const user = lawyer?.user || {};
+  const rawName = user.name || lawyer?.name || "Verified Advocate";
+  const name = rawName.startsWith("Adv.") || rawName.startsWith("Advocate")
+    ? rawName
+    : `Advocate ${rawName}`;
+  const isApproved = lawyer?.verificationStatus === "approved";
+  const experienceYears = Number(lawyer?.experienceYears) || 0;
+  const consultationFee = Number(lawyer?.consultationFee);
+  const feeText = Number.isFinite(consultationFee) && consultationFee > 0
+    ? `₹${consultationFee.toLocaleString("en-IN")}`
+    : "Contact for fee";
+
+  const specializations = Array.isArray(lawyer?.specialization)
+    ? lawyer.specialization
+    : lawyer?.specialization
+    ? [lawyer.specialization]
+    : [];
+
+  const initials = rawName
+    .replace(/^Advocate\s+/i, "")
+    .replace(/^Adv\.\s+/i, "")
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "A";
+
+  const isOwnProfile =
+    currentUser &&
+    lawyer &&
+    (currentUser._id === (lawyer.user?._id || lawyer.user) ||
+      currentUser.id === (lawyer.user?._id || lawyer.user));
+
+  const canEditProfile =
+    isOwnProfile ||
+    currentUser?.role === "lawyer" ||
+    currentUser?.role === "admin" ||
+    !currentUser;
+
+  // Handler: Upload new profile image
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setUploadError("Please select a valid image file (JPG, PNG, or WebP).");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("Image size cannot exceed 2MB.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadSuccess("");
+    setUploadingImage(true);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64Data = reader.result;
+        const res = await updateProfile({ profileImage: base64Data });
+        const newImage = res?.user?.profileImage || base64Data;
+
+        // Immediately update lawyer profile image in view
+        setLawyer((prev) => {
+          if (!prev) return prev;
+          const prevUser = typeof prev.user === "object" ? prev.user : {};
+          return {
+            ...prev,
+            user: {
+              ...prevUser,
+              profileImage: newImage,
+            },
+            profileImage: newImage,
+          };
+        });
+
+        // Persist to auth context and session storage
+        if (updateUser) {
+          updateUser({ profileImage: newImage });
+        }
+
+        setUploadSuccess("Profile image updated successfully!");
+        setTimeout(() => setUploadSuccess(""), 4000);
+      } catch (err) {
+        setUploadError(err.message || "Failed to upload profile photo.");
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setUploadError("Failed to read image file.");
+      setUploadingImage(false);
+    };
+
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  // Flow Handler: Book Consultation
+  async function handleBookConsultation() {
+    setBookingError("");
+
+    // If lawyer has slots, require either selecting a slot OR entering preferred time
+    if (slots.length > 0 && !selectedSlot && !preferredDate && !isFlexibleTime) {
+      setBookingError("Please select an available time slot above to continue with your booking.");
+      const slotsSection = document.getElementById("available-slots-section");
+      if (slotsSection) slotsSection.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    if (slots.length === 0 && !preferredDate && !isFlexibleTime) {
+      setBookingError("Please select a preferred date and time, or choose flexible timing.");
+      const slotsSection = document.getElementById("available-slots-section");
+      if (slotsSection) slotsSection.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // Save selection in session storage
+    const selectionPayload = {
+      lawyerId: lawyer._id,
+      lawyerName: name,
+      slotId: selectedSlot || null,
+      startAt: selectedSlotData?.startAt || null,
+      endAt: selectedSlotData?.endAt || null,
+      isPreferredTime: !selectedSlot,
+      isFlexibleTime: Boolean(isFlexibleTime),
+      preferredDate: preferredDate || "",
+      preferredTime: preferredTime || "",
+    };
+
+    sessionStorage.setItem("pendingConsultation", JSON.stringify(selectionPayload));
+
+    // 1. If not logged in -> redirect to login with return redirect
+    if (!currentUser) {
+      navigate(`/login?redirect=${encodeURIComponent(`/lawyers/${lawyer._id}`)}`);
+      return;
+    }
+
+    // 2. If logged in as non-client (e.g. lawyer or admin)
+    if (currentUser.role !== "client") {
+      setBookingError("Consultations can only be booked from a Client account.");
+      return;
+    }
+
+    // 3. Centralized profile completion check (Requirement 4 & 7: 100% profile completion mandatory)
+    setCheckingEligibility(true);
+    try {
+      const eligibility = await getBookingEligibility();
+
+      // If client profile is incomplete (< 100%)
+      if (!eligibility.eligible || eligibility.checks?.profilePercentage !== 100 || !eligibility.checks?.profileCompleted) {
+        navigate("/client/profile", {
+          state: {
+            fromBooking: true,
+            lawyerId: lawyer._id,
+            lawyerName: name,
+            message: "100% profile completion is required before booking a consultation. Please complete the remaining fields below.",
+          },
+        });
+        return;
+      }
+
+      // If 100% complete, proceed to dedicated booking page
+      navigate("/book-appointment");
+    } catch {
+      // In case of error reaching eligibility endpoint, proceed to booking page where backend independently checks
+      navigate("/book-appointment");
+    } finally {
+      setCheckingEligibility(false);
+    }
+  }
+
   if (loading) {
     return (
-      <main className="grid min-h-screen place-items-center bg-gray-50">
-        <p className="text-lg text-gray-600">
-          Loading lawyer profile...
-        </p>
+      <main className="grid min-h-screen place-items-center bg-slate-50">
+        <div className="text-center space-y-3">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-900 border-t-transparent" />
+          <p className="text-sm font-semibold text-slate-600">
+            Loading advocate public profile...
+          </p>
+        </div>
       </main>
     );
   }
 
   if (error || !lawyer) {
     return (
-      <main className="min-h-screen bg-gray-50 px-4 py-16">
-        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-bold text-gray-900">
-            Unable to open profile
+      <main className="min-h-screen bg-slate-50 px-4 py-16">
+        <div className="mx-auto max-w-xl rounded-3xl bg-white p-8 text-center shadow-xs border border-slate-200">
+          <h1 className="text-xl font-bold text-slate-900">
+            Advocate Profile Unavailable
           </h1>
-
-          <p className="mt-3 text-red-600">
-            {error || "Lawyer not found."}
+          <p className="mt-2 text-sm text-red-600">
+            {error || "Advocate profile not found or currently unavailable."}
           </p>
-
           <div className="mt-6 flex justify-center gap-3">
             <button
               type="button"
               onClick={loadProfile}
-              className="rounded-lg bg-blue-700 px-4 py-2 text-white"
+              className="rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 transition"
             >
               Try Again
             </button>
-
             <Link
               to="/lawyers"
-              className="rounded-lg border border-gray-300 px-4 py-2"
+              className="rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
-              Back to Lawyers
+              Back to Available Advocates
             </Link>
           </div>
         </div>
@@ -150,255 +360,236 @@ export default function LawyerProfile() {
     );
   }
 
-  const user =
-    lawyer.user && typeof lawyer.user === "object"
-      ? lawyer.user
-      : {};
-
-  const name = displayText(user.name, "Lawyer");
-
-  const specializations = Array.isArray(lawyer.specialization)
-    ? lawyer.specialization
-    : typeof lawyer.specialization === "string" &&
-        lawyer.specialization.trim()
-      ? [lawyer.specialization]
-      : [];
-
-  const education = formatEducation(lawyer.education);
-
-  const languages = Array.isArray(lawyer.languages)
-    ? lawyer.languages.filter(
-        (language) => typeof language === "string"
-      )
-    : typeof lawyer.languages === "string"
-      ? [lawyer.languages]
-      : [];
-
-  const selectedSlotData = slots.find(
-    (slot) => slot._id === selectedSlot
-  );
-
-  async function handleContinueToBooking() {
-    if (!selectedSlotData) return;
-
-    const selectionObj = {
-      lawyerId: lawyer._id,
-      slotId: selectedSlotData._id,
-      startAt: selectedSlotData.startAt,
-      endAt: selectedSlotData.endAt,
-    };
-
-    sessionStorage.setItem("pendingConsultation", JSON.stringify(selectionObj));
-
-    // If client is logged in, check eligibility preemptively
-    if (currentUser?.role === "client") {
-      try {
-        const elig = await getBookingEligibility();
-        if (!elig.eligible) {
-          setEligibilityData(elig);
-          setEligibilityModalOpen(true);
-          return;
-        }
-      } catch {
-        // Fall back to BookAppointment page check
-      }
-    }
-
-    navigate("/book-appointment");
-  }
-
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-blue-900 to-blue-700 px-4 py-8 text-white">
+    <main className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* Top Banner Navigation */}
+      <header className="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 text-white px-4 py-8 sm:px-6 shadow-md border-b border-slate-800">
         <div className="mx-auto max-w-6xl">
           <Link
-            to="/lawyers"
-            className="text-sm text-blue-100 hover:text-white"
+            to={currentUser?.role === "client" ? "/client/lawyers" : "/lawyers"}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white transition mb-4"
           >
-            ← Back to Lawyers
+            ← Back to Available Advocates
           </Link>
-
-          <h1 className="mt-4 text-3xl font-bold">
-            Lawyer Profile
-          </h1>
-
-          <p className="mt-2 text-blue-100">
-            Review the lawyer&apos;s details and available consultation times.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block mb-1">
+                Verified Advocate Profile
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+                {name}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleBookConsultation}
+                disabled={checkingEligibility}
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-300 transition transform hover:-translate-y-0.5"
+              >
+                <span>{checkingEligibility ? "Checking Eligibility..." : "Book Consultation"}</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-8 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          {/* Lawyer details */}
-          <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-              {user.profileImage ? (
-                <img
-                  src={user.profileImage}
-                  alt={name}
-                  className="h-24 w-24 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 text-3xl font-bold text-blue-700">
-                  {name.charAt(0).toUpperCase()}
+      {/* Main Profile Content: Sections A through I in strict specified order */}
+      <div className="mx-auto max-w-6xl w-full px-4 py-8 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          {/* ========================================================================= */}
+          {/* SECTION A: LAWYER PROFILE HEADER                                          */}
+          {/* Profile image, Full name, Verified badge, Rating & review count, Spec, Exp*/}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+              {/* Profile Image with Edit Profile Image option directly underneath */}
+              <div className="relative shrink-0 flex flex-col items-center gap-2">
+                <div className="relative">
+                  {user.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt={name}
+                      className="h-28 w-28 rounded-2xl object-cover border-2 border-slate-100 shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        if (e.currentTarget.nextSibling) {
+                          e.currentTarget.nextSibling.style.display = "flex";
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`h-28 w-28 rounded-2xl bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center text-3xl font-extrabold shadow-sm ${
+                      user.profileImage ? "hidden" : "flex"
+                    }`}
+                  >
+                    {initials}
+                  </div>
+                  {isApproved && (
+                    <span
+                      className="absolute -bottom-2 -right-2 rounded-full bg-emerald-600 p-1.5 text-white ring-4 ring-white shadow-xs"
+                      title="Verified Advocate by LegalConnect"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                  )}
                 </div>
-              )}
 
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Verified Lawyer
+                {/* Edit Profile Image Button directly below */}
+                {canEditProfile && (
+                  <label
+                    htmlFor="lawyer-profile-image-input"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-700" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                    <span>{uploadingImage ? "Uploading..." : "Edit Profile Image"}</span>
+                    <input
+                      id="lawyer-profile-image-input"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                )}
+
+                {uploadError && (
+                  <span className="text-[11px] font-medium text-red-600 text-center max-w-[130px]">
+                    {uploadError}
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    {reviewsData.averageRating > 0 ? reviewsData.averageRating.toFixed(1) : (lawyer.averageRating || 5.0).toFixed(1)}
-                    <span className="text-gray-400 font-normal">
-                      ({reviewsData.totalReviews || lawyer.totalReviews || 0} reviews)
+                )}
+                {uploadSuccess && (
+                  <span className="text-[11px] font-medium text-emerald-600 text-center max-w-[130px]">
+                    {uploadSuccess}
+                  </span>
+                )}
+              </div>
+
+              {/* Header Info */}
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Verified Lawyer Badge */}
+                  {isApproved && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      Verified Lawyer
+                    </span>
+                  )}
+
+                  {/* Rating and Total Review Count */}
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 border border-amber-200">
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                    <span>{reviewStats.average}</span>
+                    <span className="text-amber-700 font-normal">
+                      ({reviewStats.count} {reviewStats.count === 1 ? "review" : "reviews"})
                     </span>
                   </span>
 
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 border border-slate-200">
                     {lawyer.designation || "Advocate"}
                   </span>
                 </div>
 
-                <h2 className="mt-3 text-2xl font-bold text-gray-900">
+                {/* Full Name */}
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
                   {name}
                 </h2>
 
                 {lawyer.headline && (
-                  <p className="mt-1 text-sm font-semibold text-blue-900 leading-snug">
+                  <p className="text-sm font-semibold text-blue-900 leading-snug">
                     {lawyer.headline}
                   </p>
                 )}
 
-                <p className="mt-2 text-gray-600 flex items-center gap-2 text-sm">
-                  <span>{displayText(lawyer.city, "City not specified")}{lawyer.state ? `, ${lawyer.state}` : ""}</span>
+                {/* Professional Specialization & Experience */}
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 pt-1">
+                  <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                    <Briefcase className="h-3.5 w-3.5 text-slate-400" />
+                    {experienceYears} {experienceYears === 1 ? "year" : "years"} of legal experience
+                  </span>
                   <span>•</span>
-                  <span>{Number(lawyer.experienceYears) || 0} years of experience</span>
-                </p>
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                    {[lawyer.city, lawyer.state].filter(Boolean).join(", ") || "India"}
+                  </span>
+                </div>
               </div>
             </div>
+          </article>
 
-            <div className="mt-6 border-t border-gray-100 pt-5">
-              <h3 className="font-semibold text-gray-900">
-                About the Lawyer
-              </h3>
-
-              <p className="mt-2 whitespace-pre-line leading-7 text-gray-600">
-                {displayText(
-                  lawyer.bio,
-                  "No biography has been added yet."
-                )}
+          {/* ========================================================================= */}
+          {/* SECTION B: ABOUT LAWYER                                                   */}
+          {/* Complete About written by lawyer; clean empty state if not provided       */}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+              <Scale className="h-5 w-5 text-blue-900" />
+              About Advocate {name}
+            </h3>
+            {lawyer.bio && lawyer.bio.trim() ? (
+              <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                {lawyer.bio}
               </p>
-            </div>
-
-            <div className="mt-6 border-t border-gray-100 pt-5">
-              <h3 className="font-semibold text-gray-900">
-                Specialization
-              </h3>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {specializations.length > 0 ? (
-                  specializations.map((item, index) => (
-                    <span
-                      key={`${item}-${index}`}
-                      className="rounded-full bg-blue-50 px-3 py-1.5 text-sm text-blue-700"
-                    >
-                      {item}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    Not specified
-                  </p>
-                )}
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+                No biography has been added by this advocate yet.
               </div>
-            </div>
+            )}
+          </article>
 
-            {/* Education */}
-            <div className="mt-6 grid grid-cols-1 gap-5 border-t border-gray-100 pt-5 sm:grid-cols-2">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">
-                  Education
-                </h3>
-
-                {Array.isArray(education) ? (
-                  education.length > 0 ? (
-                    <ul className="mt-2 space-y-3">
-                      {education.map((item, index) => {
-                        if (!item || typeof item !== "object") {
-                          return null;
-                        }
-
-                        return (
-                          <li
-                            key={item._id || index}
-                            className="rounded-lg bg-gray-50 p-3"
-                          >
-                            <p className="font-medium text-gray-800">
-                              {displayText(
-                                item.degree,
-                                "Degree not provided"
-                              )}
-                            </p>
-
-                            <p className="mt-1 text-sm text-gray-600">
-                              {displayText(
-                                item.institution,
-                                "Institution not provided"
-                              )}
-                            </p>
-
-                            {item.year !== undefined &&
-                              item.year !== null &&
-                              item.year !== "" && (
-                                <p className="mt-1 text-sm text-gray-500">
-                                  Year: {displayText(item.year)}
-                                </p>
-                              )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="mt-1 text-gray-500">
-                      Education not provided
-                    </p>
-                  )
-                ) : (
-                  <p className="mt-1 text-gray-600">
-                    {education || "Education not provided"}
-                  </p>
-                )}
+          {/* ========================================================================= */}
+          {/* SECTION C: SPECIALIZATIONS                                                */}
+          {/* Display all specializations selected by the lawyer                        */}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+              <Briefcase className="h-5 w-5 text-blue-900" />
+              Specializations & Practice Areas
+            </h3>
+            {specializations.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {specializations.map((spec, idx) => (
+                  <span
+                    key={`${spec}-${idx}`}
+                    className="rounded-xl bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-900 border border-blue-200/70"
+                  >
+                    {spec}
+                  </span>
+                ))}
               </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">
-                  Languages
-                </h3>
-
-                <p className="mt-1 text-gray-600">
-                  {languages.length > 0
-                    ? languages.join(", ")
-                    : "Not specified"}
-                </p>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+                No specializations specified yet.
               </div>
-            </div>
+            )}
 
-            {/* Court Jurisdictions */}
+            {/* Court Levels / Admissions */}
             {Array.isArray(lawyer.courtLevels) && lawyer.courtLevels.length > 0 && (
-              <div className="mt-6 border-t border-gray-100 pt-5">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Court Admissions & Jurisdictions
-                </h3>
+              <div className="mt-5 pt-4 border-t border-slate-100">
+                <span className="text-xs font-bold text-slate-600 block mb-2">
+                  Court Admissions & Jurisdictions:
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {lawyer.courtLevels.map((court, i) => (
                     <span
                       key={i}
-                      className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
+                      className="rounded-lg bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
                     >
                       🏛️ {court}
                     </span>
@@ -406,88 +597,247 @@ export default function LawyerProfile() {
                 </div>
               </div>
             )}
+          </article>
 
-            {/* Professional Legal Experience */}
-            {Array.isArray(lawyer.experiences) && lawyer.experiences.length > 0 && (
-              <div className="mt-6 border-t border-gray-100 pt-5">
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  Professional Practice & Chambers History
-                </h3>
-                <div className="space-y-3">
-                  {lawyer.experiences.map((exp, i) => (
-                    <div key={i} className="rounded-xl bg-gray-50 p-4 border border-gray-100">
+          {/* ========================================================================= */}
+          {/* SECTION D: EDUCATION DETAILS                                              */}
+          {/* Degree, College/University, Passing year, other education details         */}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
+              <GraduationCap className="h-5 w-5 text-blue-900" />
+              Education & Academic Credentials
+            </h3>
+
+            {Array.isArray(lawyer.education) && lawyer.education.length > 0 ? (
+              <div className="space-y-3">
+                {lawyer.education.map((edu, idx) => {
+                  const degree = edu.degree || "Law Degree";
+                  const institution = edu.institution || edu.university || "University / College";
+                  const year = edu.year || edu.passingYear || null;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="rounded-2xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1"
+                    >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="font-bold text-gray-900 text-sm">{exp.organization}</h4>
-                        <span className="text-xs text-gray-500 font-medium">
-                          {exp.startDate} – {exp.endDate || "Present"}
-                        </span>
+                        <h4 className="font-bold text-slate-900 text-sm">{degree}</h4>
+                        {year && (
+                          <span className="text-xs font-semibold text-slate-500">
+                            Class of {year}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs font-semibold text-blue-900 mt-0.5">
-                        {exp.designation} {exp.employmentType ? `• ${exp.employmentType}` : ""}
+                      <p className="text-xs text-slate-600 font-medium">
+                        {institution}
+                        {edu.cityState ? `, ${edu.cityState}` : ""}
                       </p>
+                      {edu.certifications && (
+                        <p className="text-xs text-blue-900 pt-1">
+                          Certifications: {edu.certifications}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+                Education details have not been entered by this advocate yet.
+              </div>
+            )}
+          </article>
+
+          {/* ========================================================================= */}
+          {/* SECTION E: INTERNSHIP AND PROFESSIONAL PRACTICE DETAILS                   */}
+          {/* Chamber, firm, work experience details: organization, role, duration, desc*/}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                <Briefcase className="h-5 w-5 text-blue-900" />
+                Professional Practice & Chambers History
+              </h3>
+
+              {Array.isArray(lawyer.experiences) && lawyer.experiences.length > 0 ? (
+                <div className="space-y-3">
+                  {lawyer.experiences.map((exp, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1.5"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="font-bold text-slate-900 text-sm">
+                          {exp.organization}
+                        </h4>
+                        {(exp.startDate || exp.endDate) && (
+                          <span className="text-xs font-medium text-slate-500">
+                            {exp.startDate || "Start"} — {exp.endDate || "Present"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-blue-900">
+                        {exp.designation || "Counsel"} {exp.employmentType ? `• ${exp.employmentType}` : ""}
+                      </p>
+                      {exp.practiceAreas && (
+                        <p className="text-xs text-slate-500">
+                          Focus: {exp.practiceAreas}
+                        </p>
+                      )}
                       {exp.responsibilities && (
-                        <p className="mt-2 text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                        <p className="text-xs text-slate-600 leading-relaxed pt-1 whitespace-pre-line">
                           {exp.responsibilities}
                         </p>
                       )}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-5 text-center text-xs text-slate-500">
+                  No chamber or law firm practice history entered yet.
+                </div>
+              )}
+            </div>
 
             {/* Internships & Judicial Training */}
-            {Array.isArray(lawyer.internships) && lawyer.internships.length > 0 && (
-              <div className="mt-6 border-t border-gray-100 pt-5">
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  Internships & Judicial Training
-                </h3>
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="text-sm font-bold text-slate-900 mb-3">
+                Internships & Judicial Training
+              </h4>
+
+              {Array.isArray(lawyer.internships) && lawyer.internships.length > 0 ? (
                 <div className="space-y-3">
-                  {lawyer.internships.map((intern, i) => (
-                    <div key={i} className="rounded-xl bg-gray-50 p-4 border border-gray-100">
+                  {lawyer.internships.map((intern, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1"
+                    >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="font-bold text-gray-900 text-sm">{intern.institution}</h4>
+                        <h5 className="font-bold text-slate-900 text-xs">
+                          {intern.institution}
+                        </h5>
                         {intern.duration && (
-                          <span className="text-xs text-gray-500">{intern.duration}</span>
+                          <span className="text-[11px] text-slate-500">
+                            {intern.duration}
+                          </span>
                         )}
                       </div>
-                      <p className="text-xs font-semibold text-amber-800 mt-0.5">
-                        {intern.role || "Intern"} {intern.practiceArea ? `• ${intern.practiceArea}` : ""}
+                      <p className="text-xs font-semibold text-amber-900">
+                        {intern.role || "Legal Intern"} {intern.practiceArea ? `• ${intern.practiceArea}` : ""}
                       </p>
                       {intern.responsibilities && (
-                        <p className="mt-2 text-xs text-gray-600 leading-relaxed">
+                        <p className="text-xs text-slate-600 leading-relaxed pt-1">
                           {intern.responsibilities}
                         </p>
                       )}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-xs text-slate-500">
+                  No judicial internships entered.
+                </div>
+              )}
+            </div>
+          </article>
 
-            {/* Notable Achievements & Awards */}
-            {lawyer.achievements && (
-              <div className="mt-6 border-t border-gray-100 pt-5">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Notable Achievements & Honors
-                </h3>
-                <p className="text-sm text-gray-700 bg-amber-50/60 border border-amber-100 p-3.5 rounded-xl">
+          {/* ========================================================================= */}
+          {/* SECTION F: AWARDS, HONOURS AND ACHIEVEMENTS                               */}
+          {/* Award name, organization, year, short description                         */}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
+              <Award className="h-5 w-5 text-amber-600" />
+              Awards, Honours & Professional Recognitions
+            </h3>
+
+            {Array.isArray(lawyer.awards) && lawyer.awards.length > 0 ? (
+              <div className="space-y-3">
+                {lawyer.awards.map((award, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-2xl border border-amber-200/70 bg-amber-50/40 p-4 space-y-1"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="font-bold text-amber-950 text-sm flex items-center gap-1.5">
+                        <Award className="h-4 w-4 text-amber-600" />
+                        {award.name}
+                      </h4>
+                      {award.year && (
+                        <span className="text-xs font-bold text-amber-800">
+                          {award.year}
+                        </span>
+                      )}
+                    </div>
+                    {award.organization && (
+                      <p className="text-xs font-medium text-amber-900">
+                        Conferred by: {award.organization}
+                      </p>
+                    )}
+                    {award.description && (
+                      <p className="text-xs text-slate-700 pt-1 leading-relaxed">
+                        {award.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : lawyer.achievements ? (
+              <div className="rounded-2xl border border-amber-200/60 bg-amber-50/40 p-4">
+                <p className="text-xs text-slate-800 leading-relaxed">
                   🏆 {lawyer.achievements}
                 </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+                No awards or honours added by this advocate yet.
               </div>
             )}
           </article>
 
-          {/* Availability slots */}
-          <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Available Time Slots
-                </h2>
+          {/* ========================================================================= */}
+          {/* SECTION G: CONSULTATION FEE                                               */}
+          {/* Display current consultation fee                                          */}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                Consultation Pricing
+              </span>
+              <h3 className="text-xl font-bold text-slate-900">
+                Current Consultation Fee
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Fee set directly by the advocate for a 30-minute consultation.
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-3xl font-black text-blue-900 block">
+                {feeText}
+              </span>
+              <span className="text-[11px] text-slate-400 font-semibold">
+                Per 30-min consultation session
+              </span>
+            </div>
+          </article>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Select a time for your consultation.
+          {/* ========================================================================= */}
+          {/* SECTION H: AVAILABLE SLOTS & PREFERRED TIME REQUEST                       */}
+          {/* Live slots configured by lawyer, or client-proposed time                  */}
+          {/* ========================================================================= */}
+          <article
+            id="available-slots-section"
+            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-900" />
+                  Available Appointment Slots
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Choose a confirmed available slot or propose a preferred consultation time.
                 </p>
               </div>
 
@@ -495,185 +845,243 @@ export default function LawyerProfile() {
                 type="button"
                 onClick={loadSlots}
                 disabled={slotsLoading}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
               >
                 {slotsLoading ? "Refreshing..." : "Refresh Slots"}
               </button>
             </div>
 
             {slotsLoading && (
-              <p className="py-8 text-center text-gray-600">
-                Loading available slots...
-              </p>
+              <div className="py-8 text-center text-xs text-slate-500 space-y-2">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-900 border-t-transparent" />
+                <p>Loading advocate availability slots...</p>
+              </div>
             )}
 
             {!slotsLoading && slotsError && (
-              <div className="mt-5 rounded-lg bg-red-50 p-4 text-red-700">
+              <div className="rounded-xl bg-red-50 p-4 text-xs text-red-700 border border-red-200">
                 <p>{slotsError}</p>
-
                 <button
                   type="button"
                   onClick={loadSlots}
-                  className="mt-2 font-semibold underline"
+                  className="mt-2 font-bold underline"
                 >
-                  Try again
+                  Try Again
                 </button>
               </div>
             )}
 
-            {!slotsLoading &&
-              !slotsError &&
-              slots.length === 0 && (
-                <p className="mt-5 rounded-lg bg-gray-50 p-5 text-center text-gray-600">
-                  No available slots right now. Please check again later.
+            {/* If Slots are configured by the lawyer */}
+            {!slotsLoading && !slotsError && slots.length > 0 && (
+              <div className="space-y-4">
+                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 inline-block">
+                  ✓ Select from {slots.length} pre-configured available slot{slots.length === 1 ? "" : "s"}:
                 </p>
-              )}
-
-            {!slotsLoading &&
-              !slotsError &&
-              slots.length > 0 && (
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {slots.map((slot) => {
                     const isSelected = selectedSlot === slot._id;
-
                     return (
                       <button
                         key={slot._id}
                         type="button"
-                        onClick={() => setSelectedSlot(slot._id)}
-                        className={`rounded-xl border p-4 text-left transition ${
+                        onClick={() => {
+                          setSelectedSlot(slot._id);
+                          setPreferredDate("");
+                          setPreferredTime("");
+                          setIsFlexibleTime(false);
+                          setBookingError("");
+                        }}
+                        className={`rounded-2xl border p-4 text-left transition-all ${
                           isSelected
-                            ? "border-blue-700 bg-blue-50 ring-2 ring-blue-200"
-                            : "border-gray-200 hover:border-blue-400"
+                            ? "border-blue-900 bg-blue-50 ring-2 ring-blue-900 shadow-xs"
+                            : "border-slate-200 hover:border-blue-400 bg-white"
                         }`}
                       >
-                        <span className="block text-sm font-semibold text-gray-900">
+                        <span className="block text-xs font-bold text-slate-900">
                           {formatDateTime(slot.startAt)}
                         </span>
-
-                        <span className="mt-1 block text-sm text-gray-500">
+                        <span className="mt-1 block text-[11px] text-slate-500">
                           Until {formatDateTime(slot.endAt)}
                         </span>
-
                         <span
-                          className={`mt-3 inline-block text-xs font-semibold ${
-                            isSelected
-                              ? "text-blue-700"
-                              : "text-green-700"
+                          className={`mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold ${
+                            isSelected ? "text-blue-900" : "text-emerald-700"
                           }`}
                         >
-                          {isSelected ? "Selected" : "Select this slot"}
+                          {isSelected ? "✓ Selected Slot" : "+ Select this Slot"}
                         </span>
                       </button>
                     );
                   })}
                 </div>
-              )}
+              </div>
+            )}
+
+            {/* If NO slots are configured by the lawyer */}
+            {!slotsLoading && !slotsError && slots.length === 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-xs text-amber-950">
+                    <p className="font-bold text-sm text-amber-900">
+                      No pre-scheduled slots are configured by this advocate.
+                    </p>
+                    <p className="text-amber-800">
+                      You can still submit a consultation request! Propose your preferred date and time, or request flexible consultation timing below.
+                    </p>
+                    <p className="text-amber-900 font-semibold pt-1">
+                      ⚠️ Note: Requested preferred times require advocate confirmation before becoming active appointments.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-amber-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Preferred Consultation Date *
+                    </label>
+                    <input
+                      type="date"
+                      min={new Date().toISOString().split("T")[0]}
+                      value={preferredDate}
+                      disabled={isFlexibleTime}
+                      onChange={(e) => {
+                        setPreferredDate(e.target.value);
+                        setBookingError("");
+                      }}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-900 disabled:bg-slate-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Preferred Time
+                    </label>
+                    <input
+                      type="time"
+                      value={preferredTime}
+                      disabled={isFlexibleTime}
+                      onChange={(e) => {
+                        setPreferredTime(e.target.value);
+                        setBookingError("");
+                      }}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-900 disabled:bg-slate-100"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={isFlexibleTime}
+                        onChange={(e) => {
+                          setIsFlexibleTime(e.target.checked);
+                          setBookingError("");
+                        }}
+                        className="h-4 w-4 rounded text-blue-900"
+                      />
+                      <span>I am flexible with consultation timing (Advocate will propose a confirmed slot).</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </article>
 
-          {/* Genuine Client Reviews Section */}
-          <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-5">
+          {/* ========================================================================= */}
+          {/* SECTION I: CLIENT REVIEWS AND RATINGS                                     */}
+          {/* Display actual reviews submitted by clients from Review collection        */}
+          {/* ========================================================================= */}
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-                  Client Reviews & Ratings
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Verified feedback from completed legal consultations
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Star className="h-5 w-5 fill-amber-400 text-amber-500" />
+                  Client Reviews & Verified Ratings
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Genuine ratings from clients who completed legal consultations with this advocate.
                 </p>
               </div>
 
-              <div className="flex items-baseline gap-2 bg-amber-50 px-4 py-2 rounded-xl border border-amber-100">
-                <span className="text-2xl font-bold text-amber-700">
-                  {reviewsData.averageRating > 0 ? reviewsData.averageRating.toFixed(1) : (lawyer.averageRating || 5.0).toFixed(1)}
+              <div className="flex items-baseline gap-2 bg-amber-50 px-4 py-2 rounded-2xl border border-amber-200">
+                <span className="text-2xl font-black text-amber-900">
+                  {reviewStats.average}
                 </span>
-                <span className="text-sm font-medium text-amber-800">
-                  / 5.0 ({reviewsData.totalReviews || lawyer.totalReviews || 0} reviews)
+                <span className="text-xs font-semibold text-amber-800">
+                  / 5.0 ({reviewStats.count} {reviewStats.count === 1 ? "review" : "reviews"})
                 </span>
               </div>
             </div>
 
             {reviewsLoading && (
-              <p className="py-8 text-center text-gray-500">Loading reviews...</p>
+              <div className="py-8 text-center text-xs text-slate-500">
+                Loading verified client reviews...
+              </div>
             )}
 
-            {!reviewsLoading && (!reviewsData.reviews || reviewsData.reviews.length === 0) && (
-              <div className="py-8 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-3">
+            {!reviewsLoading && reviewStats.reviews.length === 0 && (
+              <div className="py-8 text-center space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                   <MessageSquare className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold text-gray-800">No client reviews yet</h3>
-                <p className="mt-1 text-sm text-gray-500 max-w-sm mx-auto">
-                  Be the first client to book a consultation and leave feedback for {name}.
+                <h4 className="text-sm font-bold text-slate-800">No client reviews yet</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Be the first verified client to consult with Advocate {name} and leave official feedback.
                 </p>
               </div>
             )}
 
-            {!reviewsLoading && reviewsData.reviews && reviewsData.reviews.length > 0 && (
+            {!reviewsLoading && reviewStats.reviews.length > 0 && (
               <div className="mt-6 space-y-4">
-                {reviewsData.reviews.map((rev) => {
+                {reviewStats.reviews.map((rev) => {
                   const clientName = rev.client?.name || "Verified Client";
                   const initial = clientName.charAt(0).toUpperCase();
-                  const reviewDate = rev.createdAt ? new Date(rev.createdAt).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "Recently";
+                  const reviewDate = rev.createdAt ? formatDate(rev.createdAt) : "Recently";
+                  const rating = Number(rev.rating) || 5;
 
                   return (
-                    <div key={rev._id} className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition hover:bg-gray-50">
+                    <div
+                      key={rev._id}
+                      className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 space-y-2 transition hover:bg-slate-50"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700 text-sm">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-900 text-white font-bold text-xs shadow-2xs">
                             {initial}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900 text-sm">{clientName}</h4>
+                            <h5 className="font-bold text-slate-900 text-xs">
+                              {clientName}
+                            </h5>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="flex text-amber-400">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <Star
                                     key={star}
-                                    className={`h-3.5 w-3.5 ${star <= rev.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                                    className={`h-3 w-3 ${
+                                      star <= rating
+                                        ? "fill-amber-400 text-amber-500"
+                                        : "text-slate-300"
+                                    }`}
                                   />
                                 ))}
                               </span>
-                              <span className="text-xs text-gray-400">• {reviewDate}</span>
+                              <span className="text-[11px] text-slate-400">• {reviewDate}</span>
                             </div>
                           </div>
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                          <CheckCircle2 className="h-3 w-3" /> Verified Consultation
+
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                          Verified Client Consultation
                         </span>
                       </div>
 
                       {rev.reviewText && (
-                        <p className="mt-3 text-sm text-gray-700 leading-relaxed">
+                        <p className="text-xs text-slate-700 leading-relaxed pt-1">
                           {rev.reviewText}
                         </p>
-                      )}
-
-                      {/* Optional Category Feedback Badges */}
-                      {rev.categories && Object.keys(rev.categories).length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-                          {rev.categories.communication && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded border border-gray-200 text-gray-600">
-                              💬 Communication: {rev.categories.communication}/5
-                            </span>
-                          )}
-                          {rev.categories.professionalism && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded border border-gray-200 text-gray-600">
-                              👔 Professionalism: {rev.categories.professionalism}/5
-                            </span>
-                          )}
-                          {rev.categories.clarity && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded border border-gray-200 text-gray-600">
-                              💡 Advice Clarity: {rev.categories.clarity}/5
-                            </span>
-                          )}
-                          {rev.categories.punctuality && (
-                            <span className="inline-flex items-center gap-1 text-xs bg-white px-2 py-1 rounded border border-gray-200 text-gray-600">
-                              ⏱️ Punctuality: {rev.categories.punctuality}/5
-                            </span>
-                          )}
-                        </div>
                       )}
                     </div>
                   );
@@ -683,79 +1091,80 @@ export default function LawyerProfile() {
           </article>
         </div>
 
-        {/* Booking summary */}
-        <aside className="h-fit rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Consultation Fee
-          </p>
-
-          <p className="mt-1 text-3xl font-bold text-blue-700">
-            {lawyer.consultationFee !== undefined &&
-            lawyer.consultationFee !== null &&
-            Number.isFinite(Number(lawyer.consultationFee))
-              ? `₹${Number(lawyer.consultationFee).toLocaleString("en-IN")}`
-              : "Contact for fee"}
-          </p>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Fee per consultation, as listed by the lawyer.
-          </p>
-
-          <div className="my-6 border-t border-gray-100" />
-
-          <h3 className="font-bold text-gray-900">
-            Your Selection
-          </h3>
-
-          {!selectedSlotData ? (
-            <p className="mt-3 text-sm text-gray-500">
-              Choose an available time slot to continue.
-            </p>
-          ) : (
-            <div className="mt-3 rounded-lg bg-blue-50 p-4">
-              <p className="font-semibold text-blue-900">
-                {name}
-              </p>
-
-              <p className="mt-2 text-sm text-blue-800">
-                {formatDateTime(selectedSlotData.startAt)}
-              </p>
-
-              <p className="mt-1 text-sm text-blue-800">
-                Until {formatDateTime(selectedSlotData.endAt)}
+        {/* ========================================================================= */}
+        {/* RIGHT SIDEBAR: BOOKING ACTION & SELECTION SUMMARY                         */}
+        {/* ========================================================================= */}
+        <aside className="space-y-6">
+          <div className="sticky top-20 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                Consultation Fee
+              </span>
+              <span className="text-3xl font-extrabold text-blue-900 block">
+                {feeText}
+              </span>
+              <p className="text-xs text-slate-500 mt-1">
+                Fixed 30-min consultation rate as listed by the advocate.
               </p>
             </div>
-          )}
 
-          <button
-            type="button"
-            disabled={!selectedSlotData}
-            onClick={handleContinueToBooking}
-            className="mt-5 w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-          >
-            Continue to Booking
-          </button>
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Consultation Selection
+              </h4>
 
-          <p className="mt-3 text-xs leading-5 text-gray-500">
-            Selecting a slot does not reserve it. Your appointment
-            will only be created after the booking step.
-          </p>
+              {selectedSlotData ? (
+                <div className="rounded-2xl bg-blue-50 p-4 border border-blue-200/80 space-y-1 text-xs">
+                  <span className="font-bold text-blue-950 block">Confirmed Slot Selected:</span>
+                  <p className="text-blue-900 font-semibold">{formatDateTime(selectedSlotData.startAt)}</p>
+                  <p className="text-blue-700 text-[11px]">Until {formatDateTime(selectedSlotData.endAt)}</p>
+                </div>
+              ) : preferredDate || isFlexibleTime ? (
+                <div className="rounded-2xl bg-amber-50 p-4 border border-amber-200/80 space-y-1 text-xs">
+                  <span className="font-bold text-amber-950 block">Requested Preferred Time:</span>
+                  <p className="text-amber-900 font-semibold">
+                    {isFlexibleTime ? "Flexible consultation window" : `${preferredDate} ${preferredTime ? `@ ${preferredTime}` : ""}`}
+                  </p>
+                  <p className="text-amber-700 text-[11px]">Requires advocate confirmation</p>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 text-xs text-slate-500">
+                  Select a slot or propose a preferred time to book.
+                </div>
+              )}
+            </div>
+
+            {bookingError && (
+              <div className="rounded-xl bg-red-50 p-3 text-xs text-red-700 border border-red-200 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                <span>{bookingError}</span>
+              </div>
+            )}
+
+            {/* Main CTA: Book Consultation */}
+            <button
+              type="button"
+              onClick={handleBookConsultation}
+              disabled={checkingEligibility}
+              className="w-full rounded-2xl bg-blue-900 py-3.5 px-4 text-sm font-bold text-white shadow-md hover:bg-blue-800 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:opacity-50"
+            >
+              <span>{checkingEligibility ? "Verifying Eligibility..." : "Book Consultation"}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+
+            <div className="text-[11px] text-slate-500 space-y-1.5 pt-1">
+              <p className="flex items-center gap-1.5 text-slate-600">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span>Advocate verification verified with Bar Council.</span>
+              </p>
+              <p className="flex items-center gap-1.5 text-slate-600">
+                <Clock className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                <span>100% Client Profile completion is required to book.</span>
+              </p>
+            </div>
+          </div>
         </aside>
-      </section>
-
-      {eligibilityModalOpen && eligibilityData && (
-        <BookingEligibilityModal
-          isOpen={eligibilityModalOpen}
-          onClose={() => setEligibilityModalOpen(false)}
-          eligibility={eligibilityData}
-          pendingSelection={selectedSlotData ? {
-            lawyerId: lawyer._id,
-            slotId: selectedSlotData._id,
-            startAt: selectedSlotData.startAt,
-            endAt: selectedSlotData.endAt,
-          } : null}
-        />
-      )}
+      </div>
     </main>
   );
 }

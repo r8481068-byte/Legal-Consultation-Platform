@@ -19,10 +19,29 @@ const appointmentSchema = new mongoose.Schema(
     slot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "LawyerAvailability",
-      required: true,
+      required: false,
+      default: null,
     },
 
+    isPreferredTime: {
+      type: Boolean,
+      default: false,
+    },
 
+    isFlexibleTime: {
+      type: Boolean,
+      default: false,
+    },
+
+    preferredDate: {
+      type: String,
+      default: "",
+    },
+
+    preferredTime: {
+      type: String,
+      default: "",
+    },
 
     scheduledAt: {
       type: Date,
@@ -38,7 +57,7 @@ const appointmentSchema = new mongoose.Schema(
 
     consultationType: {
       type: String,
-      enum: ["video", "in-person"],
+      enum: ["video", "chat", "both", "in-person"],
       required: true
     },
 

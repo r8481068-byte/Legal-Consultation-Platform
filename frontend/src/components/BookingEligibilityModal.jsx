@@ -5,8 +5,6 @@ import {
   AlertCircle,
   X,
   ArrowRight,
-  Mail,
-  Phone,
   MapPin,
   Lock,
 } from "lucide-react";
@@ -44,10 +42,10 @@ export default function BookingEligibilityModal({
               <ShieldAlert className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Booking Eligibility Check
+              <h2 className="text-sm font-bold text-slate-900 leading-snug">
+                Please complete your client profile to 100% before booking a consultation.
               </h2>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 Mandatory legal compliance gate before appointment confirmation
               </p>
             </div>
@@ -69,100 +67,46 @@ export default function BookingEligibilityModal({
           </p>
 
           <div className="space-y-2.5">
-            {/* 1. Email Verification */}
+            {/* 1. Address Profile */}
             <div
-              className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs ${
-                checks.emailVerified
-                  ? "border-emerald-200 bg-emerald-50/50 text-emerald-950"
-                  : "border-amber-200 bg-amber-50/40 text-amber-950"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Mail
-                  className={`h-4 w-4 ${
-                    checks.emailVerified ? "text-emerald-700" : "text-amber-700"
-                  }`}
-                />
-                <div>
-                  <span className="font-bold">Email Address OTP Verification</span>
-                  <p className="text-[11px] text-slate-500">
-                    {checks.emailVerified
-                      ? "Cryptographic OTP verified via Resend"
-                      : "Pending 6-digit email verification"}
-                  </p>
-                </div>
-              </div>
-              {checks.emailVerified ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-              )}
-            </div>
-
-            {/* 2. Mobile Verification */}
-            <div
-              className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs ${
-                checks.phoneVerified
-                  ? "border-emerald-200 bg-emerald-50/50 text-emerald-950"
-                  : "border-amber-200 bg-amber-50/40 text-amber-950"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Phone
-                  className={`h-4 w-4 ${
-                    checks.phoneVerified ? "text-emerald-700" : "text-amber-700"
-                  }`}
-                />
-                <div>
-                  <span className="font-bold">Indian Mobile OTP Verification</span>
-                  <p className="text-[11px] text-slate-500">
-                    {checks.phoneVerified
-                      ? "SMS OTP verified via MSG91"
-                      : "Pending 6-digit SMS verification"}
-                  </p>
-                </div>
-              </div>
-              {checks.phoneVerified ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-              )}
-            </div>
-
-            {/* 3. Address Profile */}
-            <div
-              className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs ${
+              className={`p-3.5 rounded-2xl border text-xs ${
                 checks.profileCompleted
                   ? "border-emerald-200 bg-emerald-50/50 text-emerald-950"
                   : "border-amber-200 bg-amber-50/40 text-amber-950"
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <MapPin
-                  className={`h-4 w-4 ${
-                    checks.profileCompleted ? "text-emerald-700" : "text-amber-700"
-                  }`}
-                />
-                <div>
-                  <span className="font-bold">Client Address & Location</span>
-                  <p className="text-[11px] text-slate-500">
-                    {checks.profileCompleted
-                      ? "Full address & Indian PIN code on file"
-                      : `Missing: ${
-                          checks.missingProfileLabels?.slice(0, 3).join(", ") ||
-                          "Address details"
-                        }...`}
-                  </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <MapPin
+                    className={`h-4 w-4 ${
+                      checks.profileCompleted ? "text-emerald-700" : "text-amber-700"
+                    }`}
+                  />
+                  <div>
+                    <span className="font-bold">Client Address & Personal Information</span>
+                    <p className="text-[11px] text-slate-500">
+                      {checks.profileCompleted
+                        ? "Full profile & Indian PIN code complete (100%)"
+                        : `${checks.profilePercentage || 0}% Complete`}
+                    </p>
+                  </div>
                 </div>
+                {checks.profileCompleted ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                )}
               </div>
-              {checks.profileCompleted ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+
+              {!checks.profileCompleted && checks.missingProfileLabels?.length > 0 && (
+                <div className="mt-2.5 pt-2 border-t border-amber-200/60 text-[11px] text-amber-900">
+                  <span className="font-bold">Remaining required fields:</span>{" "}
+                  {checks.missingProfileLabels.join(", ")}
+                </div>
               )}
             </div>
 
-            {/* 4. Identity Gate (Aadhaar & PAN) */}
+            {/* 2. Identity Gate (Aadhaar & PAN) */}
             <div
               className={`flex items-center justify-between p-3.5 rounded-2xl border text-xs ${
                 checks.identityCompleted
@@ -180,8 +124,8 @@ export default function BookingEligibilityModal({
                   <span className="font-bold">Aadhaar & PAN Identity Compliance</span>
                   <p className="text-[11px] text-slate-500">
                     {checks.identityCompleted
-                      ? "Encrypted at rest with AES-256-GCM"
-                      : "Aadhaar & PAN format validation required"}
+                      ? "Aadhaar & PAN details on file and encrypted"
+                      : "Aadhaar number and PAN number required"}
                   </p>
                 </div>
               </div>
@@ -204,23 +148,13 @@ export default function BookingEligibilityModal({
             Cancel
           </button>
 
-          {!checks.emailVerified || !checks.phoneVerified ? (
-            <button
-              type="button"
-              onClick={() => handleAction("/verify-account")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 shadow-sm transition"
-            >
-              Verify Contact Details <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => handleAction("/client/profile-completion")}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 shadow-sm transition"
-            >
-              Complete Profile & Identity <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => handleAction("/client/profile")}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 shadow-sm transition"
+          >
+            Complete My Profile <ArrowRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </div>

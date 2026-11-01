@@ -1,22 +1,16 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { authFetch, API_BASE_URL } from "./apiClient";
 
 async function appointmentRequest(endpoint, options = {}) {
-  const token = sessionStorage.getItem("accessToken");
-
-  const response = await fetch(`${API_BASE_URL}/appointments${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  const response = await authFetch(`${API_BASE_URL}/appointments${endpoint}`, options);
 
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(result.message || "Appointment request failed.");
+    const error = new Error(result.message || "Appointment request failed.");
+    error.status = response.status;
+    error.code = result.code;
+    error.data = result;
+    throw error;
   }
 
   return result;

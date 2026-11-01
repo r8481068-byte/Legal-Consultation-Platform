@@ -1,5 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { updateProfile } from "../services/authService";
 import {
   getLawyerAppointments,
   confirmLawyerAppointment,
@@ -42,6 +44,8 @@ import {
   CalendarCheck,
   Briefcase,
   ShieldCheck,
+  Camera,
+  Loader2,
 } from "lucide-react";
 
 const statusStyles = {
@@ -83,6 +87,75 @@ export default function LawyerDashboard() {
 
   // Lawyer Profile
   const [lawyerProfile, setLawyerProfile] = useState(null);
+
+  // Profile image upload state
+  const { updateUser } = useAuth();
+  const lawyerFileInputRef = useRef(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setUploadError("Please select a valid image file (JPG, PNG, or WebP).");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("Image size cannot exceed 2MB.");
+      return;
+    }
+
+    setUploadError("");
+    setUploadSuccess("");
+    setUploadingImage(true);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64Data = reader.result;
+        const res = await updateProfile({ profileImage: base64Data });
+        const newImage = res?.user?.profileImage || base64Data;
+
+        // Immediately update lawyer profile image in view
+        setLawyerProfile((prev) => {
+          if (!prev) return prev;
+          const prevUser = typeof prev.user === "object" ? prev.user : {};
+          return {
+            ...prev,
+            user: {
+              ...prevUser,
+              profileImage: newImage,
+            },
+            profileImage: newImage,
+          };
+        });
+
+        // Persist to auth context and session storage
+        if (updateUser) {
+          updateUser({ profileImage: newImage });
+        }
+
+        setUploadSuccess("Profile image updated successfully!");
+        setTimeout(() => setUploadSuccess(""), 4000);
+      } catch (err) {
+        setUploadError(err.message || "Failed to upload profile photo.");
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setUploadError("Failed to read image file.");
+      setUploadingImage(false);
+    };
+
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   // Modals state
   const [selectedClientId, setSelectedClientId] = useState(null);
@@ -322,34 +395,77 @@ export default function LawyerDashboard() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                 {/* Profile Avatar with fallback and verification badge */}
-                <div className="relative shrink-0">
-                  {lawyerProfile?.user?.profileImage ? (
-                    <img
-                      src={lawyerProfile.user.profileImage}
-                      alt={lawyerName}
-                      className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-2 border-slate-200 shadow-2xs"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        if (e.currentTarget.nextSibling) {
-                          e.currentTarget.nextSibling.style.display = "flex";
-                        }
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-2 border-slate-200 shadow-2xs ${
-                      lawyerProfile?.user?.profileImage ? "hidden" : "flex"
-                    }`}
-                  >
-                    {initials}
-                  </div>
-                  {isVerified && (
+                <div className="relative shrink-0 flex flex-col items-center gap-2">
+                  <div className="relative">
+                    {lawyerProfile?.user?.profileImage ? (
+                      <img
+                        src={lawyerProfile.user.profileImage}
+                        alt={lawyerName}
+                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-2 border-slate-200 shadow-2xs"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          if (e.currentTarget.nextSibling) {
+                            e.currentTarget.nextSibling.style.display = "flex";
+                          }
+                        }}
+                      />
+                    ) : null}
                     <div
-                      className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-2xs"
-                      title="Verified Advocate"
+                      className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-2 border-slate-200 shadow-2xs ${
+                        lawyerProfile?.user?.profileImage ? "hidden" : "flex"
+                      }`}
                     >
-                      <ShieldCheck className="h-4 w-4" />
+                      {initials}
                     </div>
+                    {isVerified && (
+                      <div
+                        className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-2xs"
+                        title="Verified Advocate"
+                      >
+                        <ShieldCheck className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit Profile Image Button immediately below */}
+                  <label
+                    htmlFor="lawyer-dashboard-photo-input"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        lawyerFileInputRef.current?.click();
+                      }
+                    }}
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-900 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-3 py-1 rounded-lg border border-slate-200 shadow-2xs transition"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-700" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                    <span>{uploadingImage ? "Uploading..." : "Edit Profile Image"}</span>
+                    <input
+                      id="lawyer-dashboard-photo-input"
+                      ref={lawyerFileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                    />
+                  </label>
+
+                  {uploadError && (
+                    <span className="text-[10px] font-medium text-red-600 text-center max-w-[120px]">
+                      {uploadError}
+                    </span>
+                  )}
+                  {uploadSuccess && (
+                    <span className="text-[10px] font-medium text-emerald-600 text-center max-w-[120px]">
+                      {uploadSuccess}
+                    </span>
                   )}
                 </div>
 
@@ -407,36 +523,6 @@ export default function LawyerDashboard() {
                     </span>
                   </div>
                 </div>
-              </div>
-
-              {/* Profile Card Action Buttons: Exactly Edit Profile, Availability, About Us */}
-              <div className="flex flex-wrap sm:flex-nowrap lg:flex-col xl:flex-row items-center gap-2.5 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                <Link
-                  to="/lawyer/edit-profile"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition"
-                  title="Edit Complete Professional Profile"
-                >
-                  <Edit className="h-4 w-4 text-blue-700" />
-                  <span>Edit Profile</span>
-                </Link>
-
-                <Link
-                  to="/lawyer/availability"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-2xs hover:bg-blue-100 transition"
-                  title="Manage Availability & 30-Minute Consultation Slots"
-                >
-                  <Clock className="h-4 w-4 text-blue-700" />
-                  <span>Availability</span>
-                </Link>
-
-                <Link
-                  to="/lawyer/about-us"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
-                  title="View Complete Saved Professional Information"
-                >
-                  <User className="h-4 w-4 text-blue-200" />
-                  <span>About Us</span>
-                </Link>
               </div>
             </div>
           </section>

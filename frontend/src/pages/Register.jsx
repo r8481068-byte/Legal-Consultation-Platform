@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { registerUser } from "../services/authService";
 import { ShieldCheck, Mail, Phone, Lock, User, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 
 function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -76,27 +77,13 @@ function Register() {
         role: "client",
       };
 
-      const result = await registerUser(payload);
+      await registerUser(payload);
 
-      // Store pending verification details for verification flow
-      const targetUser = result.user || {
-        id: result.id,
-        email: formData.email.trim().toLowerCase(),
-        phone: formData.phone.trim(),
-      };
+      setSuccess("Account created successfully! Redirecting to login...");
 
-      sessionStorage.setItem("pendingVerificationUser", JSON.stringify(targetUser));
-
-      setSuccess("Account created successfully! Redirecting to contact verification...");
-
+      const redirectParam = searchParams.get("redirect");
       setTimeout(() => {
-        navigate("/verify-account", {
-          state: {
-            user: targetUser,
-            emailChallenge: result.emailChallenge,
-            phoneChallenge: result.phoneChallenge,
-          },
-        });
+        navigate(redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : "/login");
       }, 900);
     } catch (err) {
       setError(err.message || "Registration failed. Please check details.");
@@ -188,9 +175,6 @@ function Register() {
                 className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
               />
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">
-              A 6-digit verification code will be sent to this email via Resend.
-            </p>
           </div>
 
           <div>
@@ -213,9 +197,6 @@ function Register() {
                 className="w-full rounded-r-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
               />
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">
-              A 6-digit SMS verification code will be sent via MSG91.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -271,23 +252,19 @@ function Register() {
             disabled={loading}
             className="w-full rounded-xl bg-blue-900 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {loading ? "Creating account..." : "Register & Continue to Verification"}
+            {loading ? "Creating account..." : "Create Account"}
             {!loading && <ArrowRight className="h-4 w-4" />}
           </button>
         </form>
 
         <div className="mt-6 border-t border-slate-100 pt-4 text-center space-y-2">
-          <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-600">
             Already have an account?{" "}
-            <Link to="/login" className="font-bold text-blue-800 hover:underline">
+            <Link
+              to={searchParams.get("redirect") ? `/login?redirect=${encodeURIComponent(searchParams.get("redirect"))}` : "/login"}
+              className="font-bold text-blue-800 hover:underline"
+            >
               Log in here
-            </Link>
-          </p>
-
-          <p className="text-xs text-slate-500">
-            Already registered but have pending verification?{" "}
-            <Link to="/verify-account" className="font-bold text-amber-700 hover:underline">
-              Complete OTP Verification
             </Link>
           </p>
         </div>

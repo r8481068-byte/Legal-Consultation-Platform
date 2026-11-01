@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getMyLawyerProfile } from "../services/lawyerService";
+import { getMyLawyerProfile, updateLawyerProfile } from "../services/lawyerService";
 import { getLawyerReviews } from "../services/reviewService";
 import Navbar from "../components/Navbar";
 import {
@@ -27,6 +27,9 @@ import {
   Calendar,
   AlertCircle,
   FileText,
+  Save,
+  X,
+  Loader2,
 } from "lucide-react";
 
 export default function LawyerAboutUs() {
@@ -36,6 +39,13 @@ export default function LawyerAboutUs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Describe Us states
+  const [isEditingDescribeUs, setIsEditingDescribeUs] = useState(false);
+  const [describeUsText, setDescribeUsText] = useState("");
+  const [savingDescribeUs, setSavingDescribeUs] = useState(false);
+  const [describeUsError, setDescribeUsError] = useState("");
+  const [describeUsSuccess, setDescribeUsSuccess] = useState("");
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -43,6 +53,7 @@ export default function LawyerAboutUs() {
         setError("");
         const lawyer = await getMyLawyerProfile();
         setProfile(lawyer);
+        setDescribeUsText(lawyer?.describeUs || lawyer?.bio || "");
 
         if (lawyer?._id) {
           try {
@@ -61,6 +72,42 @@ export default function LawyerAboutUs() {
 
     loadData();
   }, []);
+
+  const handleStartEditDescribeUs = () => {
+    setDescribeUsText(profile?.describeUs || profile?.bio || "");
+    setIsEditingDescribeUs(true);
+    setDescribeUsError("");
+    setDescribeUsSuccess("");
+  };
+
+  const handleCancelEditDescribeUs = () => {
+    setDescribeUsText(profile?.describeUs || profile?.bio || "");
+    setIsEditingDescribeUs(false);
+    setDescribeUsError("");
+  };
+
+  const handleSaveDescribeUs = async () => {
+    try {
+      setSavingDescribeUs(true);
+      setDescribeUsError("");
+      const updated = await updateLawyerProfile({
+        describeUs: describeUsText,
+        bio: describeUsText,
+      });
+      setProfile((prev) => ({
+        ...prev,
+        describeUs: updated.describeUs !== undefined ? updated.describeUs : describeUsText,
+        bio: updated.bio !== undefined ? updated.bio : describeUsText,
+      }));
+      setIsEditingDescribeUs(false);
+      setDescribeUsSuccess("Description updated and saved successfully.");
+      setTimeout(() => setDescribeUsSuccess(""), 4000);
+    } catch (err) {
+      setDescribeUsError(err.message || "Failed to save description.");
+    } finally {
+      setSavingDescribeUs(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -295,6 +342,111 @@ export default function LawyerAboutUs() {
           </div>
 
           {/* ========================================================================= */}
+          {/* SECTION: DESCRIBE US                                                      */}
+          {/* ========================================================================= */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <FileText className="h-5 w-5 text-blue-900" />
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                  Describe Us
+                </h2>
+              </div>
+
+              {!isEditingDescribeUs && (
+                <button
+                  type="button"
+                  onClick={handleStartEditDescribeUs}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-900 hover:bg-blue-100 transition shadow-2xs"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
+
+            {describeUsSuccess && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>{describeUsSuccess}</span>
+              </div>
+            )}
+
+            {describeUsError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+                <span>{describeUsError}</span>
+              </div>
+            )}
+
+            {isEditingDescribeUs ? (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">
+                  Write a personal and professional introduction about yourself in your own words.
+                </p>
+                <textarea
+                  value={describeUsText}
+                  onChange={(e) => setDescribeUsText(e.target.value)}
+                  rows={6}
+                  placeholder="Introduce yourself, your legal background, practice philosophy, and experience..."
+                  className="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none leading-relaxed transition"
+                />
+                <div className="flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleCancelEditDescribeUs}
+                    disabled={savingDescribeUs}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveDescribeUs}
+                    disabled={savingDescribeUs}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition disabled:opacity-50"
+                  >
+                    {savingDescribeUs ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3.5 w-3.5" />
+                        <span>Save</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {(profile.describeUs || profile.bio) ? (
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
+                    {profile.describeUs || profile.bio}
+                  </p>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-6 text-center">
+                    <p className="text-xs text-slate-500 font-medium">
+                      No personal or professional introduction added yet.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleStartEditDescribeUs}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      <span>Add Description</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ========================================================================= */}
           {/* SECTION B: PERSONAL AND PROFESSIONAL INFORMATION                          */}
           {/* ========================================================================= */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-5">
@@ -310,13 +462,13 @@ export default function LawyerAboutUs() {
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 About the Lawyer
               </h3>
-              {profile.bio ? (
+              {(profile.describeUs || profile.bio) ? (
                 <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
-                  {profile.bio}
+                  {profile.describeUs || profile.bio}
                 </p>
               ) : (
                 <p className="text-xs italic text-slate-400">
-                  No professional biography provided yet. You can add one via the Edit Profile page.
+                  No professional biography provided yet. You can add one via the Edit Profile page or the Describe Us section above.
                 </p>
               )}
             </div>

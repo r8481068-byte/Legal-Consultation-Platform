@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:demo": "node src/scripts/seedDemoUsers.js",
+    "seed:admin": "node src/scripts/seedProductionAdmin.js",
     "migrate:legacy": "node src/scripts/migrateLegacyUsers.js",
     "test": "node --test tests/*.test.js"
   },

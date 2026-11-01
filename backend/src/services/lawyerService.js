@@ -70,6 +70,7 @@ const updateLawyerProfileService = async (userId, data) => {
     "headline",
     "designation",
     "bio",
+    "describeUs",
     "specialization",
     "secondarySpecializations",
     "experienceYears",
@@ -89,6 +90,7 @@ const updateLawyerProfileService = async (userId, data) => {
     "practiceCourts",
     "jurisdictions",
     "achievements",
+    "awards",
     "website",
     "memberships",
     "publications",
@@ -104,6 +106,16 @@ const updateLawyerProfileService = async (userId, data) => {
     }
   }
 
+  // Sync describeUs and bio
+  if (updates.describeUs !== undefined) {
+    updates.describeUs = typeof updates.describeUs === "string" ? updates.describeUs.trim() : "";
+    if (updates.bio === undefined) {
+      updates.bio = updates.describeUs;
+    }
+  } else if (updates.bio !== undefined) {
+    updates.describeUs = typeof updates.bio === "string" ? updates.bio.trim() : "";
+  }
+
   // Normalize string fields if array was provided
   if (Array.isArray(updates.achievements)) {
     updates.achievements = updates.achievements.join("\n");
@@ -113,6 +125,16 @@ const updateLawyerProfileService = async (userId, data) => {
   }
   if (Array.isArray(updates.publications)) {
     updates.publications = updates.publications.join("\n");
+  }
+
+  // Normalize awards array
+  if (Array.isArray(updates.awards)) {
+    updates.awards = updates.awards.map((a) => ({
+      name: a.name || "",
+      organization: a.organization || "",
+      year: Number(a.year) || null,
+      description: a.description || ""
+    })).filter((a) => a.name || a.organization || a.description);
   }
 
   // Normalize education items (accept institution or university)
@@ -165,20 +187,17 @@ const searchLawyersService = async (query) => {
     isAvailable: true
   };
 
-  if (query.city && query.city !== "All Cities") {
-    filter.city = {
-      $regex: query.city,
-      $options: "i"
-    };
-  }
+  const andClauses = [];
 
-  if (query.specialization && query.specialization !== "All Practice Areas") {
+  // Specialization filter
+  if (query.specialization && query.specialization !== "All Practice Areas" && query.specialization !== "All Specializations") {
     filter.specialization = {
       $regex: query.specialization,
       $options: "i"
     };
   }
 
+  // Court Level filter
   if (query.courtLevel && query.courtLevel !== "All Courts") {
     filter.courtLevels = {
       $regex: query.courtLevel,
@@ -186,20 +205,72 @@ const searchLawyersService = async (query) => {
     };
   }
 
+  // State filter
   if (query.state && query.state !== "All States") {
-    filter.stateOfEnrolment = {
-      $regex: query.state,
-      $options: "i"
-    };
+    const stateTerm = query.state.trim();
+    andClauses.push({
+      $or: [
+        { state: { $regex: stateTerm, $options: "i" } },
+        { stateOfEnrolment: { $regex: stateTerm, $options: "i" } },
+        { officeAddress: { $regex: stateTerm, $options: "i" } },
+        { city: { $regex: stateTerm, $options: "i" } }
+      ]
+    });
   }
 
-  if (query.minExperience) {
+  // District filter
+  const districtTerm = (query.district || "").trim();
+  if (districtTerm && districtTerm !== "All Districts") {
+    andClauses.push({
+      $or: [
+        { district: { $regex: districtTerm, $options: "i" } },
+        { city: { $regex: districtTerm, $options: "i" } },
+        { officeAddress: { $regex: districtTerm, $options: "i" } }
+      ]
+    });
+  }
+
+  // General Location filter (city or location query parameter)
+  const locTerm = (query.location || query.city || "").trim();
+  if (locTerm && locTerm !== "All Cities" && locTerm !== "All Locations") {
+    andClauses.push({
+      $or: [
+        { city: { $regex: locTerm, $options: "i" } },
+        { district: { $regex: locTerm, $options: "i" } },
+        { state: { $regex: locTerm, $options: "i" } },
+        { stateOfEnrolment: { $regex: locTerm, $options: "i" } },
+        { officeAddress: { $regex: locTerm, $options: "i" } }
+      ]
+    });
+  }
+
+  // Verified lawyers only filter
+  if (query.verifiedOnly === "true" || query.isVerified === "true") {
+    filter.verificationStatus = "approved";
+  }
+
+  // Experience filter
+  if (query.minExperience !== undefined && query.minExperience !== "") {
     const minExp = Number(query.minExperience);
     if (Number.isFinite(minExp) && minExp >= 0) {
       filter.experienceYears = { $gte: minExp };
     }
   }
 
+  // Rating filter
+  if (query.minRating !== undefined && query.minRating !== "") {
+    const minRat = Number(query.minRating);
+    if (Number.isFinite(minRat) && minRat >= 0) {
+      filter.averageRating = { $gte: minRat };
+    }
+  } else if (query.rating !== undefined && query.rating !== "") {
+    const minRat = Number(query.rating);
+    if (Number.isFinite(minRat) && minRat >= 0) {
+      filter.averageRating = { $gte: minRat };
+    }
+  }
+
+  // Fee filter
   const minFee = Number(query.minFee);
   const maxFee = Number(query.maxFee);
 
@@ -219,6 +290,17 @@ const searchLawyersService = async (query) => {
     }
   }
 
+  // Search by lawyer name specifically
+  if (query.name && query.name.trim()) {
+    const nameTerm = query.name.trim();
+    const matchingUsers = await User.find({
+      name: { $regex: nameTerm, $options: "i" }
+    }).select("_id").lean();
+    const userIds = matchingUsers.map((u) => u._id);
+    filter.user = { $in: userIds };
+  }
+
+  // General text search (name, specialization, city, bio)
   if (query.search && query.search.trim()) {
     const term = query.search.trim();
     const matchingUsers = await User.find({
@@ -226,12 +308,32 @@ const searchLawyersService = async (query) => {
     }).select("_id").lean();
     const userIds = matchingUsers.map((u) => u._id);
 
-    filter.$or = [
-      { user: { $in: userIds } },
-      { city: { $regex: term, $options: "i" } },
-      { specialization: { $regex: term, $options: "i" } },
-      { bio: { $regex: term, $options: "i" } }
-    ];
+    andClauses.push({
+      $or: [
+        { user: { $in: userIds } },
+        { city: { $regex: term, $options: "i" } },
+        { state: { $regex: term, $options: "i" } },
+        { specialization: { $regex: term, $options: "i" } },
+        { headline: { $regex: term, $options: "i" } },
+        { bio: { $regex: term, $options: "i" } }
+      ]
+    });
+  }
+
+  if (andClauses.length > 0) {
+    filter.$and = andClauses;
+  }
+
+  // Sorting
+  let sortOption = { consultationFee: 1, _id: 1 };
+  if (query.sortBy === "fee_asc") {
+    sortOption = { consultationFee: 1, _id: 1 };
+  } else if (query.sortBy === "fee_desc") {
+    sortOption = { consultationFee: -1, _id: 1 };
+  } else if (query.sortBy === "exp_desc" || query.sortBy === "experience_desc" || query.sortBy === "experience") {
+    sortOption = { experienceYears: -1, _id: 1 };
+  } else if (query.sortBy === "rating_desc" || query.sortBy === "rating") {
+    sortOption = { averageRating: -1, totalReviews: -1, _id: 1 };
   }
 
   const skip = (page - 1) * limit;
@@ -240,7 +342,7 @@ const searchLawyersService = async (query) => {
     Lawyer.find(filter)
       .select("-barCouncilId -__v")
       .populate("user", "name profileImage")
-      .sort({ consultationFee: 1, _id: 1 })
+      .sort(sortOption)
       .skip(skip)
       .limit(limit)
       .lean(),
@@ -563,6 +665,46 @@ const getLawyerEarningsService = async (userId) => {
   };
 };
 
+const getDirectorySummaryService = async () => {
+  const [counts, totalApproved] = await Promise.all([
+    Lawyer.aggregate([
+      {
+        $match: {
+          verificationStatus: "approved",
+          isAvailable: true
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $toLower: {
+              $ifNull: ["$state", "$stateOfEnrolment"]
+            }
+          },
+          count: { $sum: 1 },
+          districts: { $addToSet: "$city" }
+        }
+      }
+    ]),
+    Lawyer.countDocuments({
+      verificationStatus: "approved",
+      isAvailable: true
+    })
+  ]);
+
+  const stateCounts = {};
+  counts.forEach((item) => {
+    if (item._id && typeof item._id === "string" && item._id.trim()) {
+      stateCounts[item._id.trim()] = item.count;
+    }
+  });
+
+  return {
+    stateCounts,
+    totalLawyers: totalApproved
+  };
+};
+
 module.exports = {
   createLawyerProfileService,
   getMyLawyerProfileService,
@@ -574,6 +716,7 @@ module.exports = {
   applyAsLawyerService,
   getMyLawyerApplicationService,
   getLawyerEarningsService,
-  getAuthorizedClientDetailService
+  getAuthorizedClientDetailService,
+  getDirectorySummaryService
 };
 

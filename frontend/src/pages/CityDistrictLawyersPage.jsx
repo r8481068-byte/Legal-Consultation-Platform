@@ -111,7 +111,7 @@ export default function CityDistrictLawyersPage() {
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <Link to="/lawyers-in-india" className="hover:text-blue-900">Lawyers in India</Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-            <Link to={`/advocate-lawyer-${stateData.slug}`} className="hover:text-blue-900">
+            <Link to={`/lawyers-in-india/${stateData.slug}`} className="hover:text-blue-900">
               {stateData.name}
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
@@ -255,7 +255,7 @@ export default function CityDistrictLawyersPage() {
             </p>
             <div className="pt-2 flex flex-wrap justify-center gap-3">
               <Link
-                to={`/advocate-lawyer-${stateData.slug}`}
+                to={`/lawyers-in-india/${stateData.slug}`}
                 className="rounded-xl bg-blue-950 px-4 py-2 text-xs font-bold text-white hover:bg-blue-900 transition"
               >
                 View All {stateData.name} Advocates
@@ -356,14 +356,14 @@ export default function CityDistrictLawyersPage() {
               .map((c) => (
                 <Link
                   key={c.slug}
-                  to={`/advocate-lawyer-${stateData.slug}/${c.slug}`}
+                  to={`/lawyers-in-india/${stateData.slug}/${c.slug}`}
                   className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition"
                 >
                   Lawyers in {c.name}
                 </Link>
               ))}
             <Link
-              to={`/advocate-lawyer-${stateData.slug}`}
+              to={`/lawyers-in-india/${stateData.slug}`}
               className="rounded-lg bg-blue-900 px-3 py-1.5 font-bold text-white hover:bg-blue-800 transition"
             >
               All {stateData.name} Districts →

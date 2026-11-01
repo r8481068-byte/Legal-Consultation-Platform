@@ -22,9 +22,6 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const {
-  generateSixDigitOtp,
-  hashOtp,
-  verifyOtpHash,
   encryptSensitive,
   decryptSensitive,
   normalizeEmail,
@@ -44,42 +41,6 @@ const {
 } = require("../src/services/eligibilityService");
 
 describe("1. Cryptographic & Security Utility Tests", () => {
-  test("generateSixDigitOtp generates a valid 6-digit numeric string", () => {
-    for (let i = 0; i < 20; i++) {
-      const otp = generateSixDigitOtp();
-      assert.equal(typeof otp, "string");
-      assert.equal(otp.length, 6);
-      assert.match(otp, /^\d{6}$/);
-      const num = parseInt(otp, 10);
-      assert.ok(num >= 100000 && num <= 999999);
-    }
-  });
-
-  test("hashOtp and verifyOtpHash perform constant-time HMAC matching", () => {
-    const userId = "507f1f77bcf86cd799439011";
-    const otp = "654321";
-    const purpose = "email_verification";
-
-    const hash = hashOtp(otp, purpose, userId);
-    assert.equal(typeof hash, "string");
-    assert.equal(hash.length, 64); // SHA-256 hex is 64 chars
-
-    // Positive verification
-    const valid = verifyOtpHash(otp, purpose, userId, hash);
-    assert.equal(valid, true);
-
-    // Negative verification (wrong OTP)
-    const invalidOtp = verifyOtpHash("123456", purpose, userId, hash);
-    assert.equal(invalidOtp, false);
-
-    // Negative verification (wrong purpose)
-    const invalidPurpose = verifyOtpHash(otp, "phone_verification", userId, hash);
-    assert.equal(invalidPurpose, false);
-
-    // Negative verification (wrong user)
-    const invalidUser = verifyOtpHash(otp, purpose, "507f1f77bcf86cd799439099", hash);
-    assert.equal(invalidUser, false);
-  });
 
   test("encryptSensitive and decryptSensitive perform round-trip AES-256-GCM encryption", () => {
     const sensitiveAadhaar = "987654321098";
@@ -252,13 +213,13 @@ describe("2. Profile Completeness & Identity Requirements", () => {
 });
 
 describe("3. Centralized Booking Eligibility Enforcement Logic", () => {
-  test("Centralized gate rejects unverified contact details", () => {
+  test("Centralized gate allows client accounts with completed profile and identity regardless of emailVerified/phoneVerified", () => {
     const user = {
       _id: "507f1f77bcf86cd799439011",
       role: "client",
       isActive: true,
-      emailVerified: false, // unverified email
-      phoneVerified: true,
+      emailVerified: false, // OTP verification removed: no longer blocks booking
+      phoneVerified: false,
       name: "Priya Sharma",
       email: "priya@example.com",
       phone: "+919876543210",
@@ -276,54 +237,40 @@ describe("3. Centralized Booking Eligibility Enforcement Logic", () => {
     const profile = calculateProfileCompleteness(user);
     const identity = calculateIdentityStatus(user);
 
-    assert.equal(user.emailVerified, false);
     assert.equal(profile.isComplete, true);
     assert.equal(identity.isComplete, true);
 
-    // Gate condition check
+    // Gate condition check without OTP requirement
     const eligible =
       user.role === "client" &&
       user.isActive &&
-      user.emailVerified &&
-      user.phoneVerified &&
-      profile.isComplete &&
-      identity.isComplete;
-
-    assert.equal(eligible, false);
-  });
-
-  test("Centralized gate approves fully verified and completed client accounts", () => {
-    const user = {
-      _id: "507f1f77bcf86cd799439011",
-      role: "client",
-      isActive: true,
-      emailVerified: true,
-      phoneVerified: true,
-      name: "Priya Sharma",
-      email: "priya@example.com",
-      phone: "+919876543210",
-      state: "Delhi NCR",
-      district: "South Delhi",
-      subDistrict: "Hauz Khas",
-      locality: "Green Park Extension",
-      cityVillage: "New Delhi",
-      pincode: "110016",
-      addressLine: "Flat 102, Shanti Niketan Apartments",
-      aadhaarMasked: "XXXX-XXXX-1234",
-      panMasked: "XXXXX1234F",
-    };
-
-    const profile = calculateProfileCompleteness(user);
-    const identity = calculateIdentityStatus(user);
-
-    const eligible =
-      user.role === "client" &&
-      user.isActive &&
-      user.emailVerified &&
-      user.phoneVerified &&
       profile.isComplete &&
       identity.isComplete;
 
     assert.equal(eligible, true);
+  });
+
+  test("Centralized gate rejects accounts with incomplete profile or identity", () => {
+    const incompleteUser = {
+      _id: "507f1f77bcf86cd799439011",
+      role: "client",
+      isActive: true,
+      name: "Priya Sharma",
+      email: "priya@example.com",
+      phone: "+919876543210",
+      state: "Delhi NCR",
+      // missing address fields
+    };
+
+    const profile = calculateProfileCompleteness(incompleteUser);
+    const identity = calculateIdentityStatus(incompleteUser);
+
+    const eligible =
+      incompleteUser.role === "client" &&
+      incompleteUser.isActive &&
+      profile.isComplete &&
+      identity.isComplete;
+
+    assert.equal(eligible, false);
   });
 });

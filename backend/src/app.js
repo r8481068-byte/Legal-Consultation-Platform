@@ -22,11 +22,15 @@ const app = express();
 
 app.use(helmet());
 
+
 const allowedOrigins = [
     process.env.FRONTEND_URL,
     "http://localhost:5173",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174"
 ].filter(Boolean);
+
 
 app.use(
     cors({
@@ -45,11 +49,13 @@ app.use(
 
 app.use(
     express.json({
+        limit: "10mb",
         verify: (req, res, buf) => {
             req.rawBody = buf.toString();
         }
     })
 );
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // =========================
 // Health Check (Always reachable)
@@ -106,6 +112,7 @@ const documentRoutes = require("./routes/documentRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const complaintRoutes = require("./routes/complaintRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/lawyers", lawyerRoutes);
@@ -117,6 +124,7 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/complaints", complaintRoutes);
 
 
 // =========================

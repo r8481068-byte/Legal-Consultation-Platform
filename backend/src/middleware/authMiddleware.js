@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -15,15 +16,6 @@ const protect = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Temporary debugging: inspect the JWT payload keys.
-    console.log("JWT payload keys:", Object.keys(decoded));
-    console.log("JWT user ID fields:", {
-      id: decoded.id,
-      _id: decoded._id,
-      userId: decoded.userId,
-      role: decoded.role,
-    });
-
     const userId = decoded.id || decoded._id || decoded.userId;
 
     if (!userId) {
@@ -33,11 +25,21 @@ const protect = (req, res, next) => {
       });
     }
 
+    // Immediate database check: Block suspended/deactivated users in real-time
+    const userDoc = await User.findById(userId).select("isActive role name email");
+    if (userDoc && userDoc.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Account has been deactivated or suspended by Administrator",
+      });
+    }
+
     req.user = {
       ...decoded,
       _id: userId,
       id: userId,
       userId: userId,
+      role: userDoc ? userDoc.role : decoded.role,
     };
 
     next();

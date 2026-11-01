@@ -98,7 +98,9 @@ const withOptionalTransaction = async (operation) => {
       error.message &&
       (error.message.includes("replica set") ||
         error.message.includes("Transaction numbers are only allowed") ||
-        error.message.includes("standalone"))
+        error.message.includes("standalone") ||
+        error.message.includes("retryable writes") ||
+        error.message.includes("retryWrites"))
     ) {
       // Standalone MongoDB without replica set: execute directly without transaction session
       return await operation(null);
@@ -114,9 +116,11 @@ const withOptionalTransaction = async (operation) => {
 const bookAppointmentService = async (clientId, data) => {
   // Enforce centralized booking eligibility before transaction and slot claim
   const eligibility = await checkBookingEligibility(clientId);
-  if (!eligibility.eligible) {
+  if (!eligibility.eligible || eligibility.checks?.profilePercentage !== 100 || !eligibility.checks?.profileCompleted) {
     const error = new Error(
-      `Appointment booking rejected: ${eligibility.reasons.join(" ")}`
+      !eligibility.checks?.profileCompleted || eligibility.checks?.profilePercentage !== 100
+        ? "Please complete your client profile to 100% before booking a consultation."
+        : `Appointment booking rejected: ${eligibility.reasons.join(" ")}`
     );
     error.statusCode = 403;
     error.code = "BOOKING_INELIGIBLE";
@@ -139,25 +143,92 @@ const bookAppointmentService = async (clientId, data) => {
       throw error;
     }
 
-    // Atomically reserve the slot. Only one request can claim it.
-    const slot = await LawyerAvailability.findOneAndUpdate(
-      {
-        _id: data.slotId,
-        status: "available",
-        startAt: { $gt: new Date() },
-      },
-      { $set: { status: "booked" } },
-      { new: true, ...opts }
-    );
+    // CASE 1: Booking using a configured availability slot
+    if (data.slotId) {
+      // Atomically reserve the slot. Only one request can claim it.
+      const slot = await LawyerAvailability.findOneAndUpdate(
+        {
+          _id: data.slotId,
+          status: "available",
+          startAt: { $gt: new Date() },
+        },
+        { $set: { status: "booked" } },
+        { returnDocument: "after", ...opts }
+      );
 
-    if (!slot) {
-      const error = new Error("Slot is unavailable or already booked");
-      error.statusCode = 409;
+      if (!slot) {
+        const error = new Error("Slot is unavailable or already booked");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const lawyer = await Lawyer.findOne({
+        _id: slot.lawyer,
+        verificationStatus: "approved",
+        isAvailable: true,
+      }, null, opts);
+
+      if (!lawyer) {
+        const error = new Error("Lawyer is not available for booking");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      // Prevent overlap with existing pending/confirmed appointments.
+      const conflict = await Appointment.findOne({
+        lawyer: lawyer._id,
+        status: { $in: ["pending", "confirmed"] },
+        scheduledAt: { $lt: slot.endAt },
+        $expr: {
+          $gt: [
+            {
+              $add: [
+                "$scheduledAt",
+                { $multiply: ["$durationMinutes", 60000] },
+              ],
+            },
+            slot.startAt,
+          ],
+        },
+      }, null, opts);
+
+      if (conflict) {
+        const error = new Error("This time conflicts with another appointment");
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const appointment = await Appointment.create(
+        [
+          {
+            client: client._id,
+            lawyer: lawyer._id,
+            slot: slot._id,
+            scheduledAt: slot.startAt,
+            durationMinutes: lawyer.consultationDuration || 30,
+            consultationType: data.consultationType || "video",
+            notes: data.notes || "",
+            status: "pending",
+            isPreferredTime: false,
+            isFlexibleTime: false,
+          },
+        ],
+        opts
+      );
+
+      const created = appointment[0] || appointment;
+      return created;
+    }
+
+    // CASE 2: Booking request without configured slot (preferred or flexible time)
+    if (!data.lawyerId) {
+      const error = new Error("Either an availability slot ID or lawyer ID is required");
+      error.statusCode = 400;
       throw error;
     }
 
     const lawyer = await Lawyer.findOne({
-      _id: slot.lawyer,
+      _id: data.lawyerId,
       verificationStatus: "approved",
       isAvailable: true,
     }, null, opts);
@@ -168,28 +239,25 @@ const bookAppointmentService = async (clientId, data) => {
       throw error;
     }
 
-    // Prevent overlap with existing pending/confirmed appointments.
-    const conflict = await Appointment.findOne({
-      lawyer: lawyer._id,
-      status: { $in: ["pending", "confirmed"] },
-      scheduledAt: { $lt: slot.endAt },
-      $expr: {
-        $gt: [
-          {
-            $add: [
-              "$scheduledAt",
-              { $multiply: ["$durationMinutes", 60000] },
-            ],
-          },
-          slot.startAt,
-        ],
-      },
-    }, null, opts);
+    let scheduledAtDate;
+    if (data.scheduledAt) {
+      scheduledAtDate = new Date(data.scheduledAt);
+    } else if (data.preferredDate && data.preferredTime) {
+      scheduledAtDate = new Date(`${data.preferredDate}T${data.preferredTime}`);
+    } else if (data.preferredDate) {
+      scheduledAtDate = new Date(`${data.preferredDate}T10:00:00`);
+    } else {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(10, 0, 0, 0);
+      scheduledAtDate = tomorrow;
+    }
 
-    if (conflict) {
-      const error = new Error("This time conflicts with another appointment");
-      error.statusCode = 409;
-      throw error;
+    if (!Number.isFinite(scheduledAtDate.getTime()) || scheduledAtDate <= new Date()) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(10, 0, 0, 0);
+      scheduledAtDate = tomorrow;
     }
 
     const appointment = await Appointment.create(
@@ -197,17 +265,23 @@ const bookAppointmentService = async (clientId, data) => {
         {
           client: client._id,
           lawyer: lawyer._id,
-          slot: slot._id,
-          scheduledAt: slot.startAt,
-          durationMinutes: 30,
-          consultationType: data.consultationType,
+          slot: null,
+          scheduledAt: scheduledAtDate,
+          durationMinutes: lawyer.consultationDuration || 30,
+          consultationType: data.consultationType || "video",
           notes: data.notes || "",
+          status: "pending",
+          isPreferredTime: true,
+          isFlexibleTime: Boolean(data.isFlexibleTime),
+          preferredDate: data.preferredDate || "",
+          preferredTime: data.preferredTime || "",
         },
       ],
       opts
     );
 
-    return appointment[0] || appointment;
+    const created = appointment[0] || appointment;
+    return created;
   });
 };
 
@@ -216,7 +290,8 @@ const getMyAppointmentsService = async (clientId) => {
   const appointments = await Appointment.find({ client: clientId })
     .populate({
       path: "lawyer",
-      select: "city specialization consultationFee user",
+      select:
+        "city specialization consultationFee user headline designation bio averageRating totalReviews experienceYears verificationStatus",
       populate: {
         path: "user",
         select: "name profileImage",

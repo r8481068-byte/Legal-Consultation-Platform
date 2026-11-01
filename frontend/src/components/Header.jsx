@@ -122,15 +122,7 @@ export default function Header({ onOpenProfileSettings }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <Link
-                to="/how-we-work"
-                id="nav-how-we-work-top"
-                className="hidden sm:inline font-medium text-slate-300 hover:text-white transition"
-              >
-                How We Work
-              </Link>
 
-              <span className="hidden sm:inline text-slate-700">|</span>
 
               <Link
                 to="/blogs"
@@ -336,13 +328,7 @@ export default function Header({ onOpenProfileSettings }) {
             )}
           </div>
 
-          <Link
-            to="/how-we-work"
-            id="nav-how-we-work-main"
-            className="rounded-lg px-3 py-2 text-xs font-bold tracking-wide uppercase text-slate-700 transition hover:bg-slate-50 hover:text-blue-800"
-          >
-            HOW WE WORK
-          </Link>
+
 
           {/* Interactive IPC Section 5x5 Mega Dropdown (Replaces Find a Lawyer) */}
           <div className="relative" ref={ipcDropdownRef}>
@@ -434,7 +420,7 @@ export default function Header({ onOpenProfileSettings }) {
 
           {/* Quick Talk Button with Reference-Inspired Gold Accent */}
           <Link
-            to="/lawyers"
+            to={user ? "/lawyers" : "/talk-to-lawyer"}
             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-sm transition hover:bg-amber-300"
           >
             <PhoneCall className="h-3.5 w-3.5 text-slate-950" />
@@ -459,7 +445,7 @@ export default function Header({ onOpenProfileSettings }) {
         {/* Mobile Hamburger Button */}
         <div className="flex items-center gap-2 lg:hidden">
           <Link
-            to="/lawyers"
+            to={user ? "/lawyers" : "/talk-to-lawyer"}
             className="inline-flex items-center gap-1 rounded-lg bg-amber-400 px-2.5 py-1.5 text-xs font-bold text-slate-950 shadow-sm"
           >
             <PhoneCall className="h-3.5 w-3.5" />
@@ -544,14 +530,7 @@ export default function Header({ onOpenProfileSettings }) {
               )}
             </div>
 
-            <Link
-              to="/how-we-work"
-              id="nav-how-we-work-mobile"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block rounded-lg px-3 py-2 text-sm font-semibold uppercase text-slate-800 hover:bg-slate-50 hover:text-blue-800"
-            >
-              HOW WE WORK
-            </Link>
+
 
             {/* Mobile IPC Section Collapsible */}
             <div>
