@@ -25,9 +25,17 @@ const protect = async (req, res, next) => {
       });
     }
 
-    // Immediate database check: Block suspended/deactivated users in real-time
+    // Immediate database check: Verify user existence and active status
     const userDoc = await User.findById(userId).select("isActive isVerified emailVerified role name email");
-    if (userDoc && userDoc.isActive === false) {
+
+    if (!userDoc) {
+      return res.status(401).json({
+        success: false,
+        message: "User account no longer exists",
+      });
+    }
+
+    if (userDoc.isActive === false) {
       return res.status(403).json({
         success: false,
         message: "Account has been deactivated or suspended by Administrator",
@@ -39,7 +47,7 @@ const protect = async (req, res, next) => {
       _id: userId,
       id: userId,
       userId: userId,
-      role: userDoc ? userDoc.role : decoded.role,
+      role: userDoc.role,
     };
 
     next();

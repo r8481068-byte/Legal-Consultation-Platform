@@ -7,6 +7,6 @@ build/
 coverage/
 .agents/
 skills-lock.json
-backend/uploads/
 uploads/
+backend/uploads/
 backend/test-results.txt

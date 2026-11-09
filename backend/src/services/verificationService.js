@@ -152,6 +152,169 @@ async function sendVerificationEmail({ name, email, otp }) {
 }
 
 /**
+ * Escapes characters for safe interpolation into HTML email content.
+ */
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Sends a clean, professional LegalConnect-branded password reset email containing the reset link and token.
+ */
+async function sendPasswordResetEmail({ name, email, resetToken }) {
+  if (simulateEmailDeliveryFailure) {
+    const error = new Error("Failed to send password reset email (simulated delivery failure).");
+    error.statusCode = 502;
+    error.code = "EMAIL_DELIVERY_FAILED";
+    throw error;
+  }
+
+  const destination = normalizeEmail(email);
+  if (!destination) {
+    const error = new Error("A valid destination email is required");
+    error.statusCode = 400;
+    error.code = "INVALID_EMAIL";
+    throw error;
+  }
+
+  const cleanName = name ? name.trim() : "Valued User";
+  const displayName = escapeHtml(cleanName);
+  const safeToken = escapeHtml(resetToken);
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const isLiveKey = Boolean(apiKey && apiKey.startsWith("re_") && apiKey !== "re_xxxxxxxxxxxxxxxxxxxx");
+  const isProd = process.env.NODE_ENV === "production";
+  const isTest = process.env.NODE_ENV === "test";
+  const isDev = process.env.NODE_ENV === "development";
+
+  // Production requirement: missing or invalid email config must throw a structured error
+  if (isProd && !isLiveKey) {
+    const error = new Error("Email service is not configured for production environment");
+    error.statusCode = 503;
+    error.code = "EMAIL_CONFIG_INVALID";
+    throw error;
+  }
+
+  const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/+$/, "");
+  const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+  const safeResetUrl = escapeHtml(resetUrl);
+
+  const isTestRecipient =
+    !isProd &&
+    (destination.endsWith("@example.com") ||
+      destination.endsWith("@test.com") ||
+      isTest);
+
+  if (isLiveKey && !isTestRecipient) {
+    let result;
+    try {
+      const resend = new Resend(apiKey);
+      const fromEmail =
+        process.env.EMAIL_FROM ||
+        process.env.RESEND_FROM_EMAIL ||
+        "LegalConnect <onboarding@resend.dev>";
+
+      result = await resend.emails.send({
+        from: fromEmail,
+        to: [destination],
+        subject: "Reset Your LegalConnect Password",
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Reset Your Password</title>
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
+              <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                <tr>
+                  <td style="background-color: #0f172a; padding: 24px 32px; text-align: left;">
+                    <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
+                      LegalConnect
+                    </div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">
+                      Verified Legal Consultation Platform
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 32px;">
+                    <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 12px;">
+                      Password Reset Request
+                    </h1>
+                    <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">
+                      Hello <strong>${displayName}</strong>,<br/>
+                      We received a request to reset your LegalConnect account password. Click the button below to choose a new password:
+                    </p>
+
+                    <div style="text-align: center; margin: 28px 0;">
+                      <a href="${safeResetUrl}" style="background-color: #1e3a8a; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none; display: inline-block;">
+                        Reset My Password
+                      </a>
+                    </div>
+
+                    <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0 0 16px 0;">
+                      <strong>This link is valid for 15 minutes</strong>. If the button above does not work, copy and paste this URL into your browser:<br/>
+                      <span style="font-family: monospace; font-size: 11px; color: #2563eb; word-break: break-all;">${safeResetUrl}</span>
+                    </p>
+
+                    <div style="margin: 20px 0; padding: 16px; background-color: #f1f5f9; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                      <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 4px;">Manual Reset Token:</div>
+                      <div style="font-family: monospace; font-size: 12px; color: #0f172a; word-break: break-all;">${safeToken}</div>
+                    </div>
+
+                    <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0;">
+                      If you did not request a password reset, please ignore this email or contact support immediately if you suspect unauthorized access.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #f8fafc; padding: 16px 32px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+                    &copy; ${new Date().getFullYear()} LegalConnect. All rights reserved.
+                  </td>
+                </tr>
+              </table>
+            </body>
+          </html>
+        `,
+      });
+    } catch (sendError) {
+      console.error("Failed to deliver password reset email through Resend:", sendError.message);
+      const err = new Error(sendError.message || "Failed to deliver password reset email");
+      err.statusCode = 502;
+      err.code = "EMAIL_DELIVERY_FAILED";
+      err.cause = sendError;
+      throw err;
+    }
+
+    if (result && result.error) {
+      console.error("Resend API error sending password reset:", result.error.message);
+      const err = new Error(
+        result.error.message || "Failed to dispatch password reset email via Resend"
+      );
+      err.statusCode = 502;
+      err.code = "EMAIL_DELIVERY_FAILED";
+      throw err;
+    }
+  } else {
+    // Development-only token/link logging when email delivery is intentionally unavailable
+    if (isDev) {
+      console.log(`[PASSWORD RESET DEV/SIMULATION] Token for ${destination}: ${resetToken}`);
+      console.log(`[PASSWORD RESET DEV/SIMULATION] Reset Link: ${resetUrl}`);
+    }
+  }
+
+  return { delivered: true };
+}
+
+/**
  * Creates or updates an active email challenge for a pending registration or existing unverified user.
  */
 async function createOrUpdateEmailChallenge({
@@ -522,6 +685,7 @@ async function resendEmailOtpService({ email }) {
 
 module.exports = {
   sendVerificationEmail,
+  sendPasswordResetEmail,
   createOrUpdateEmailChallenge,
   verifyEmailOtpService,
   resendEmailOtpService,

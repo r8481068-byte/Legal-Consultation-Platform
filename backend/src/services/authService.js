@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Lawyer = require("../models/Lawyer");
 const RefreshToken = require("../models/RefreshToken");
 const bcrypt = require("bcrypt");
 const {
@@ -121,7 +122,12 @@ const registerUserService = async ({
         isAvailable: false,
       });
     } catch (lawyerErr) {
+      // Clean up newly created user record to prevent inconsistent partial registration
+      await User.findByIdAndDelete(user._id).catch(() => {});
       console.error("Failed to initialize lawyer profile:", lawyerErr.message);
+      const error = new Error(`Failed to create lawyer profile: ${lawyerErr.message}`);
+      error.statusCode = 500;
+      throw error;
     }
   }
 

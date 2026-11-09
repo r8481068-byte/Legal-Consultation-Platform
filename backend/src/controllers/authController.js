@@ -21,6 +21,7 @@ const {
   verifyEmailOtpService,
   resendEmailOtpService,
   createOrUpdateEmailChallenge,
+  sendPasswordResetEmail,
 } = require("../services/verificationService");
 
 // ==========================================
@@ -240,11 +241,13 @@ const forgotPassword = async (req, res) => {
     const normalizedEmail = normalizeEmail(email);
     const user = await User.findOne({ email: normalizedEmail });
 
+    const genericSuccessResponse = {
+      success: true,
+      message: "If the email exists, a password reset link has been sent",
+    };
+
     if (!user) {
-      return res.status(200).json({
-        success: true,
-        message: "If the email exists, a password reset link has been sent",
-      });
+      return res.status(200).json(genericSuccessResponse);
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -252,10 +255,37 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
     await user.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Password reset instructions generated",
-    });
+    try {
+      await sendPasswordResetEmail({
+        name: user.name,
+        email: user.email,
+        resetToken,
+      });
+    } catch (deliveryError) {
+      // Do not silently swallow: log server-side operational error
+      console.error(
+        `Failed to deliver password reset email for user ID ${user._id}:`,
+        deliveryError.message
+      );
+
+      // Rollback: clear unusable token and expiration from active database state
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      try {
+        await user.save();
+      } catch (saveError) {
+        console.error(
+          `Failed to clear reset token for user ID ${user._id}:`,
+          saveError.message
+        );
+      }
+
+      // Preserve the exact same generic public response to prevent account enumeration
+      // and do not expose email-provider errors or account existence to the client
+      return res.status(200).json(genericSuccessResponse);
+    }
+
+    return res.status(200).json(genericSuccessResponse);
   } catch (error) {
     console.error("Forgot password error:", error);
     return res.status(500).json({
@@ -283,8 +313,14 @@ const resetPassword = async (req, res) => {
       });
     }
 
+    const cleanToken = String(token).trim();
+    const tokenHash = crypto.createHash("sha256").update(cleanToken).digest("hex");
+
     const user = await User.findOne({
-      resetPasswordToken: token,
+      $or: [
+        { resetPasswordToken: cleanToken },
+        { resetPasswordToken: tokenHash },
+      ],
       resetPasswordExpires: { $gt: new Date() },
     });
 
