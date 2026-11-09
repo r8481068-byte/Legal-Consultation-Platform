@@ -24,6 +24,9 @@ const refreshTokenSchema = new mongoose.Schema(
   }
 );
 
+// Single TTL index for automatic expiry cleanup by MongoDB background monitor
+refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 const RefreshToken = mongoose.model(
   "RefreshToken",
   refreshTokenSchema

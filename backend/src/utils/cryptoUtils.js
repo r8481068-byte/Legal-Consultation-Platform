@@ -1,13 +1,34 @@
 const crypto = require("crypto");
 
+// Ephemeral fallback keys restricted strictly to isolated automated unit tests (NODE_ENV === "test")
+let ephemeralTestKey = null;
+let ephemeralTestPepper = null;
+
 /**
  * Derives a consistent 32-byte key for AES-256 encryption.
+ * Production and development require a stable IDENTITY_ENCRYPTION_KEY.
+ * Ephemeral keys are restricted strictly to isolated unit tests.
+ * JWT_SECRET is never reused for identity encryption.
  */
 function getEncryptionKey() {
-  const secret =
-    process.env.IDENTITY_ENCRYPTION_KEY ||
-    process.env.JWT_SECRET ||
-    "legalconnect_secure_identity_salt_2026_dev_key";
+  const secret = process.env.IDENTITY_ENCRYPTION_KEY;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "test") {
+      if (!ephemeralTestKey) {
+        ephemeralTestKey = crypto.randomBytes(32);
+      }
+      return ephemeralTestKey;
+    }
+
+    const error = new Error(
+      "IDENTITY_ENCRYPTION_KEY environment variable is required to ensure encrypted data persists across restarts. " +
+      "Please set IDENTITY_ENCRYPTION_KEY in your environment or backend/.env file."
+    );
+    error.statusCode = 500;
+    error.code = "CRYPTO_KEY_MISSING";
+    throw error;
+  }
 
   return crypto.createHash("sha256").update(secret).digest();
 }
@@ -20,6 +41,35 @@ function generateSixDigitOtp() {
 }
 
 /**
+ * Retrieves the OTP pepper secret.
+ * Production and development require a stable OTP_PEPPER_SECRET.
+ * Ephemeral pepper is restricted strictly to isolated unit tests.
+ * JWT_SECRET is never reused for OTP pepper hashing.
+ */
+function getOtpPepper() {
+  const pepper = process.env.OTP_PEPPER_SECRET;
+
+  if (!pepper) {
+    if (process.env.NODE_ENV === "test") {
+      if (!ephemeralTestPepper) {
+        ephemeralTestPepper = crypto.randomBytes(32).toString("hex");
+      }
+      return ephemeralTestPepper;
+    }
+
+    const error = new Error(
+      "OTP_PEPPER_SECRET environment variable is required to ensure OTP hashes remain valid across restarts. " +
+      "Please set OTP_PEPPER_SECRET in your environment or backend/.env file."
+    );
+    error.statusCode = 500;
+    error.code = "CRYPTO_KEY_MISSING";
+    throw error;
+  }
+
+  return pepper;
+}
+
+/**
  * Computes a keyed HMAC-SHA256 hash for OTP values to prevent brute-force attacks if DB is leaked.
  *
  * @param {string} otp - The plain 6-digit OTP
@@ -28,10 +78,7 @@ function generateSixDigitOtp() {
  * @returns {string} Hex encoded HMAC hash
  */
 function hashOtp(otp, purpose = "email_verification", destination = "") {
-  const pepper =
-    process.env.OTP_PEPPER_SECRET ||
-    process.env.JWT_SECRET ||
-    "legalconnect_otp_pepper_2026";
+  const pepper = getOtpPepper();
 
   const cleanDest = destination ? destination.toLowerCase().trim() : "";
   return crypto
