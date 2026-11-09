@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { Scale, ArrowLeft, Search, HelpCircle, FileText, Users } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function NotFound() {
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-xl text-center space-y-6">
@@ -37,7 +39,7 @@ export default function NotFound() {
           </Link>
 
           <Link
-            to="/lawyers"
+            to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
             className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-blue-300 hover:shadow transition"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-800 font-bold">

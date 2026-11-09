@@ -99,9 +99,6 @@ export default function Dashboard() {
   const completeness = profileData?.completeness?.percentage ??
     (profileData?.pincode && profileData?.state ? 100 : 70);
 
-  // Certified Client Badge Logic:
-  // ONLY display "Certified Client" if genuinely verified (e.g. user.isCertified === true).
-  // Otherwise display "Profile Complete" or "Identity Submitted".
   const isGenuinelyCertified = Boolean(profileData?.isCertified);
   const isProfileComplete = completeness === 100;
 
@@ -123,14 +120,12 @@ export default function Dashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate type
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
       setUploadError("Only JPG, PNG, and WebP images are supported.");
       return;
     }
 
-    // Validate size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setUploadError("Image size must be less than 2MB.");
       return;
@@ -142,7 +137,6 @@ export default function Dashboard() {
       setImageModalOpen(true);
     };
     reader.readAsDataURL(file);
-    // Reset file input value so re-selecting same file triggers onChange
     e.target.value = "";
   };
 
@@ -182,14 +176,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Navbar onOpenProfileSettings={() => setProfileModalOpen(true)} />
 
       <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-6xl space-y-7">
+        <div className="mx-auto max-w-6xl space-y-6">
           {/* Success Banner */}
           {successMessage && (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-semibold text-emerald-800 flex items-center justify-between shadow-xs">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-semibold text-emerald-800 flex items-center justify-between shadow-2xs">
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 {successMessage}
@@ -204,10 +198,8 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* CLIENT PROFILE CARD (Inspired by Lawyer Dashboard profile layout)          */}
-          {/* ========================================================================= */}
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+          {/* CLIENT PROFILE CARD */}
+          <section className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 {/* Profile Image with Edit Profile Image button directly underneath */}
@@ -217,7 +209,7 @@ export default function Dashboard() {
                       <img
                         src={clientImage}
                         alt={clientName}
-                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-2 border-slate-200 shadow-sm"
+                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover border border-slate-200 shadow-2xs"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                           if (e.currentTarget.nextSibling) {
@@ -227,7 +219,7 @@ export default function Dashboard() {
                       />
                     ) : null}
                     <div
-                      className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-2 border-slate-200 shadow-sm ${
+                      className={`h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br from-[#0B132B] via-[#101C3A] to-[#2457D6] text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border border-slate-200 shadow-2xs ${
                         clientImage ? "hidden" : "flex"
                       }`}
                     >
@@ -237,14 +229,14 @@ export default function Dashboard() {
                     {/* Verification Indicator Icon */}
                     {isGenuinelyCertified ? (
                       <div
-                        className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-xs"
+                        className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-2xs"
                         title="Certified Client"
                       >
                         <ShieldCheck className="h-4 w-4" />
                       </div>
                     ) : isProfileComplete ? (
                       <div
-                        className="absolute -bottom-1 -right-1 rounded-full bg-blue-600 p-1 text-white ring-2 ring-white shadow-xs"
+                        className="absolute -bottom-1 -right-1 rounded-full bg-[#2457D6] p-1 text-white ring-2 ring-white shadow-2xs"
                         title="Profile Complete"
                       >
                         <CheckCircle2 className="h-4 w-4" />
@@ -255,10 +247,10 @@ export default function Dashboard() {
                   {/* Edit Profile Image Button immediately below */}
                   <label
                     htmlFor="client-photo-input"
-                    className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-900 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-3 py-1 rounded-lg border border-slate-200 shadow-2xs transition"
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#2457D6] bg-slate-100 hover:bg-blue-50 px-3 py-1 rounded-xl border border-slate-200 shadow-2xs transition"
                   >
                     <Camera className="h-3.5 w-3.5" />
-                    <span>Edit Profile Image</span>
+                    <span>Edit Photo</span>
                     <input
                       id="client-photo-input"
                       ref={fileInputRef}
@@ -273,26 +265,26 @@ export default function Dashboard() {
                 {/* Client Details */}
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    <h1 className="font-heading text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                       {clientName}
                     </h1>
 
                     {/* Client Role Badge */}
-                    <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800 border border-blue-200 uppercase">
+                    <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-[#2457D6] border border-blue-200 uppercase">
                       Client
                     </span>
 
                     {/* Suitable Client Status Badge */}
                     {isGenuinelyCertified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
                         <ShieldCheck className="h-3.5 w-3.5" /> Certified Client
                       </span>
                     ) : isProfileComplete ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800 border border-blue-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-[#2457D6] border border-blue-200">
                         <CheckCircle2 className="h-3.5 w-3.5" /> Profile Complete
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
                         <Clock className="h-3.5 w-3.5" /> Profile in Progress
                       </span>
                     )}
@@ -321,11 +313,11 @@ export default function Dashboard() {
                   <div className="pt-2 max-w-sm">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-semibold text-slate-600">Profile Completion</span>
-                      <span className="font-bold text-blue-900">{completeness}%</span>
+                      <span className="font-bold text-[#2457D6]">{completeness}%</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200">
                       <div
-                        className="h-full rounded-full bg-linear-to-r from-blue-700 to-indigo-600 transition-all duration-500"
+                        className="h-full rounded-full bg-gradient-to-r from-[#2457D6] to-indigo-600 transition-all duration-500"
                         style={{ width: `${completeness}%` }}
                       />
                     </div>
@@ -335,90 +327,87 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* ========================================================================= */}
-          {/* DASHBOARD SUMMARY CARDS (Exact 4 Requirements from live MongoDB data)     */}
-          {/* ========================================================================= */}
+          {/* DASHBOARD SUMMARY KPI CARDS */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* 1. Total Appointments */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 transition">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs hover:border-blue-300 transition">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Total Appointments
                 </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-900">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#2457D6]">
                   <Calendar className="h-5 w-5" />
                 </div>
               </div>
-              <p className="mt-4 text-3xl font-black text-slate-900">
+              <p className="font-heading mt-4 text-3xl font-black text-slate-900">
                 {totalAppointments}
               </p>
               <p className="mt-1 text-xs text-slate-400">Total sessions booked</p>
             </div>
 
             {/* 2. Upcoming Appointments */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-emerald-300 transition">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs hover:border-emerald-300 transition">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Upcoming
                 </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
                   <Clock className="h-5 w-5" />
                 </div>
               </div>
-              <p className="mt-4 text-3xl font-black text-emerald-700">
+              <p className="font-heading mt-4 text-3xl font-black text-emerald-700">
                 {upcomingAppointments.length}
               </p>
               <p className="mt-1 text-xs text-slate-400">Confirmed & upcoming</p>
             </div>
 
             {/* 3. Completed Consultations */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-purple-300 transition">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs hover:border-purple-300 transition">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Completed
                 </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-50 text-purple-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-700">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
               </div>
-              <p className="mt-4 text-3xl font-black text-purple-700">
+              <p className="font-heading mt-4 text-3xl font-black text-purple-700">
                 {completedAppointments.length}
               </p>
               <p className="mt-1 text-xs text-slate-400">Successfully conducted</p>
             </div>
 
             {/* 4. Pending Appointment Requests */}
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-amber-300 transition">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs hover:border-amber-300 transition">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   Pending Requests
                 </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
                   <Clock className="h-5 w-5" />
                 </div>
               </div>
-              <p className="mt-4 text-3xl font-black text-amber-600">
+              <p className="font-heading mt-4 text-3xl font-black text-amber-600">
                 {pendingAppointments.length}
               </p>
               <p className="mt-1 text-xs text-slate-400">Awaiting lawyer confirmation</p>
             </div>
           </section>
 
-
           {/* Recent Appointments Preview */}
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+          <section className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="font-heading text-base font-bold text-slate-900">
                   Recent Appointment History
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Latest consultations booked under your client account.
                 </p>
               </div>
               <Link
                 to="/my-appointments"
-                className="text-xs font-bold text-blue-900 hover:underline"
+                className="text-xs font-bold text-[#2457D6] hover:underline"
               >
                 View All →
               </Link>
@@ -430,7 +419,7 @@ export default function Dashboard() {
                 <p className="mt-1">Book your first legal consultation with a verified advocate.</p>
                 <Link
                   to="/client/lawyers"
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 font-bold text-white shadow-xs hover:bg-blue-800 transition"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#2457D6] px-4 py-2 font-bold text-white shadow-2xs hover:bg-blue-700 transition"
                 >
                   <Search className="h-3.5 w-3.5" /> Find Advocate
                 </Link>
@@ -450,15 +439,15 @@ export default function Dashboard() {
                           <img
                             src={lawyerImage}
                             alt={lawyerName}
-                            className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                            className="h-10 w-10 rounded-xl object-cover border border-slate-200"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-900 font-bold text-sm">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B132B] text-white font-bold text-xs shadow-2xs">
                             {lawyerName.charAt(0)}
                           </div>
                         )}
                         <div>
-                          <p className="text-sm font-bold text-slate-900">
+                          <p className="font-heading text-xs sm:text-sm font-bold text-slate-900">
                             Advocate {lawyerName}
                           </p>
                           <p className="text-xs text-slate-500">
@@ -473,21 +462,21 @@ export default function Dashboard() {
 
                       <div className="flex items-center gap-3">
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold capitalize ${
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold capitalize ${
                             appt.status === "confirmed"
-                              ? "bg-emerald-100 text-emerald-800"
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                               : appt.status === "pending"
-                              ? "bg-amber-100 text-amber-800"
+                              ? "bg-amber-50 text-amber-800 border border-amber-200"
                               : appt.status === "completed"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-slate-100 text-slate-700"
+                              ? "bg-blue-50 text-blue-800 border border-blue-200"
+                              : "bg-slate-100 text-slate-700 border border-slate-200"
                           }`}
                         >
                           {appt.status}
                         </span>
                         <Link
                           to="/my-appointments"
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                         >
                           Details
                         </Link>
@@ -501,15 +490,13 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* ========================================================================= */}
-      {/* PROFILE IMAGE UPLOAD & PREVIEW MODAL                                      */}
-      {/* ========================================================================= */}
+      {/* PROFILE IMAGE UPLOAD & PREVIEW MODAL */}
       {imageModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-150">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 space-y-5 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Camera className="h-5 w-5 text-blue-900" />
+              <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2">
+                <Camera className="h-5 w-5 text-[#2457D6]" />
                 Edit Profile Image
               </h3>
               <button
@@ -538,29 +525,20 @@ export default function Dashboard() {
                   <img
                     src={previewImage}
                     alt="Preview"
-                    className="h-36 w-36 rounded-full object-cover border-4 border-white shadow-md"
+                    className="h-36 w-36 rounded-2xl object-cover border-4 border-white shadow-md"
                   />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 rounded-full bg-blue-900 p-2 text-white shadow-md hover:bg-blue-800 transition"
+                    className="absolute bottom-0 right-0 rounded-full bg-[#2457D6] p-2 text-white shadow-md hover:bg-blue-700 transition"
                     title="Choose different photo"
                   >
                     <UploadCloud className="h-4 w-4" />
                   </button>
                 </div>
-              ) : (
-                <div className="text-center py-6 text-xs text-slate-500">
-                  <UploadCloud className="h-10 w-10 text-slate-400 mx-auto mb-2" />
-                  <p>No photo selected</p>
-                </div>
-              )}
-              <p className="mt-3 text-xs text-slate-500 text-center">
-                Supported formats: JPG, PNG, WebP (Max size: 2MB)
-              </p>
+              ) : null}
             </div>
 
-            {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -568,28 +546,23 @@ export default function Dashboard() {
                   setImageModalOpen(false);
                   setPreviewImage(null);
                 }}
-                disabled={uploading}
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
                 onClick={handleSaveProfileImage}
-                disabled={uploading || !previewImage}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
+                disabled={uploading}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#2457D6] px-5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition disabled:opacity-50"
               >
                 {uploading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving Photo...</span>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving...</span>
                   </>
                 ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>Save Photo</span>
-                  </>
+                  <span>Save Profile Image</span>
                 )}
               </button>
             </div>
@@ -597,14 +570,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Account Settings Modal */}
       {profileModalOpen && (
         <ProfileSettingsModal
           isOpen={profileModalOpen}
-          onClose={() => {
-            setProfileModalOpen(false);
-            loadDashboardData();
-          }}
+          onClose={() => setProfileModalOpen(false)}
         />
       )}
     </div>

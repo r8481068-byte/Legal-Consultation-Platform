@@ -13,6 +13,61 @@ function getEncryptionKey() {
 }
 
 /**
+ * Cryptographically secure 6-digit numeric OTP generator.
+ */
+function generateSixDigitOtp() {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+/**
+ * Computes a keyed HMAC-SHA256 hash for OTP values to prevent brute-force attacks if DB is leaked.
+ *
+ * @param {string} otp - The plain 6-digit OTP
+ * @param {string} purpose - "email_verification"
+ * @param {string} destination - Email destination string
+ * @returns {string} Hex encoded HMAC hash
+ */
+function hashOtp(otp, purpose = "email_verification", destination = "") {
+  const pepper =
+    process.env.OTP_PEPPER_SECRET ||
+    process.env.JWT_SECRET ||
+    "legalconnect_otp_pepper_2026";
+
+  const cleanDest = destination ? destination.toLowerCase().trim() : "";
+  return crypto
+    .createHmac("sha256", pepper)
+    .update(`${otp}:${purpose}:${cleanDest}`)
+    .digest("hex");
+}
+
+/**
+ * Compares an OTP submission against stored HMAC using constant-time equality.
+ */
+function verifyOtpHash(otp, purpose = "email_verification", destination = "", storedHash = "") {
+  if (!otp || !storedHash) return false;
+
+  const expectedHash = hashOtp(otp, purpose, destination);
+  const a = Buffer.from(expectedHash, "hex");
+  const b = Buffer.from(storedHash, "hex");
+
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * Masks an email for safe display (e.g. "p***a@example.com").
+ */
+function maskEmail(email) {
+  if (!email || typeof email !== "string") return "";
+  const [local, domain] = email.trim().toLowerCase().split("@");
+  if (!domain) return email;
+  if (local.length <= 2) {
+    return `${local[0] || "*"}***@${domain}`;
+  }
+  return `${local[0]}***${local[local.length - 1]}@${domain}`;
+}
+
+/**
  * Encrypts sensitive string (e.g., Aadhaar / PAN) at rest using AES-256-GCM.
  */
 function encryptSensitive(text) {
@@ -133,6 +188,10 @@ function isValidPinCode(pincode) {
 }
 
 module.exports = {
+  generateSixDigitOtp,
+  hashOtp,
+  verifyOtpHash,
+  maskEmail,
   encryptSensitive,
   decryptSensitive,
   normalizeEmail,

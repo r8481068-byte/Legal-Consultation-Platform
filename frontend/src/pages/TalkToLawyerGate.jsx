@@ -17,9 +17,13 @@ export default function TalkToLawyerGate() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // If visitor is already authenticated, bypass gate immediately
+  // Immediate role and authentication enforcement
   useEffect(() => {
-    if (user || isAuthenticated) {
+    if (!isAuthenticated && !user) {
+      navigate("/register?redirect=/lawyers", { replace: true });
+    } else if (user?.role === "lawyer") {
+      navigate("/lawyer-dashboard?restricted=booking", { replace: true });
+    } else {
       navigate("/lawyers", { replace: true });
     }
   }, [isAuthenticated, user, navigate]);

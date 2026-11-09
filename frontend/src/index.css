@@ -1,72 +1,100 @@
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --color-navy: #0b132b;
+  --color-navy-dark: #070d1e;
+  --color-navy-light: #162447;
+  --color-navy-950: #070d1e;
+  --color-navy-900: #0b132b;
+  --color-navy-800: #101c3a;
+  --color-navy-700: #1a2c5a;
+  --color-navy-600: #243c7a;
+
+  --color-gold: #d9a441;
+  --color-gold-light: #f5be57;
+  --color-gold-dark: #b8832a;
+  --color-gold-400: #f5be57;
+  --color-gold-500: #d9a441;
+  --color-gold-600: #b8832a;
+
+  --color-royal: #2457d6;
+  --color-royal-light: #3b82f6;
+  --color-royal-dark: #1d4ed8;
+  --color-royal-500: #3b82f6;
+  --color-royal-600: #2457d6;
+  --color-royal-700: #1d4ed8;
 }
 
+:root {
+  --primary-navy: #101c3a;
+  --primary-blue: #2457d6;
+  --accent-gold: #d9a441;
+  --bg-canvas: #f8fafc;
+}
 
-
-/* 
 html {
   scroll-behavior: smooth;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
   margin: 0;
+  color: #0f172a;
+  background-color: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  min-height: 100vh;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.015em;
 }
 
-
-
-.auth-container {
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+/* Custom subtle scrollbars for high visual polish */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 28px;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: white;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.auth-card input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 16px;
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 
-.auth-card button {
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: #173b67;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-.auth-card button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Reusable card polish utility */
+.premium-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.auth-error {
-  color: #b91c1c;
-} */
+.premium-card:hover {
+  border-color: rgba(147, 197, 253, 0.7);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+}
+
+/* Accessible focus visible utility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2457d6;
+  outline-offset: 2px;
+}

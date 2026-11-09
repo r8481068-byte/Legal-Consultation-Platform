@@ -161,9 +161,9 @@ describe("Find Lawyer, Public Profile & Appointment Booking Upgrade Suite", () =
 
     configuredSlot = await LawyerAvailability.create({
       lawyer: seniorLawyerDoc._id,
-      startTime: tomorrow,
-      endTime: slotEnd,
-      isBooked: false,
+      startAt: tomorrow,
+      endAt: slotEnd,
+      status: "available",
     });
   });
 

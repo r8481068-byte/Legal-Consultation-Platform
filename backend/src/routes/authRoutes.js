@@ -3,6 +3,9 @@ const rateLimit = require("express-rate-limit");
 
 const {
   registerUser,
+  sendEmailOtp,
+  verifyEmailOtp,
+  resendEmailOtp,
   loginUser,
   refreshAccessToken,
   logoutUser,
@@ -22,6 +25,8 @@ const { protect } = require("../middleware/authMiddleware");
 const {
   registerValidator,
   loginValidator,
+  verifyOtpValidator,
+  emailOnlyValidator,
   clientProfileValidator,
   identityValidator,
 } = require("../validators/authValidator");
@@ -55,13 +60,33 @@ const loginLimiter = rateLimit({
   },
 });
 
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "production" ? 10 : 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    const resetTime = req.rateLimit?.resetTime;
+    const remainingMs = resetTime
+      ? Math.max(0, new Date(resetTime).getTime() - Date.now())
+      : options.windowMs;
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
 
+    return res.status(options.statusCode || 429).json({
+      success: false,
+      message: `Too many OTP verification requests. Please try again after ${remainingMinutes} minutes.`,
+    });
+  },
+});
 
 // ==========================================
 // Authentication Routes
 // ==========================================
 
 router.post("/register", registerValidator, validate, registerUser);
+router.post("/send-email-otp", otpLimiter, emailOnlyValidator, validate, sendEmailOtp);
+router.post("/verify-email-otp", otpLimiter, verifyOtpValidator, validate, verifyEmailOtp);
+router.post("/resend-email-otp", otpLimiter, emailOnlyValidator, validate, resendEmailOtp);
 router.post("/login", loginLimiter, loginValidator, validate, loginUser);
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", logoutUser);

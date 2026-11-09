@@ -41,7 +41,7 @@ export default function LawyerCard({ lawyer }) {
   const reviewCount = lawyer.totalReviews || 0;
 
   return (
-    <article className="group flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl">
+    <article className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg">
       <div>
         {/* ============================================================== */}
         {/* TOP SECTION: Profile Image, Name, Experience, Badge, Rating   */}
@@ -53,7 +53,7 @@ export default function LawyerCard({ lawyer }) {
               <img
                 src={profileImage}
                 alt={name}
-                className="h-16 w-16 rounded-2xl object-cover border-2 border-slate-100 shadow-xs"
+                className="h-16 w-16 rounded-2xl object-cover border border-slate-200 shadow-2xs"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                   if (e.currentTarget.nextSibling) {
@@ -63,7 +63,7 @@ export default function LawyerCard({ lawyer }) {
               />
             ) : null}
             <div
-              className={`h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-xl shadow-xs border-2 border-slate-100 ${
+              className={`h-16 w-16 rounded-2xl bg-gradient-to-br from-[#0B132B] via-[#101C3A] to-[#2457D6] text-white flex items-center justify-center font-extrabold text-xl shadow-2xs border border-slate-200 ${
                 profileImage ? "hidden" : "flex"
               }`}
             >
@@ -71,7 +71,7 @@ export default function LawyerCard({ lawyer }) {
             </div>
             {isApproved && (
               <span
-                className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-xs"
+                className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-2xs"
                 title="Verified by LegalConnect"
               >
                 <ShieldCheck className="h-3 w-3" />
@@ -83,7 +83,7 @@ export default function LawyerCard({ lawyer }) {
             {/* Full Name */}
             <Link
               to={`/lawyers/${lawyer._id}`}
-              className="block font-bold text-slate-900 text-base group-hover:text-blue-900 hover:underline transition truncate"
+              className="block font-heading font-bold text-slate-900 text-base group-hover:text-[#2457D6] hover:underline transition-colors truncate"
               title={name}
             >
               {name}
@@ -92,32 +92,29 @@ export default function LawyerCard({ lawyer }) {
             {/* Experience */}
             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
               <Briefcase className="h-3 w-3 text-slate-400" />
-              <span>{experienceYears} {experienceYears === 1 ? "year" : "years"} of experience</span>
+              <span>{experienceYears} {experienceYears === 1 ? "year" : "years"} experience</span>
             </p>
 
             {/* Badges: Verified Lawyer Badge & Rating with Review Count */}
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {isApproved && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  Verified Lawyer
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/80">
+                  <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                  Verified
                 </span>
               )}
 
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-200">
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-200/80">
+                <Star className="h-3 w-3 fill-[#D9A441] text-[#D9A441]" />
                 <span>{ratingValue}</span>
                 <span className="text-amber-700 font-normal">
-                  ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
+                  ({reviewCount})
                 </span>
               </span>
             </div>
           </div>
         </div>
 
-        {/* ============================================================== */}
-        {/* BELOW TOP SECTION: Specializations & Short Location             */}
-        {/* ============================================================== */}
         {/* Location Info */}
         <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-600">
           <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -130,7 +127,7 @@ export default function LawyerCard({ lawyer }) {
             specializations.slice(0, 3).map((spec) => (
               <span
                 key={spec}
-                className="rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-800 border border-blue-100"
+                className="rounded-lg bg-blue-50/70 px-2.5 py-1 text-[11px] font-semibold text-[#1D4ED8] border border-blue-100/80"
               >
                 {spec}
               </span>
@@ -160,17 +157,17 @@ export default function LawyerCard({ lawyer }) {
       {/* ============================================================== */}
       <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
         <div>
-          <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Consultation Fee
           </span>
-          <span className="text-lg font-extrabold text-blue-900">
+          <span className="font-heading text-lg font-black text-[#0B132B]">
             {feeText}
           </span>
         </div>
 
         <Link
           to={`/lawyers/${lawyer._id}`}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#2457D6] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#2457D6] focus:ring-offset-2"
         >
           <span>View Profile</span>
           <ChevronRight className="h-3.5 w-3.5" />

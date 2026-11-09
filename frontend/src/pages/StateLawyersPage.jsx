@@ -29,6 +29,7 @@ import { LEGAL_SERVICES } from "../data/legalServicesData";
 import { getCourtsForState } from "../data/stateCourtsData";
 import { getLawyers } from "../services/lawyerService";
 import StateLawyersMap from "../components/StateLawyersMap";
+import { useAuth } from "../context/AuthContext";
 
 // 14 Required Legal Service Categories for State Landing Pages
 const STATE_LEGAL_SERVICES = [
@@ -67,6 +68,7 @@ const RATING_OPTIONS = [
 ];
 
 export default function StateLawyersPage() {
+  const { user } = useAuth();
   const { stateSlug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -832,7 +834,13 @@ export default function StateLawyersPage() {
                           </Link>
 
                           <Link
-                            to={`/lawyers/${lawyer._id}#booking`}
+                            to={
+                              !user
+                                ? `/register?redirect=${encodeURIComponent(`/lawyers/${lawyer._id}#booking`)}`
+                                : user.role === "client"
+                                ? `/lawyers/${lawyer._id}#booking`
+                                : "/lawyer-dashboard?restricted=booking"
+                            }
                             className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-black text-slate-950 shadow-xs hover:bg-amber-300 transition transform hover:-translate-y-0.5"
                           >
                             <span>Book</span>

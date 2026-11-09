@@ -144,29 +144,29 @@ export default function LawyersInIndia() {
   const regionTabs = ["All", "States", "Union Territories", "Northern", "Southern", "Western", "Eastern", "Central", "North Eastern"];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans">
       {/* Breadcrumb */}
       <div className="border-b border-slate-200 bg-white py-3">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-            <Link to="/" className="hover:text-blue-900">Home</Link>
+            <Link to="/" className="hover:text-navy">Home</Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-blue-950 font-bold">Lawyers in India Directory</span>
+            <span className="text-navy font-bold">Lawyers in India Directory</span>
           </nav>
         </div>
       </div>
 
       {/* A. HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-16 px-4 text-white sm:px-6 sm:py-20 lg:px-8 border-b border-slate-800">
-        <div className="absolute right-0 top-0 -mt-10 -mr-10 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-navy via-navy-light to-royal py-16 px-4 text-white sm:px-6 sm:py-20 lg:px-8 border-b border-slate-800">
+        <div className="absolute right-0 top-0 -mt-10 -mr-10 h-96 w-96 rounded-full bg-gold/15 blur-3xl pointer-events-none" />
         <div className="relative mx-auto max-w-7xl">
           <div className="max-w-3xl space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-300">
-              <Scale className="h-4 w-4 text-amber-400" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/15 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-gold">
+              <Scale className="h-4 w-4 text-gold" />
               <span>Pan-India Court & Territorial Discovery</span>
             </div>
 
-            <h1 className="text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl text-white leading-tight">
+            <h1 className="text-3xl font-heading font-black tracking-tight sm:text-5xl lg:text-6xl text-white leading-tight">
               Find Lawyers Across India
             </h1>
 
@@ -183,12 +183,12 @@ export default function LawyersInIndia() {
                   value={locationSearchQuery}
                   onChange={(e) => setLocationSearchQuery(e.target.value)}
                   placeholder="Search state, union territory, district, or city (e.g., Delhi, Madhya Pradesh, Pune, Bhopal)..."
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900/90 py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-400 shadow-xl outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                  className="w-full rounded-2xl border border-white/20 bg-white/10 py-3.5 pl-12 pr-4 text-sm text-white placeholder-slate-400 shadow-xl outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 backdrop-blur-xs transition"
                 />
                 {locationSearchQuery && (
                   <button
                     onClick={() => setLocationSearchQuery("")}
-                    className="absolute right-3 rounded-lg px-2 py-1 text-xs text-slate-400 hover:text-white"
+                    className="absolute right-3 rounded-lg px-2 py-1 text-xs text-slate-300 hover:text-white"
                   >
                     Clear
                   </button>
@@ -197,7 +197,7 @@ export default function LawyersInIndia() {
             </div>
 
             {/* Supported Highlights */}
-            <div className="pt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-300">
+            <div className="pt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-200">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" /> 28 States Covered
               </span>
@@ -247,8 +247,8 @@ export default function LawyersInIndia() {
                 onClick={() => setSelectedRegionTab(tab)}
                 className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
                   selectedRegionTab === tab
-                    ? "bg-blue-950 text-white shadow-sm"
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-navy text-white shadow-xs"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-navy"
                 }`}
               >
                 {tab}

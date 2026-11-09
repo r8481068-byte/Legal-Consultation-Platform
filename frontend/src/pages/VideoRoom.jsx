@@ -360,7 +360,7 @@ export default function VideoRoom() {
               <button
                 type="button"
                 onClick={() => setIsReviewOpen(true)}
-                className="w-full rounded-xl bg-blue-700 py-3 text-sm font-bold text-white hover:bg-blue-600 transition shadow-md"
+                className="w-full rounded-xl bg-navy py-3 text-sm font-bold text-white hover:bg-navy-light transition shadow-md"
               >
                 Review Your Consultation
               </button>
@@ -397,15 +397,15 @@ export default function VideoRoom() {
   // RENDER: Pre-Meeting Waiting Room Screen
   if (inWaitingRoom) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 sm:p-8">
+      <main className="min-h-screen bg-slate-950 text-white flex flex-col justify-between p-4 sm:p-8 font-sans">
         {/* Top Header */}
         <header className="mx-auto w-full max-w-4xl flex items-center justify-between pb-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-700 text-white font-bold">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-gold font-heading font-black text-xs border border-white/10">
               LC
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-100">Legal Consultation Room</h1>
+              <h1 className="text-lg font-heading font-bold text-slate-100">Legal Consultation Room</h1>
               <p className="text-xs text-slate-400">Appointment #{appointment._id.substring(0, 8)}</p>
             </div>
           </div>
@@ -442,7 +442,7 @@ export default function VideoRoom() {
                 type="button"
                 onClick={toggleMic}
                 className={`p-3 rounded-full transition shadow-lg ${
-                  micEnabled ? "bg-slate-800 text-white hover:bg-slate-700" : "bg-red-600 text-white"
+                  micEnabled ? "bg-slate-800 text-white hover:bg-slate-700" : "bg-rose-600 text-white"
                 }`}
                 title={micEnabled ? "Mute Microphone" : "Unmute Microphone"}
               >
@@ -453,7 +453,7 @@ export default function VideoRoom() {
                 type="button"
                 onClick={toggleCamera}
                 className={`p-3 rounded-full transition shadow-lg ${
-                  cameraEnabled ? "bg-slate-800 text-white hover:bg-slate-700" : "bg-red-600 text-white"
+                  cameraEnabled ? "bg-slate-800 text-white hover:bg-slate-700" : "bg-rose-600 text-white"
                 }`}
                 title={cameraEnabled ? "Turn Off Video" : "Turn On Video"}
               >
@@ -465,10 +465,10 @@ export default function VideoRoom() {
           {/* Details & Join Action */}
           <div className="space-y-6">
             <div>
-              <span className="rounded-full bg-blue-900/60 px-3 py-1 text-xs font-semibold text-blue-300 border border-blue-700/50">
+              <span className="rounded-full bg-blue-900/60 px-3 py-1 text-xs font-semibold text-royal border border-blue-700/50">
                 Encrypted Peer Consultation
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold text-white">
+              <h2 className="mt-3 text-3xl font-heading font-extrabold text-white">
                 Ready to consult with {partnerName}?
               </h2>
               <p className="mt-2 text-sm text-slate-400">
@@ -485,14 +485,14 @@ export default function VideoRoom() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Status</span>
-                <span className="font-semibold text-green-400 capitalize">{connectionStatus}</span>
+                <span className="font-semibold text-emerald-400 capitalize">{connectionStatus}</span>
               </div>
             </div>
 
             <button
               type="button"
               onClick={enterConsultation}
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-600 py-4 text-base font-bold text-white shadow-xl shadow-blue-700/20 hover:from-blue-600 hover:to-indigo-500 transition"
+              className="w-full rounded-2xl bg-gradient-to-r from-navy via-navy-light to-royal py-4 text-base font-bold text-white shadow-xl shadow-royal/20 hover:opacity-95 transition"
             >
               Enter Video Consultation
             </button>

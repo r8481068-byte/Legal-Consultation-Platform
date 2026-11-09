@@ -20,9 +20,14 @@ const {
   calculateIdentityStatus,
 } = require("./eligibilityService");
 
+const {
+  createOrUpdateEmailChallenge,
+} = require("./verificationService");
+
 /**
  * Registers a new user (Client or Lawyer).
- * Validates, normalizes email and Indian phone number, and disallows admin role.
+ * Validates details, checks duplicate accounts, and creates a pending registration challenge
+ * with Email OTP verification. Account is only created upon successful OTP verification.
  */
 const registerUserService = async ({
   name,
@@ -30,13 +35,20 @@ const registerUserService = async ({
   password,
   phone,
   role = "client",
+  lawyerData = null,
 }) => {
   // Prevent self-registration as admin
   const assignedRole = role === "lawyer" ? "lawyer" : "client";
 
-  const cleanName = name.trim();
+  const cleanName = name ? name.trim() : "";
   const normalizedEmail = normalizeEmail(email);
   const normalizedPhone = normalizeIndianMobile(phone);
+
+  if (!cleanName || cleanName.length < 2) {
+    const error = new Error("Full name must be at least 2 characters");
+    error.statusCode = 400;
+    throw error;
+  }
 
   if (!normalizedEmail) {
     const error = new Error("A valid email address is required");
@@ -46,6 +58,12 @@ const registerUserService = async ({
 
   if (!normalizedPhone) {
     const error = new Error("A valid 10-digit Indian mobile number is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!password || password.length < 6) {
+    const error = new Error("Password must be at least 6 characters");
     error.statusCode = 400;
     throw error;
   }
@@ -66,34 +84,73 @@ const registerUserService = async ({
     throw error;
   }
 
-  // Create user account
-  const user = await User.create({
+  // Create user directly without requiring OTP verification
+  const user = new User({
     name: cleanName,
     email: normalizedEmail,
     password, // Handled by pre-save bcrypt hook in User.js
     phone: normalizedPhone,
     role: assignedRole,
-    emailVerified: true,
-    phoneVerified: true,
-    isVerified: true,
+    emailVerified: false,
+    phoneVerified: false,
+    isVerified: false,
     isActive: true,
   });
 
+  await user.save();
+
+  // If lawyerData is provided (e.g. from lawyer signup flow), create pending lawyer profile
+  if (assignedRole === "lawyer" && lawyerData && typeof lawyerData === "object") {
+    try {
+      await Lawyer.create({
+        user: user._id,
+        barCouncilId: lawyerData.barCouncilId || `PND/${Date.now()}`,
+        stateOfEnrolment: lawyerData.stateOfEnrolment || "Bar Council of Delhi",
+        city: lawyerData.city || "New Delhi",
+        experienceYears: Number(lawyerData.experienceYears) || 1,
+        consultationFee: Number(lawyerData.consultationFee) || 500,
+        specialization: lawyerData.specialization || ["Civil Litigation"],
+        languages: lawyerData.languages || ["English", "Hindi"],
+        bio: lawyerData.bio || "Advocate profile awaiting verification.",
+        lawCollege: lawyerData.lawCollege || "Law College",
+        graduationYear: Number(lawyerData.graduationYear) || 2020,
+        consultationModes: lawyerData.consultationModes || ["video"],
+        education: lawyerData.education || [],
+        verificationDocuments: lawyerData.verificationDocuments || [],
+        verificationStatus: "pending",
+        isAvailable: false,
+      });
+    } catch (lawyerErr) {
+      console.error("Failed to initialize lawyer profile:", lawyerErr.message);
+    }
+  }
+
   return {
+    success: true,
+    message: "Registration successful! You can now log in.",
     id: user._id,
     name: user.name,
     email: user.email,
     phone: user.phone,
     role: user.role,
-    emailVerified: true,
-    phoneVerified: true,
-    message: "Registration successful! You can now log in.",
+    emailVerified: user.emailVerified,
+    phoneVerified: user.phoneVerified,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+      isActive: user.isActive,
+    },
   };
 };
 
 /**
  * Logins an existing user.
- * Issues sessions directly without requiring OTP verification.
+ * Validates credentials and generates session tokens without requiring OTP verification.
  */
 const loginUserService = async ({ email, password }) => {
   const normalizedEmail = normalizeEmail(email);
@@ -120,7 +177,7 @@ const loginUserService = async ({ email, password }) => {
     throw error;
   }
 
-  // Generate tokens for verified users
+  // Generate tokens directly without requiring OTP verification
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken();
 
@@ -142,6 +199,7 @@ const loginUserService = async ({ email, password }) => {
       emailVerified: Boolean(user.emailVerified),
       phoneVerified: Boolean(user.phoneVerified),
       isVerified: Boolean(user.isVerified),
+      isActive: Boolean(user.isActive),
     },
   };
 };

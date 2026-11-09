@@ -46,14 +46,20 @@ import {
   ShieldCheck,
   Camera,
   Loader2,
+  Sparkles,
+  MapPin,
+  Award,
+  DollarSign,
+  PhoneCall,
+  Users,
 } from "lucide-react";
 
 const statusStyles = {
-  pending: "bg-amber-100 text-amber-800 border-amber-200",
-  confirmed: "bg-blue-100 text-blue-800 border-blue-200",
-  completed: "bg-green-100 text-green-800 border-green-200",
+  pending: "bg-amber-50 text-amber-800 border-amber-200",
+  confirmed: "bg-blue-50 text-royal border-blue-200",
+  completed: "bg-emerald-50 text-emerald-800 border-emerald-200",
   cancelled: "bg-slate-100 text-slate-700 border-slate-200",
-  rejected: "bg-red-100 text-red-800 border-red-200",
+  rejected: "bg-rose-50 text-rose-800 border-rose-200",
 };
 
 export default function LawyerDashboard() {
@@ -223,7 +229,7 @@ export default function LawyerDashboard() {
   const handleAction = async (appointmentId, action) => {
     const labels = {
       confirm: "accepted",
-      reject: "rejected",
+      reject: "declined",
       complete: "marked as completed",
     };
 
@@ -290,7 +296,6 @@ export default function LawyerDashboard() {
   };
 
   // Categorize appointments strictly according to business logic
-  // Tab A: Appointment Requests (Pending and Confirmed/Upcoming that require lawyer action or are active)
   const appointmentRequests = appointments.filter((a) =>
     ["pending", "confirmed"].includes(a.status)
   );
@@ -301,7 +306,6 @@ export default function LawyerDashboard() {
     return true;
   });
 
-  // Tab B: Appointments Completed (Only appointments genuinely marked completed)
   const completedAppointments = appointments.filter((a) => a.status === "completed");
 
   const pendingCount = appointments.filter((a) => a.status === "pending").length;
@@ -383,16 +387,18 @@ export default function LawyerDashboard() {
   const reviewCount = lawyerProfile?.totalReviews || reviewsData.length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Navbar onOpenProfileSettings={() => setProfileModalOpen(true)} />
 
-      <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-6xl space-y-6">
+      <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl space-y-6">
           {/* ========================================================================= */}
           {/* LAWYER PROFILE SUMMARY CARD                                               */}
           {/* ========================================================================= */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
+            <div className="absolute top-0 right-0 h-40 w-72 bg-gradient-to-bl from-blue-50/60 via-indigo-50/20 to-transparent pointer-events-none" />
+
+            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                 {/* Profile Avatar with fallback and verification badge */}
                 <div className="relative shrink-0 flex flex-col items-center gap-2">
@@ -401,7 +407,7 @@ export default function LawyerDashboard() {
                       <img
                         src={lawyerProfile.user.profileImage}
                         alt={lawyerName}
-                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-2 border-slate-200 shadow-2xs"
+                        className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover border-2 border-slate-200 shadow-xs"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                           if (e.currentTarget.nextSibling) {
@@ -411,7 +417,7 @@ export default function LawyerDashboard() {
                       />
                     ) : null}
                     <div
-                      className={`h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl border-2 border-slate-200 shadow-2xs ${
+                      className={`h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br from-navy via-navy-light to-royal text-white flex items-center justify-center font-heading font-black text-2xl sm:text-3xl border-2 border-slate-200 shadow-xs ${
                         lawyerProfile?.user?.profileImage ? "hidden" : "flex"
                       }`}
                     >
@@ -419,15 +425,15 @@ export default function LawyerDashboard() {
                     </div>
                     {isVerified && (
                       <div
-                        className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-2xs"
-                        title="Verified Advocate"
+                        className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1 text-white ring-2 ring-white shadow-xs"
+                        title="Verified Advocate (Bar Council of India Verified)"
                       >
                         <ShieldCheck className="h-4 w-4" />
                       </div>
                     )}
                   </div>
 
-                  {/* Edit Profile Image Button immediately below */}
+                  {/* Edit Profile Image Button */}
                   <label
                     htmlFor="lawyer-dashboard-photo-input"
                     role="button"
@@ -438,14 +444,14 @@ export default function LawyerDashboard() {
                         lawyerFileInputRef.current?.click();
                       }
                     }}
-                    className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-900 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-3 py-1 rounded-lg border border-slate-200 shadow-2xs transition"
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-[11px] font-semibold text-navy bg-slate-50 hover:bg-blue-50 hover:text-royal px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs transition"
                   >
                     {uploadingImage ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-700" />
+                      <Loader2 className="h-3 w-3 animate-spin text-royal" />
                     ) : (
-                      <Camera className="h-3.5 w-3.5" />
+                      <Camera className="h-3 w-3 text-slate-500" />
                     )}
-                    <span>{uploadingImage ? "Uploading..." : "Edit Profile Image"}</span>
+                    <span>{uploadingImage ? "Uploading..." : "Edit Photo"}</span>
                     <input
                       id="lawyer-dashboard-photo-input"
                       ref={lawyerFileInputRef}
@@ -458,7 +464,7 @@ export default function LawyerDashboard() {
                   </label>
 
                   {uploadError && (
-                    <span className="text-[10px] font-medium text-red-600 text-center max-w-[120px]">
+                    <span className="text-[10px] font-medium text-rose-600 text-center max-w-[120px]">
                       {uploadError}
                     </span>
                   )}
@@ -471,73 +477,197 @@ export default function LawyerDashboard() {
 
                 {/* Profile Details */}
                 <div className="space-y-1.5">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                    {lawyerName}
-                  </h1>
-
-                  <p className="text-sm font-semibold text-blue-900">
-                    {headline}
-                  </p>
-
-                  {/* Metadata Row: Specialization | Experience | Fees | Bar Reg. No */}
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 pt-0.5">
-                    <span>
-                      <strong className="font-semibold text-slate-800">Specialization:</strong> {specializationText}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span>
-                      <strong className="font-semibold text-slate-800">Experience:</strong> {experienceText}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span>
-                      <strong className="font-semibold text-slate-800">Fees:</strong> ₹{feesText}
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span>
-                      <strong className="font-semibold text-slate-800">Bar Reg. No:</strong> {barRegText}
-                    </span>
-                  </div>
-
-                  {/* Status Badges Row: Verified | Rating | Profile Completeness */}
-                  <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-navy tracking-tight">
+                      {lawyerName}
+                    </h1>
                     {isVerified ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                        Verified Advocate
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+                        <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                        BCI Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
-                        <Clock className="h-3.5 w-3.5 text-amber-600" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+                        <Clock className="h-3 w-3 text-amber-600" />
                         Verification Pending
                       </span>
                     )}
+                  </div>
 
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50/80 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/80">
+                  <p className="text-sm font-semibold text-royal">
+                    {headline}
+                  </p>
+
+                  {/* Metadata Row */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 pt-0.5">
+                    <span className="inline-flex items-center gap-1">
+                      <Scale className="h-3.5 w-3.5 text-slate-400" />
+                      <strong className="font-semibold text-slate-800">Specialization:</strong> {specializationText}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Briefcase className="h-3.5 w-3.5 text-slate-400" />
+                      <strong className="font-semibold text-slate-800">Exp:</strong> {experienceText}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span>
+                      <strong className="font-semibold text-slate-800">Fee:</strong> ₹{feesText} / session
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span>
+                      <strong className="font-semibold text-slate-800">Bar Reg:</strong> {barRegText}
+                    </span>
+                  </div>
+
+                  {/* Badges Row */}
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/80">
                       <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                       ★ {ratingValue} / 5 ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
                     </span>
 
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 border border-blue-200">
-                      <CheckCircle className="h-3.5 w-3.5 text-blue-700" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-navy border border-blue-200">
+                      <CheckCircle className="h-3.5 w-3.5 text-royal" />
                       Profile: {completenessPercentage}% Complete
                     </span>
+
+                    {lawyerProfile?.city && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        <MapPin className="h-3 w-3 text-slate-400" />
+                        {lawyerProfile.city}{lawyerProfile.state ? `, ${lawyerProfile.state}` : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
+          {/* ========================================================================= */}
+          {/* KPI STATS CARDS                                                           */}
+          {/* ========================================================================= */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Stat 1: Total Appointments */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Total Sessions
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-royal">
+                  <Calendar className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-heading font-extrabold text-navy">
+                  {appointments.length}
+                </span>
+                <span className="text-xs text-slate-500">all-time</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                Scheduled consultations across all modes
+              </div>
+            </div>
+
+            {/* Stat 2: Active / Pending Requests */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Pending Action
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-heading font-extrabold text-amber-600">
+                  {pendingCount}
+                </span>
+                <span className="text-xs text-slate-500">requests</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                {pendingCount > 0 ? "Awaiting your acceptance" : "No pending booking requests"}
+              </div>
+            </div>
+
+            {/* Stat 3: Completed Consultations */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Concluded Cases
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-heading font-extrabold text-emerald-700">
+                  {completedCount}
+                </span>
+                <span className="text-xs text-slate-500">successful</span>
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                Completed consultation summaries archived
+              </div>
+            </div>
+
+            {/* Stat 4: Estimated Earnings */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Consultation Earnings
+                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-heading font-extrabold text-navy">
+                  ₹{Number(earningsData?.totalEarnings || 0).toLocaleString("en-IN")}
+                </span>
+                <span className="text-xs font-semibold text-emerald-600 flex items-center">
+                  <TrendingUp className="h-3 w-3 mr-0.5" /> Settled
+                </span>
+              </div>
+              <div className="mt-2 text-xs text-slate-500">
+                Direct client booking settlements
+              </div>
+            </div>
+          </div>
+
           {/* Feedback Alerts */}
+          {searchParams.get("restricted") === "booking" && (
+            <div className="flex items-center justify-between rounded-2xl bg-amber-50 p-4 text-xs font-semibold text-amber-900 border border-amber-300 shadow-sm animate-in fade-in">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-600" />
+                <span>
+                  <strong>Advocate Account Notice:</strong> Advocate accounts cannot access client consultation booking. You have been redirected to your Advocate Dashboard.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete("restricted");
+                  setSearchParams(next);
+                }}
+                className="text-amber-700 hover:text-amber-900 font-bold ml-2 text-sm cursor-pointer"
+                aria-label="Dismiss message"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {error && (
-            <div className="flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-xs font-semibold text-red-700 border border-red-200">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+            <div className="flex items-center gap-2.5 rounded-2xl bg-rose-50 p-4 text-xs font-semibold text-rose-800 border border-rose-200">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           )}
 
           {message && (
-            <div className="flex items-center gap-2 rounded-2xl bg-green-50 p-4 text-xs font-semibold text-green-800 border border-green-200">
-              <CheckCircle className="h-4 w-4 shrink-0" />
+            <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200">
+              <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
               <span>{message}</span>
             </div>
           )}
@@ -549,18 +679,18 @@ export default function LawyerDashboard() {
               <button
                 type="button"
                 onClick={() => handleTabChange("requests")}
-                className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition shadow-2xs ${
                   activeTab === "requests"
-                    ? "bg-blue-900 text-white shadow-sm"
+                    ? "bg-navy text-white shadow-xs"
                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                 }`}
               >
                 <Inbox className="h-4 w-4" />
                 <span>Appointment Requests</span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
                     activeTab === "requests"
-                      ? "bg-blue-800 text-white"
+                      ? "bg-blue-900/60 text-white"
                       : "bg-slate-100 text-slate-700"
                   }`}
                 >
@@ -572,18 +702,18 @@ export default function LawyerDashboard() {
               <button
                 type="button"
                 onClick={() => handleTabChange("completed")}
-                className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition shadow-2xs ${
                   activeTab === "completed"
-                    ? "bg-blue-900 text-white shadow-sm"
+                    ? "bg-navy text-white shadow-xs"
                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                 }`}
               >
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Appointments Completed</span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
                     activeTab === "completed"
-                      ? "bg-blue-800 text-white"
+                      ? "bg-blue-900/60 text-white"
                       : "bg-slate-100 text-slate-700"
                   }`}
                 >
@@ -595,18 +725,18 @@ export default function LawyerDashboard() {
               <button
                 type="button"
                 onClick={() => handleTabChange("reviews")}
-                className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition shadow-2xs ${
                   activeTab === "reviews"
-                    ? "bg-blue-900 text-white shadow-sm"
+                    ? "bg-navy text-white shadow-xs"
                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                 }`}
               >
-                <Star className="h-4 w-4" />
+                <Star className="h-4 w-4 text-gold fill-gold" />
                 <span>Client Reviews</span>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
                     activeTab === "reviews"
-                      ? "bg-blue-800 text-white"
+                      ? "bg-blue-900/60 text-white"
                       : "bg-slate-100 text-slate-700"
                   }`}
                 >
@@ -620,11 +750,11 @@ export default function LawyerDashboard() {
           {/* TAB 1: APPOINTMENT REQUESTS                                              */}
           {/* ========================================================================= */}
           {activeTab === "requests" && (
-            <section className="mt-6 space-y-6 animate-in fade-in duration-200">
+            <section className="mt-6 space-y-6">
               {/* Sub-header & Filter Pills */}
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
+                  <h2 className="text-lg font-heading font-bold text-navy">
                     Active Appointment Requests
                   </h2>
                   <p className="text-xs text-slate-500">
@@ -632,14 +762,14 @@ export default function LawyerDashboard() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-2xs text-xs">
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs text-xs">
                   <button
                     type="button"
                     onClick={() => setRequestFilter("all")}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition ${
+                    className={`px-3 py-1.5 rounded-lg font-bold transition ${
                       requestFilter === "all"
-                        ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:text-slate-900"
+                        ? "bg-navy text-white"
+                        : "text-slate-600 hover:text-navy"
                     }`}
                   >
                     All ({appointmentRequests.length})
@@ -647,7 +777,7 @@ export default function LawyerDashboard() {
                   <button
                     type="button"
                     onClick={() => setRequestFilter("pending")}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition ${
+                    className={`px-3 py-1.5 rounded-lg font-bold transition ${
                       requestFilter === "pending"
                         ? "bg-amber-600 text-white"
                         : "text-slate-600 hover:text-amber-700"
@@ -658,10 +788,10 @@ export default function LawyerDashboard() {
                   <button
                     type="button"
                     onClick={() => setRequestFilter("confirmed")}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition ${
+                    className={`px-3 py-1.5 rounded-lg font-bold transition ${
                       requestFilter === "confirmed"
-                        ? "bg-blue-700 text-white"
-                        : "text-slate-600 hover:text-blue-700"
+                        ? "bg-royal text-white"
+                        : "text-slate-600 hover:text-royal"
                     }`}
                   >
                     Confirmed ({confirmedCount})
@@ -670,13 +800,14 @@ export default function LawyerDashboard() {
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-royal mb-2" />
                   Loading appointment requests...
                 </div>
               ) : filteredRequests.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-                  <Inbox className="mx-auto h-9 w-9 text-slate-400" />
-                  <h3 className="mt-3 text-base font-bold text-slate-800">
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
+                  <Inbox className="mx-auto h-10 w-10 text-slate-300" />
+                  <h3 className="mt-3 text-base font-heading font-bold text-navy">
                     No Appointment Requests Matching Filter
                   </h3>
                   <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
@@ -687,9 +818,9 @@ export default function LawyerDashboard() {
                   <div className="mt-5">
                     <Link
                       to="/lawyer/availability"
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800 transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-navy px-4 py-2 text-xs font-bold text-white hover:bg-navy-light transition shadow-xs"
                     >
-                      <Clock className="h-4 w-4" />
+                      <Clock className="h-4 w-4 text-gold" />
                       Add Consultation Slots
                     </Link>
                   </div>
@@ -704,7 +835,7 @@ export default function LawyerDashboard() {
                     return (
                       <article
                         key={appointment._id}
-                        className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-slate-300 transition"
+                        className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs hover:border-slate-300 transition"
                       >
                         {/* Top Card Bar: Avatar, Clickable Name, Meta Badges */}
                         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -713,14 +844,14 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setSelectedClientId(client._id)}
-                              className="group relative flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-900 to-indigo-800 text-lg font-bold text-white shadow-xs transition hover:scale-105 focus:outline-none"
+                              className="group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-navy to-royal text-base font-bold text-white shadow-2xs transition hover:scale-105 focus:outline-none"
                               title="Click to view verified client profile"
                             >
                               {client.profileImage ? (
                                 <img
                                   src={client.profileImage}
                                   alt={client.name}
-                                  className="h-full w-full rounded-2xl object-cover"
+                                  className="h-full w-full rounded-xl object-cover"
                                 />
                               ) : client.name ? (
                                 client.name.charAt(0).toUpperCase()
@@ -734,7 +865,7 @@ export default function LawyerDashboard() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedClientId(client._id)}
-                                className="text-left text-lg font-bold text-slate-900 hover:text-blue-900 hover:underline transition flex items-center gap-1.5 group"
+                                className="text-left text-base font-heading font-bold text-navy hover:text-royal hover:underline transition flex items-center gap-1.5 group"
                               >
                                 <span>{client.name || "Client Name"}</span>
                                 <ExternalLink className="h-3.5 w-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition" />
@@ -750,12 +881,12 @@ export default function LawyerDashboard() {
                           {/* Consultation Type & Payment Badges */}
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 capitalize">
-                              {isVideo ? <Video className="h-3.5 w-3.5 text-blue-700" /> : null}
+                              {isVideo ? <Video className="h-3.5 w-3.5 text-royal" /> : null}
                               {appointment.consultationType} Consultation
                             </span>
 
                             {appointment.isPaid ? (
-                              <span className="rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800">
+                              <span className="rounded-full bg-emerald-50 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800">
                                 Fee Paid
                               </span>
                             ) : (
@@ -767,15 +898,14 @@ export default function LawyerDashboard() {
                         </div>
 
                         {/* ================= Table-like row within card ================= */}
-                        {/* | Date | Time | Status | Actions | */}
-                        <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center text-xs">
                             {/* 1. Date */}
                             <div>
                               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                                Date
+                                Consultation Date
                               </span>
-                              <span className="font-bold text-slate-900 text-sm">
+                              <span className="font-heading font-bold text-navy text-sm">
                                 {formatDateOnly(appointment.scheduledAt)}
                               </span>
                             </div>
@@ -822,7 +952,7 @@ export default function LawyerDashboard() {
                                     type="button"
                                     onClick={() => handleAction(appointment._id, "confirm")}
                                     disabled={processingId === appointment._id}
-                                    className="rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                                    className="rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 shadow-2xs"
                                   >
                                     {processingId === appointment._id ? "..." : "Accept"}
                                   </button>
@@ -831,9 +961,9 @@ export default function LawyerDashboard() {
                                     type="button"
                                     onClick={() => handleAction(appointment._id, "reject")}
                                     disabled={processingId === appointment._id}
-                                    className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                                    className="rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition disabled:opacity-50 shadow-2xs"
                                   >
-                                    Reject
+                                    Decline
                                   </button>
                                 </div>
                               )}
@@ -844,7 +974,7 @@ export default function LawyerDashboard() {
                                     <button
                                       type="button"
                                       onClick={() => navigate(`/video-room/${appointment._id}`)}
-                                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
+                                      className="inline-flex items-center gap-1.5 rounded-xl bg-royal px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition"
                                     >
                                       <Video className="h-3.5 w-3.5" />
                                       Join Call
@@ -855,9 +985,9 @@ export default function LawyerDashboard() {
                                     type="button"
                                     onClick={() => handleAction(appointment._id, "complete")}
                                     disabled={processingId === appointment._id}
-                                    className="rounded-xl bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-800 transition disabled:opacity-50"
+                                    className="rounded-xl bg-navy px-3.5 py-1.5 text-xs font-bold text-white hover:bg-navy-light transition disabled:opacity-50 shadow-2xs"
                                   >
-                                    Complete
+                                    Mark Complete
                                   </button>
                                 </div>
                               )}
@@ -867,8 +997,8 @@ export default function LawyerDashboard() {
 
                         {/* Client Consultation Note / Issue */}
                         {appointment.notes && (
-                          <div className="mt-4 rounded-2xl bg-slate-50 p-3.5 border border-slate-100 text-xs">
-                            <span className="font-bold text-slate-700">Client Case Note: </span>
+                          <div className="mt-4 rounded-xl bg-slate-50 p-3.5 border border-slate-200/70 text-xs">
+                            <span className="font-bold text-slate-800">Client Case Note: </span>
                             <span className="text-slate-600">{appointment.notes}</span>
                           </div>
                         )}
@@ -879,18 +1009,18 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setChatAppointment(appointment)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-navy transition shadow-2xs"
                             >
-                              <MessageSquare className="h-4 w-4 text-blue-700" />
-                              Chat
+                              <MessageSquare className="h-4 w-4 text-royal" />
+                              Client Chat
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setDocumentAppointment(appointment)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-navy transition shadow-2xs"
                             >
-                              <FileText className="h-4 w-4 text-blue-700" />
+                              <FileText className="h-4 w-4 text-royal" />
                               Case Documents
                             </button>
                           </div>
@@ -911,10 +1041,10 @@ export default function LawyerDashboard() {
           {/* TAB 2: APPOINTMENTS COMPLETED                                            */}
           {/* ========================================================================= */}
           {activeTab === "completed" && (
-            <section className="mt-6 space-y-6 animate-in fade-in duration-200">
+            <section className="mt-6 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
+                  <h2 className="text-lg font-heading font-bold text-navy">
                     Appointments Completed ({completedAppointments.length})
                   </h2>
                   <p className="text-xs text-slate-500">
@@ -925,20 +1055,21 @@ export default function LawyerDashboard() {
                 <button
                   type="button"
                   onClick={loadAppointments}
-                  className="text-xs font-semibold text-blue-700 hover:underline"
+                  className="text-xs font-semibold text-royal hover:underline"
                 >
                   Refresh
                 </button>
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-royal mb-2" />
                   Loading completed consultations...
                 </div>
               ) : completedAppointments.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
-                  <CheckCircle2 className="mx-auto h-9 w-9 text-slate-400" />
-                  <h3 className="mt-3 text-base font-bold text-slate-800">
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
+                  <CheckCircle2 className="mx-auto h-10 w-10 text-slate-300" />
+                  <h3 className="mt-3 text-base font-heading font-bold text-navy">
                     No Completed Consultations Yet
                   </h3>
                   <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
@@ -954,7 +1085,7 @@ export default function LawyerDashboard() {
                     return (
                       <article
                         key={appointment._id}
-                        className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:border-slate-300 transition"
+                        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-slate-300 transition"
                       >
                         {/* Header info */}
                         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -963,14 +1094,14 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setSelectedClientId(client._id)}
-                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition focus:outline-none"
+                              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition focus:outline-none"
                               title="Click to view verified client profile"
                             >
                               {client.profileImage ? (
                                 <img
                                   src={client.profileImage}
                                   alt={client.name}
-                                  className="h-full w-full rounded-2xl object-cover"
+                                  className="h-full w-full rounded-xl object-cover"
                                 />
                               ) : client.name ? (
                                 client.name.charAt(0).toUpperCase()
@@ -984,7 +1115,7 @@ export default function LawyerDashboard() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedClientId(client._id)}
-                                className="text-left text-lg font-bold text-slate-900 hover:text-blue-900 hover:underline transition flex items-center gap-1.5"
+                                className="text-left text-base font-heading font-bold text-navy hover:text-royal hover:underline transition flex items-center gap-1.5"
                               >
                                 <span>{client.name || "Client Name"}</span>
                                 <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
@@ -996,23 +1127,23 @@ export default function LawyerDashboard() {
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800">
+                            <span className="rounded-full bg-emerald-50 border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-800">
                               Fee Paid
                             </span>
 
-                            <span className="rounded-full bg-green-100 border border-green-200 px-3 py-1 text-xs font-bold text-green-800 capitalize">
+                            <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700 capitalize">
                               ✓ Completed
                             </span>
                           </div>
                         </div>
 
                         {/* Session Date & Time Row */}
-                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-2xl bg-slate-50/70 p-4 border border-slate-200 text-xs">
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl bg-slate-50/70 p-4 border border-slate-200 text-xs">
                           <div>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
                               Concluded Date
                             </span>
-                            <span className="font-bold text-slate-900">
+                            <span className="font-heading font-bold text-navy">
                               {formatDateOnly(appointment.scheduledAt)}
                             </span>
                           </div>
@@ -1034,7 +1165,7 @@ export default function LawyerDashboard() {
                               Mode
                             </span>
                             <span className="font-semibold text-slate-800 capitalize flex items-center gap-1">
-                              {isVideo ? <Video className="h-3.5 w-3.5 text-blue-700" /> : null}
+                              {isVideo ? <Video className="h-3.5 w-3.5 text-royal" /> : null}
                               {appointment.consultationType} ({appointment.durationMinutes || 30}m)
                             </span>
                           </div>
@@ -1047,9 +1178,9 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setSummaryAppointment(appointment)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-navy transition shadow-2xs"
                             >
-                              <FileText className="h-4 w-4 text-blue-700" />
+                              <FileText className="h-4 w-4 text-royal" />
                               Summary
                             </button>
 
@@ -1057,7 +1188,7 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setFeedbackAppointment(appointment)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition shadow-2xs"
                             >
                               <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
                               {appointment.review ? "Client Feedback (★)" : "Client Feedback"}
@@ -1067,7 +1198,7 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setDocumentAppointment(appointment)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-navy transition shadow-2xs"
                             >
                               <FileText className="h-4 w-4 text-slate-500" />
                               Case Documents
@@ -1077,7 +1208,7 @@ export default function LawyerDashboard() {
                             <button
                               type="button"
                               onClick={() => setChatAppointment(appointment)}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-navy transition shadow-2xs"
                             >
                               <MessageSquare className="h-4 w-4 text-slate-500" />
                               Chat
@@ -1100,12 +1231,12 @@ export default function LawyerDashboard() {
           {/* TAB 3: CLIENT REVIEWS                                                    */}
           {/* ========================================================================= */}
           {activeTab === "reviews" && (
-            <section className="mt-6 space-y-6 animate-in fade-in duration-200">
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+            <section className="mt-6 space-y-6">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
                 {/* Reviews Header Banner */}
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900">
+                    <h2 className="text-lg font-heading font-bold text-navy">
                       Client Reviews & Testimonials
                     </h2>
                     <p className="text-xs text-slate-500">
@@ -1114,10 +1245,10 @@ export default function LawyerDashboard() {
                   </div>
 
                   {/* Rating Badge */}
-                  <div className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-2.5">
+                  <div className="flex items-center gap-3 rounded-2xl bg-amber-50/80 border border-amber-200 px-4 py-2.5">
                     <Star className="h-6 w-6 fill-amber-400 text-amber-400 shrink-0" />
                     <div>
-                      <span className="text-2xl font-extrabold text-slate-900">
+                      <span className="text-2xl font-heading font-extrabold text-navy">
                         {lawyerProfile?.averageRating > 0
                           ? lawyerProfile.averageRating.toFixed(1)
                           : "5.0"}
@@ -1131,12 +1262,13 @@ export default function LawyerDashboard() {
 
                 {reviewsLoading ? (
                   <div className="py-12 text-center text-xs text-slate-400">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-royal mb-2" />
                     Loading verified reviews...
                   </div>
                 ) : reviewsData.length === 0 ? (
                   <div className="py-12 text-center space-y-2">
                     <Star className="mx-auto h-8 w-8 text-slate-300" />
-                    <h3 className="text-sm font-bold text-slate-800">No Client Reviews Yet</h3>
+                    <h3 className="text-sm font-heading font-bold text-navy">No Client Reviews Yet</h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
                       Reviews appear automatically once verified clients conclude consultations and rate their experience.
                     </p>
@@ -1155,11 +1287,11 @@ export default function LawyerDashboard() {
                           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
                             <div className="flex items-center gap-2.5">
                               {/* Avatar */}
-                              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-900 text-xs font-bold text-white">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-xs font-bold text-white">
                                 {client.name ? client.name.charAt(0).toUpperCase() : "C"}
                               </div>
                               <div>
-                                <p className="text-sm font-bold text-slate-900">
+                                <p className="text-sm font-heading font-bold text-navy">
                                   {client.name || "Verified Client"}
                                 </p>
                                 <p className="text-[11px] text-slate-400">
@@ -1187,8 +1319,8 @@ export default function LawyerDashboard() {
 
                           {/* Related Appointment Reference */}
                           {appRef && (
-                            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-blue-900 bg-blue-50/70 px-3 py-1 rounded-xl w-fit">
-                              <CalendarCheck className="h-3.5 w-3.5 text-blue-700" />
+                            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-navy bg-blue-50/70 px-3 py-1 rounded-xl w-fit">
+                              <CalendarCheck className="h-3.5 w-3.5 text-royal" />
                               <span>
                                 Consultation on{" "}
                                 {formatDateOnly(appRef.scheduledAt)} (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Search, MapPin, Briefcase, Filter, RotateCcw, AlertCircle, ArrowRight } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import LawyerCard from "./LawyerCard";
 import { getLawyers } from "../services/lawyerService";
 
@@ -33,6 +34,7 @@ const PRACTICE_AREAS = [
 ];
 
 export default function LawyerSearch({ initialCity = "", initialSpecialization = "" }) {
+  const { user } = useAuth();
   const [city, setCity] = useState(initialCity || "All Cities");
   const [specialization, setSpecialization] = useState(initialSpecialization || "All Practice Areas");
   const [minExperience, setMinExperience] = useState("");
@@ -210,7 +212,7 @@ export default function LawyerSearch({ initialCity = "", initialSpecialization =
           </div>
 
           <Link
-            to="/lawyers"
+            to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
             className="hidden sm:inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:text-blue-900"
           >
             Explore all lawyers <ArrowRight className="h-4 w-4" />

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import LawyerCard from "../components/LawyerCard";
 import { getLawyers } from "../services/lawyerService";
@@ -20,19 +21,24 @@ import {
 const PRACTICE_AREAS = [
   "All Specializations",
   "Corporate & Startup Law",
+  "Corporate Law",
   "Criminal Law",
   "Criminal Defense",
   "Civil Litigation",
   "Family & Divorce Law",
+  "Family Law",
+  "Divorce Law",
   "Property & Real Estate Law",
   "Property Law",
   "Cyber Crime & Data Privacy",
+  "Cyber Crime Law",
   "Labour & Employment Law",
   "Taxation & GST",
   "Consumer Protection",
   "Constitutional Law",
   "Banking & Finance",
   "Intellectual Property (IPR)",
+  "IP Law",
   "Immigration Law",
   "Arbitration & Dispute Resolution",
 ];
@@ -63,7 +69,20 @@ const RATING_OPTIONS = [
 ];
 
 export default function ClientFindLawyers({ isPublicLayout = false }) {
+  const { user } = useAuth();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // If visitor is not authenticated, redirect directly to registration preserving destination
+  if (!user) {
+    const targetUrl = location.pathname + location.search;
+    return <Navigate to={`/register?redirect=${encodeURIComponent(targetUrl)}`} replace />;
+  }
+
+  // Advocates are prevented from client consultation booking
+  if (user.role === "lawyer") {
+    return <Navigate to="/lawyer-dashboard?restricted=booking" replace />;
+  }
 
   // Search filter states
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
@@ -81,6 +100,16 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
   const [lawyers, setLawyers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Synchronize specialization state when URL searchParams change
+  useEffect(() => {
+    const specParam = searchParams.get("specialization");
+    if (specParam) {
+      setSpecialization(specParam);
+    } else {
+      setSpecialization("All Specializations");
+    }
+  }, [searchParams]);
 
   // Debounce text inputs for responsive typing
   useEffect(() => {
@@ -187,29 +216,29 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
   }, [lawyers, minRating, sortBy]);
 
   return (
-    <div className={`min-h-screen bg-slate-50 flex flex-col font-sans ${isPublicLayout ? "pb-12" : ""}`}>
+    <div className={`min-h-screen bg-[#F8FAFC] flex flex-col font-sans ${isPublicLayout ? "pb-12" : ""}`}>
       {!isPublicLayout && <Navbar />}
 
       <main className="flex-1 px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-7xl space-y-6">
           {/* Header Banner */}
-          <div className="rounded-3xl bg-linear-to-r from-slate-950 via-blue-950 to-slate-900 p-8 sm:p-10 text-white shadow-xl relative overflow-hidden border border-slate-800">
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/15 blur-3xl pointer-events-none" />
+          <div className="rounded-3xl bg-gradient-to-r from-[#070D1E] via-[#0B132B] to-[#101C3A] p-8 sm:p-10 text-white shadow-xl relative overflow-hidden border border-slate-800">
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
             <div className="relative z-10 max-w-3xl space-y-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3.5 py-1 text-xs font-bold text-amber-300 border border-amber-400/30">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 px-3.5 py-1 text-xs font-bold text-[#D9A441] border border-amber-400/30">
                 <ShieldCheck className="h-3.5 w-3.5" /> Verified Legal Counsel
               </span>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              <h1 className="font-heading text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
                 Available Advocates
               </h1>
-              <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                 Connect directly with licensed Advocates, Senior Counsels, and legal consultants across District Courts, High Courts, and Tribunals in India.
               </p>
             </div>
           </div>
 
           {/* Search & Combined Filter Bar */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {/* Search by Lawyer Name or Keywords */}
               <div className="relative">
@@ -219,7 +248,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                   placeholder="Search by advocate name or keyword..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none transition"
+                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-[#2457D6] focus:ring-1 focus:ring-[#2457D6] outline-none transition"
                 />
               </div>
 
@@ -228,7 +257,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                 <select
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none transition bg-white"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 focus:border-[#2457D6] focus:ring-1 focus:ring-[#2457D6] outline-none transition bg-white"
                 >
                   {PRACTICE_AREAS.map((area) => (
                     <option key={area} value={area}>
@@ -246,7 +275,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                   placeholder="Location (e.g. Delhi, Mumbai, Bengaluru)..."
                   value={locationQuery}
                   onChange={(e) => setLocationQuery(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none transition"
+                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:border-[#2457D6] focus:ring-1 focus:ring-[#2457D6] outline-none transition"
                 />
               </div>
 
@@ -255,16 +284,17 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                 <button
                   type="button"
                   onClick={fetchLawyers}
-                  className="flex-1 rounded-xl bg-blue-900 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition flex items-center justify-center gap-1.5"
+                  className="flex-1 rounded-xl bg-[#2457D6] px-4 py-2.5 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition flex items-center justify-center gap-1.5 active:scale-[0.99]"
                 >
                   <Filter className="h-3.5 w-3.5" />
-                  Apply Filters
+                  <span>Apply Filters</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-slate-100 transition"
+                  className="rounded-xl border border-slate-200 p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
                   title="Reset all filters"
+                  aria-label="Reset all filters"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
@@ -280,7 +310,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                   <select
                     value={minExperience}
                     onChange={(e) => setMinExperience(e.target.value)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 bg-white outline-none focus:border-blue-900"
+                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 bg-white outline-none focus:border-[#2457D6]"
                   >
                     {EXPERIENCE_OPTIONS.map((opt) => (
                       <option key={opt.label} value={opt.value}>
@@ -296,7 +326,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                   <select
                     value={maxFee}
                     onChange={(e) => setMaxFee(e.target.value)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 bg-white outline-none focus:border-blue-900"
+                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 bg-white outline-none focus:border-[#2457D6]"
                   >
                     {FEE_OPTIONS.map((opt) => (
                       <option key={opt.label} value={opt.value}>
@@ -312,7 +342,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                   <select
                     value={minRating}
                     onChange={(e) => setMinRating(e.target.value)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 bg-white outline-none focus:border-blue-900"
+                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-700 bg-white outline-none focus:border-[#2457D6]"
                   >
                     {RATING_OPTIONS.map((opt) => (
                       <option key={opt.label} value={opt.value}>
@@ -330,7 +360,7 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-800 bg-white outline-none focus:border-blue-900"
+                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-800 bg-white outline-none focus:border-[#2457D6]"
                 >
                   <option value="fee_asc">Fee: Low to High</option>
                   <option value="fee_desc">Fee: High to Low</option>
@@ -345,71 +375,63 @@ export default function ClientFindLawyers({ isPublicLayout = false }) {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="font-heading text-lg sm:text-xl font-bold text-slate-900">
                   Available Advocates
                 </h2>
-                <p className="text-xs text-slate-500">
-                  Verified advocates ready for consultation
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Showing {filteredAndSortedLawyers.length} approved legal practitioner{filteredAndSortedLawyers.length === 1 ? "" : "s"}
                 </p>
               </div>
-
-              {!loading && !error && (
-                <span className="text-xs font-medium text-slate-500">
-                  Showing <strong className="text-slate-900">{filteredAndSortedLawyers.length}</strong> available advocate{filteredAndSortedLawyers.length === 1 ? "" : "s"}
-                </span>
-              )}
             </div>
 
-            {/* Loading State */}
-            {loading && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-900 border-r-transparent align-[-0.125em]" />
-                <p className="mt-4 text-sm font-semibold text-slate-600">
-                  Loading available advocates...
-                </p>
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800">
+                {error}
               </div>
             )}
 
-            {/* Error State */}
-            {error && !loading && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-xs text-red-700">
-                <p className="font-bold">Error loading advocates</p>
-                <p className="mt-1">{error}</p>
-                <button
-                  type="button"
-                  onClick={fetchLawyers}
-                  className="mt-3 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 transition"
-                >
-                  Try Again
-                </button>
+            {loading ? (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="h-64 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs animate-pulse space-y-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-2xl bg-slate-200" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                        <div className="h-3 w-1/2 bg-slate-200 rounded" />
+                      </div>
+                    </div>
+                    <div className="h-3 w-full bg-slate-200 rounded mt-4" />
+                    <div className="h-3 w-2/3 bg-slate-200 rounded" />
+                  </div>
+                ))}
               </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && !error && filteredAndSortedLawyers.length === 0 && (
-              <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-xs space-y-4">
-                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                  <Search className="h-8 w-8" />
+            ) : filteredAndSortedLawyers.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-2xs space-y-3">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#2457D6]">
+                  <Scale className="h-7 w-7" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="font-heading text-base font-bold text-slate-800">
                   No advocates found matching your criteria
                 </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Try adjusting your filters, searching for a different name, or clearing location parameters to view all available counsel.
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Try broadening your search term, clearing location filters, or resetting the fee range to discover verified lawyers.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 transition"
-                >
-                  <RotateCcw className="h-4 w-4" /> Reset All Filters
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="rounded-xl bg-[#2457D6] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
               </div>
-            )}
-
-            {/* Lawyer Cards Grid */}
-            {!loading && !error && filteredAndSortedLawyers.length > 0 && (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredAndSortedLawyers.map((lawyer) => (
                   <LawyerCard key={lawyer._id} lawyer={lawyer} />
                 ))}

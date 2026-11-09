@@ -45,6 +45,12 @@ describe("OTP Removal End-to-End Integration Tests", () => {
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(mongoUri);
     }
+    await User.deleteMany({
+      $or: [
+        { email: new RegExp(String(timestamp)) },
+        { phone: { $in: ["+919876543210", "+919988776655"] } },
+      ],
+    });
   });
 
   after(async () => {

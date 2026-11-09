@@ -277,19 +277,19 @@ export default function LawyerProfile() {
 
     sessionStorage.setItem("pendingConsultation", JSON.stringify(selectionPayload));
 
-    // 1. If not logged in -> redirect to login with return redirect
+    // 1. If not logged in -> redirect to register with return redirect
     if (!currentUser) {
-      navigate(`/login?redirect=${encodeURIComponent(`/lawyers/${lawyer._id}`)}`);
+      navigate(`/register?redirect=${encodeURIComponent(`/lawyers/${lawyer._id}`)}`);
       return;
     }
 
     // 2. If logged in as non-client (e.g. lawyer or admin)
     if (currentUser.role !== "client") {
-      setBookingError("Consultations can only be booked from a Client account.");
+      setBookingError("Advocate accounts cannot access client consultation booking. Consultations can only be booked from a Client account.");
       return;
     }
 
-    // 3. Centralized profile completion check (Requirement 4 & 7: 100% profile completion mandatory)
+    // 3. Centralized profile completion check
     setCheckingEligibility(true);
     try {
       const eligibility = await getBookingEligibility();
@@ -310,7 +310,6 @@ export default function LawyerProfile() {
       // If 100% complete, proceed to dedicated booking page
       navigate("/book-appointment");
     } catch {
-      // In case of error reaching eligibility endpoint, proceed to booking page where backend independently checks
       navigate("/book-appointment");
     } finally {
       setCheckingEligibility(false);
@@ -319,11 +318,11 @@ export default function LawyerProfile() {
 
   if (loading) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-50">
+      <main className="grid min-h-screen place-items-center bg-[#F8FAFC]">
         <div className="text-center space-y-3">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-900 border-t-transparent" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#2457D6] border-t-transparent" />
           <p className="text-sm font-semibold text-slate-600">
-            Loading advocate public profile...
+            Loading advocate profile...
           </p>
         </div>
       </main>
@@ -332,9 +331,9 @@ export default function LawyerProfile() {
 
   if (error || !lawyer) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-16">
-        <div className="mx-auto max-w-xl rounded-3xl bg-white p-8 text-center shadow-xs border border-slate-200">
-          <h1 className="text-xl font-bold text-slate-900">
+      <main className="min-h-screen bg-[#F8FAFC] px-4 py-16">
+        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center shadow-xs border border-slate-200">
+          <h1 className="font-heading text-xl font-bold text-slate-900">
             Advocate Profile Unavailable
           </h1>
           <p className="mt-2 text-sm text-red-600">
@@ -344,7 +343,7 @@ export default function LawyerProfile() {
             <button
               type="button"
               onClick={loadProfile}
-              className="rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 transition"
+              className="rounded-xl bg-[#2457D6] px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition"
             >
               Try Again
             </button>
@@ -361,9 +360,9 @@ export default function LawyerProfile() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <main className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       {/* Top Banner Navigation */}
-      <header className="bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 text-white px-4 py-8 sm:px-6 shadow-md border-b border-slate-800">
+      <header className="bg-gradient-to-r from-[#070D1E] via-[#0B132B] to-[#101C3A] text-white px-4 py-8 sm:px-6 shadow-md border-b border-slate-800">
         <div className="mx-auto max-w-6xl">
           <Link
             to={currentUser?.role === "client" ? "/client/lawyers" : "/lawyers"}
@@ -373,10 +372,10 @@ export default function LawyerProfile() {
           </Link>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#D9A441] block mb-1">
                 Verified Advocate Profile
               </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">
                 {name}
               </h1>
             </div>
@@ -385,7 +384,7 @@ export default function LawyerProfile() {
                 type="button"
                 onClick={handleBookConsultation}
                 disabled={checkingEligibility}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 px-6 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-300 transition transform hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#D9A441] px-6 py-3 text-xs font-black tracking-wide text-slate-950 shadow-md shadow-amber-500/20 hover:bg-[#c89432] transition transform hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 <span>{checkingEligibility ? "Checking Eligibility..." : "Book Consultation"}</span>
                 <ArrowRight className="h-4 w-4" />
@@ -397,12 +396,9 @@ export default function LawyerProfile() {
 
       {/* Main Profile Content: Sections A through I in strict specified order */}
       <div className="mx-auto max-w-6xl w-full px-4 py-8 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* ========================================================================= */}
-          {/* SECTION A: LAWYER PROFILE HEADER                                          */}
-          {/* Profile image, Full name, Verified badge, Rating & review count, Spec, Exp*/}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+        <div className="lg:col-span-2 space-y-6">
+          {/* SECTION A: LAWYER PROFILE HEADER */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-start gap-6">
               {/* Profile Image with Edit Profile Image option directly underneath */}
               <div className="relative shrink-0 flex flex-col items-center gap-2">
@@ -411,7 +407,7 @@ export default function LawyerProfile() {
                     <img
                       src={user.profileImage}
                       alt={name}
-                      className="h-28 w-28 rounded-2xl object-cover border-2 border-slate-100 shadow-sm"
+                      className="h-28 w-28 rounded-2xl object-cover border border-slate-200 shadow-2xs"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                         if (e.currentTarget.nextSibling) {
@@ -421,7 +417,7 @@ export default function LawyerProfile() {
                     />
                   ) : null}
                   <div
-                    className={`h-28 w-28 rounded-2xl bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center text-3xl font-extrabold shadow-sm ${
+                    className={`h-28 w-28 rounded-2xl bg-gradient-to-br from-[#0B132B] via-[#101C3A] to-[#2457D6] text-white flex items-center justify-center text-3xl font-extrabold shadow-2xs border border-slate-200 ${
                       user.profileImage ? "hidden" : "flex"
                     }`}
                   >
@@ -429,7 +425,7 @@ export default function LawyerProfile() {
                   </div>
                   {isApproved && (
                     <span
-                      className="absolute -bottom-2 -right-2 rounded-full bg-emerald-600 p-1.5 text-white ring-4 ring-white shadow-xs"
+                      className="absolute -bottom-2 -right-2 rounded-full bg-emerald-600 p-1.5 text-white ring-4 ring-white shadow-2xs"
                       title="Verified Advocate by LegalConnect"
                     >
                       <ShieldCheck className="h-4 w-4" />
@@ -449,14 +445,14 @@ export default function LawyerProfile() {
                         fileInputRef.current?.click();
                       }
                     }}
-                    className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition"
+                    className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-[#2457D6] bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition"
                   >
                     {uploadingImage ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-700" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2457D6]" />
                     ) : (
                       <Camera className="h-3.5 w-3.5" />
                     )}
-                    <span>{uploadingImage ? "Uploading..." : "Edit Profile Image"}</span>
+                    <span>{uploadingImage ? "Uploading..." : "Edit Photo"}</span>
                     <input
                       id="lawyer-profile-image-input"
                       ref={fileInputRef}
@@ -486,33 +482,33 @@ export default function LawyerProfile() {
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Verified Lawyer Badge */}
                   {isApproved && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                       Verified Lawyer
                     </span>
                   )}
 
                   {/* Rating and Total Review Count */}
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 border border-amber-200">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 border border-amber-200">
+                    <Star className="h-3.5 w-3.5 fill-[#D9A441] text-[#D9A441]" />
                     <span>{reviewStats.average}</span>
                     <span className="text-amber-700 font-normal">
                       ({reviewStats.count} {reviewStats.count === 1 ? "review" : "reviews"})
                     </span>
                   </span>
 
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 border border-slate-200">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700 border border-slate-200">
                     {lawyer.designation || "Advocate"}
                   </span>
                 </div>
 
                 {/* Full Name */}
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-slate-900">
                   {name}
                 </h2>
 
                 {lawyer.headline && (
-                  <p className="text-sm font-semibold text-blue-900 leading-snug">
+                  <p className="text-sm font-semibold text-[#2457D6] leading-snug">
                     {lawyer.headline}
                   </p>
                 )}
@@ -521,7 +517,7 @@ export default function LawyerProfile() {
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 pt-1">
                   <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
                     <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                    {experienceYears} {experienceYears === 1 ? "year" : "years"} of legal experience
+                    {experienceYears} {experienceYears === 1 ? "year" : "years"} legal experience
                   </span>
                   <span>•</span>
                   <span className="inline-flex items-center gap-1">
@@ -533,33 +529,27 @@ export default function LawyerProfile() {
             </div>
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION B: ABOUT LAWYER                                                   */}
-          {/* Complete About written by lawyer; clean empty state if not provided       */}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
-              <Scale className="h-5 w-5 text-blue-900" />
+          {/* SECTION B: ABOUT LAWYER */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
+            <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2 mb-3">
+              <Scale className="h-5 w-5 text-[#2457D6]" />
               About Advocate {name}
             </h3>
             {lawyer.bio && lawyer.bio.trim() ? (
-              <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">
                 {lawyer.bio}
               </p>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
                 No biography has been added by this advocate yet.
               </div>
             )}
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION C: SPECIALIZATIONS                                                */}
-          {/* Display all specializations selected by the lawyer                        */}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
-              <Briefcase className="h-5 w-5 text-blue-900" />
+          {/* SECTION C: SPECIALIZATIONS */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
+            <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2 mb-3">
+              <Briefcase className="h-5 w-5 text-[#2457D6]" />
               Specializations & Practice Areas
             </h3>
             {specializations.length > 0 ? (
@@ -567,14 +557,14 @@ export default function LawyerProfile() {
                 {specializations.map((spec, idx) => (
                   <span
                     key={`${spec}-${idx}`}
-                    className="rounded-xl bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-900 border border-blue-200/70"
+                    className="rounded-xl bg-blue-50/70 px-3 py-1.5 text-xs font-bold text-[#1D4ED8] border border-blue-200/60"
                   >
                     {spec}
                   </span>
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
                 No specializations specified yet.
               </div>
             )}
@@ -599,13 +589,10 @@ export default function LawyerProfile() {
             )}
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION D: EDUCATION DETAILS                                              */}
-          {/* Degree, College/University, Passing year, other education details         */}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <GraduationCap className="h-5 w-5 text-blue-900" />
+          {/* SECTION D: EDUCATION DETAILS */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
+            <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
+              <GraduationCap className="h-5 w-5 text-[#2457D6]" />
               Education & Academic Credentials
             </h3>
 
@@ -619,10 +606,10 @@ export default function LawyerProfile() {
                   return (
                     <div
                       key={idx}
-                      className="rounded-2xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1"
+                      className="rounded-xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="font-bold text-slate-900 text-sm">{degree}</h4>
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{degree}</h4>
                         {year && (
                           <span className="text-xs font-semibold text-slate-500">
                             Class of {year}
@@ -634,7 +621,7 @@ export default function LawyerProfile() {
                         {edu.cityState ? `, ${edu.cityState}` : ""}
                       </p>
                       {edu.certifications && (
-                        <p className="text-xs text-blue-900 pt-1">
+                        <p className="text-xs text-[#2457D6] pt-1">
                           Certifications: {edu.certifications}
                         </p>
                       )}
@@ -643,20 +630,17 @@ export default function LawyerProfile() {
                 })}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
                 Education details have not been entered by this advocate yet.
               </div>
             )}
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION E: INTERNSHIP AND PROFESSIONAL PRACTICE DETAILS                   */}
-          {/* Chamber, firm, work experience details: organization, role, duration, desc*/}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+          {/* SECTION E: INTERNSHIP AND PROFESSIONAL PRACTICE DETAILS */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
-                <Briefcase className="h-5 w-5 text-blue-900" />
+              <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2 mb-3">
+                <Briefcase className="h-5 w-5 text-[#2457D6]" />
                 Professional Practice & Chambers History
               </h3>
 
@@ -665,10 +649,10 @@ export default function LawyerProfile() {
                   {lawyer.experiences.map((exp, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1.5"
+                      className="rounded-xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1.5"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="font-bold text-slate-900 text-sm">
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
                           {exp.organization}
                         </h4>
                         {(exp.startDate || exp.endDate) && (
@@ -677,7 +661,7 @@ export default function LawyerProfile() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-semibold text-blue-900">
+                      <p className="text-xs font-semibold text-[#2457D6]">
                         {exp.designation || "Counsel"} {exp.employmentType ? `• ${exp.employmentType}` : ""}
                       </p>
                       {exp.practiceAreas && (
@@ -694,7 +678,7 @@ export default function LawyerProfile() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-5 text-center text-xs text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-5 text-center text-xs text-slate-500">
                   No chamber or law firm practice history entered yet.
                 </div>
               )}
@@ -702,7 +686,7 @@ export default function LawyerProfile() {
 
             {/* Internships & Judicial Training */}
             <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-sm font-bold text-slate-900 mb-3">
+              <h4 className="font-heading text-xs sm:text-sm font-bold text-slate-900 mb-3">
                 Internships & Judicial Training
               </h4>
 
@@ -711,7 +695,7 @@ export default function LawyerProfile() {
                   {lawyer.internships.map((intern, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1"
+                      className="rounded-xl bg-slate-50/70 p-4 border border-slate-200/70 space-y-1"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <h5 className="font-bold text-slate-900 text-xs">
@@ -735,20 +719,17 @@ export default function LawyerProfile() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-xs text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-xs text-slate-500">
                   No judicial internships entered.
                 </div>
               )}
             </div>
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION F: AWARDS, HONOURS AND ACHIEVEMENTS                               */}
-          {/* Award name, organization, year, short description                         */}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <Award className="h-5 w-5 text-amber-600" />
+          {/* SECTION F: AWARDS, HONOURS AND ACHIEVEMENTS */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
+            <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2 mb-4">
+              <Award className="h-5 w-5 text-[#D9A441]" />
               Awards, Honours & Professional Recognitions
             </h3>
 
@@ -757,11 +738,11 @@ export default function LawyerProfile() {
                 {lawyer.awards.map((award, idx) => (
                   <div
                     key={idx}
-                    className="rounded-2xl border border-amber-200/70 bg-amber-50/40 p-4 space-y-1"
+                    className="rounded-xl border border-amber-200/70 bg-amber-50/40 p-4 space-y-1"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h4 className="font-bold text-amber-950 text-sm flex items-center gap-1.5">
-                        <Award className="h-4 w-4 text-amber-600" />
+                      <h4 className="font-bold text-amber-950 text-xs sm:text-sm flex items-center gap-1.5">
+                        <Award className="h-4 w-4 text-[#D9A441]" />
                         {award.name}
                       </h4>
                       {award.year && (
@@ -784,28 +765,25 @@ export default function LawyerProfile() {
                 ))}
               </div>
             ) : lawyer.achievements ? (
-              <div className="rounded-2xl border border-amber-200/60 bg-amber-50/40 p-4">
+              <div className="rounded-xl border border-amber-200/60 bg-amber-50/40 p-4">
                 <p className="text-xs text-slate-800 leading-relaxed">
                   🏆 {lawyer.achievements}
                 </p>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center text-xs text-slate-500">
                 No awards or honours added by this advocate yet.
               </div>
             )}
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION G: CONSULTATION FEE                                               */}
-          {/* Display current consultation fee                                          */}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs flex flex-wrap items-center justify-between gap-4">
+          {/* SECTION G: CONSULTATION FEE */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs flex flex-wrap items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Consultation Pricing
               </span>
-              <h3 className="text-xl font-bold text-slate-900">
+              <h3 className="font-heading text-lg font-bold text-slate-900">
                 Current Consultation Fee
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -813,27 +791,24 @@ export default function LawyerProfile() {
               </p>
             </div>
             <div className="text-right">
-              <span className="text-3xl font-black text-blue-900 block">
+              <span className="font-heading text-3xl font-black text-[#0B132B] block">
                 {feeText}
               </span>
-              <span className="text-[11px] text-slate-400 font-semibold">
+              <span className="text-[11px] text-slate-500 font-medium">
                 Per 30-min consultation session
               </span>
             </div>
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION H: AVAILABLE SLOTS & PREFERRED TIME REQUEST                       */}
-          {/* Live slots configured by lawyer, or client-proposed time                  */}
-          {/* ========================================================================= */}
+          {/* SECTION H: AVAILABLE SLOTS & PREFERRED TIME REQUEST */}
           <article
             id="available-slots-section"
-            className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-4"
+            className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs space-y-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-900" />
+                <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-[#2457D6]" />
                   Available Appointment Slots
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -853,7 +828,7 @@ export default function LawyerProfile() {
 
             {slotsLoading && (
               <div className="py-8 text-center text-xs text-slate-500 space-y-2">
-                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-900 border-t-transparent" />
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[#2457D6] border-t-transparent" />
                 <p>Loading advocate availability slots...</p>
               </div>
             )}
@@ -891,10 +866,10 @@ export default function LawyerProfile() {
                           setIsFlexibleTime(false);
                           setBookingError("");
                         }}
-                        className={`rounded-2xl border p-4 text-left transition-all ${
+                        className={`rounded-xl border p-4 text-left transition-all ${
                           isSelected
-                            ? "border-blue-900 bg-blue-50 ring-2 ring-blue-900 shadow-xs"
-                            : "border-slate-200 hover:border-blue-400 bg-white"
+                            ? "border-[#2457D6] bg-blue-50/70 ring-2 ring-[#2457D6] shadow-2xs"
+                            : "border-slate-200 hover:border-blue-300 bg-white"
                         }`}
                       >
                         <span className="block text-xs font-bold text-slate-900">
@@ -905,7 +880,7 @@ export default function LawyerProfile() {
                         </span>
                         <span
                           className={`mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold ${
-                            isSelected ? "text-blue-900" : "text-emerald-700"
+                            isSelected ? "text-[#2457D6]" : "text-emerald-700"
                           }`}
                         >
                           {isSelected ? "✓ Selected Slot" : "+ Select this Slot"}
@@ -919,7 +894,7 @@ export default function LawyerProfile() {
 
             {/* If NO slots are configured by the lawyer */}
             {!slotsLoading && !slotsError && slots.length === 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 space-y-4">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 space-y-4">
                 <div className="flex items-start gap-3">
                   <Clock className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
                   <div className="space-y-1 text-xs text-amber-950">
@@ -949,7 +924,7 @@ export default function LawyerProfile() {
                         setPreferredDate(e.target.value);
                         setBookingError("");
                       }}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-900 disabled:bg-slate-100"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-[#2457D6] disabled:bg-slate-100"
                     />
                   </div>
 
@@ -965,7 +940,7 @@ export default function LawyerProfile() {
                         setPreferredTime(e.target.value);
                         setBookingError("");
                       }}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-900 disabled:bg-slate-100"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-[#2457D6] disabled:bg-slate-100"
                     />
                   </div>
 
@@ -978,7 +953,7 @@ export default function LawyerProfile() {
                           setIsFlexibleTime(e.target.checked);
                           setBookingError("");
                         }}
-                        className="h-4 w-4 rounded text-blue-900"
+                        className="h-4 w-4 rounded text-[#2457D6]"
                       />
                       <span>I am flexible with consultation timing (Advocate will propose a confirmed slot).</span>
                     </label>
@@ -988,15 +963,12 @@ export default function LawyerProfile() {
             )}
           </article>
 
-          {/* ========================================================================= */}
-          {/* SECTION I: CLIENT REVIEWS AND RATINGS                                     */}
-          {/* Display actual reviews submitted by clients from Review collection        */}
-          {/* ========================================================================= */}
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+          {/* SECTION I: CLIENT REVIEWS AND RATINGS */}
+          <article className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-2xs">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Star className="h-5 w-5 fill-amber-400 text-amber-500" />
+                <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Star className="h-5 w-5 fill-[#D9A441] text-[#D9A441]" />
                   Client Reviews & Verified Ratings
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -1004,8 +976,8 @@ export default function LawyerProfile() {
                 </p>
               </div>
 
-              <div className="flex items-baseline gap-2 bg-amber-50 px-4 py-2 rounded-2xl border border-amber-200">
-                <span className="text-2xl font-black text-amber-900">
+              <div className="flex items-baseline gap-2 bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
+                <span className="font-heading text-2xl font-black text-amber-900">
                   {reviewStats.average}
                 </span>
                 <span className="text-xs font-semibold text-amber-800">
@@ -1022,10 +994,10 @@ export default function LawyerProfile() {
 
             {!reviewsLoading && reviewStats.reviews.length === 0 && (
               <div className="py-8 text-center space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#2457D6]">
                   <MessageSquare className="h-6 w-6" />
                 </div>
-                <h4 className="text-sm font-bold text-slate-800">No client reviews yet</h4>
+                <h4 className="font-heading text-sm font-bold text-slate-800">No client reviews yet</h4>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Be the first verified client to consult with Advocate {name} and leave official feedback.
                 </p>
@@ -1043,11 +1015,11 @@ export default function LawyerProfile() {
                   return (
                     <div
                       key={rev._id}
-                      className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 space-y-2 transition hover:bg-slate-50"
+                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 space-y-2 transition hover:bg-slate-50"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-900 text-white font-bold text-xs shadow-2xs">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0B132B] text-white font-bold text-xs shadow-2xs">
                             {initial}
                           </div>
                           <div>
@@ -1061,7 +1033,7 @@ export default function LawyerProfile() {
                                     key={star}
                                     className={`h-3 w-3 ${
                                       star <= rating
-                                        ? "fill-amber-400 text-amber-500"
+                                        ? "fill-[#D9A441] text-[#D9A441]"
                                         : "text-slate-300"
                                     }`}
                                   />
@@ -1091,16 +1063,14 @@ export default function LawyerProfile() {
           </article>
         </div>
 
-        {/* ========================================================================= */}
-        {/* RIGHT SIDEBAR: BOOKING ACTION & SELECTION SUMMARY                         */}
-        {/* ========================================================================= */}
+        {/* RIGHT SIDEBAR: BOOKING ACTION & SELECTION SUMMARY */}
         <aside className="space-y-6">
-          <div className="sticky top-20 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+          <div className="sticky top-20 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-5">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
                 Consultation Fee
               </span>
-              <span className="text-3xl font-extrabold text-blue-900 block">
+              <span className="font-heading text-3xl font-extrabold text-[#0B132B] block">
                 {feeText}
               </span>
               <p className="text-xs text-slate-500 mt-1">
@@ -1109,18 +1079,18 @@ export default function LawyerProfile() {
             </div>
 
             <div className="border-t border-slate-100 pt-4 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
                 Consultation Selection
               </h4>
 
               {selectedSlotData ? (
-                <div className="rounded-2xl bg-blue-50 p-4 border border-blue-200/80 space-y-1 text-xs">
-                  <span className="font-bold text-blue-950 block">Confirmed Slot Selected:</span>
-                  <p className="text-blue-900 font-semibold">{formatDateTime(selectedSlotData.startAt)}</p>
-                  <p className="text-blue-700 text-[11px]">Until {formatDateTime(selectedSlotData.endAt)}</p>
+                <div className="rounded-xl bg-blue-50/70 p-4 border border-blue-200/80 space-y-1 text-xs">
+                  <span className="font-bold text-[#0B132B] block">Confirmed Slot Selected:</span>
+                  <p className="text-[#2457D6] font-semibold">{formatDateTime(selectedSlotData.startAt)}</p>
+                  <p className="text-slate-500 text-[11px]">Until {formatDateTime(selectedSlotData.endAt)}</p>
                 </div>
               ) : preferredDate || isFlexibleTime ? (
-                <div className="rounded-2xl bg-amber-50 p-4 border border-amber-200/80 space-y-1 text-xs">
+                <div className="rounded-xl bg-amber-50/70 p-4 border border-amber-200/80 space-y-1 text-xs">
                   <span className="font-bold text-amber-950 block">Requested Preferred Time:</span>
                   <p className="text-amber-900 font-semibold">
                     {isFlexibleTime ? "Flexible consultation window" : `${preferredDate} ${preferredTime ? `@ ${preferredTime}` : ""}`}
@@ -1128,7 +1098,7 @@ export default function LawyerProfile() {
                   <p className="text-amber-700 text-[11px]">Requires advocate confirmation</p>
                 </div>
               ) : (
-                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 text-xs text-slate-500">
+                <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 text-xs text-slate-500">
                   Select a slot or propose a preferred time to book.
                 </div>
               )}
@@ -1146,7 +1116,7 @@ export default function LawyerProfile() {
               type="button"
               onClick={handleBookConsultation}
               disabled={checkingEligibility}
-              className="w-full rounded-2xl bg-blue-900 py-3.5 px-4 text-sm font-bold text-white shadow-md hover:bg-blue-800 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 disabled:opacity-50"
+              className="w-full rounded-xl bg-[#2457D6] py-3.5 px-4 text-xs font-bold uppercase tracking-wide text-white shadow-2xs hover:bg-blue-700 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#2457D6] focus:ring-offset-2 disabled:opacity-50 active:scale-[0.98]"
             >
               <span>{checkingEligibility ? "Verifying Eligibility..." : "Book Consultation"}</span>
               <ArrowRight className="h-4 w-4" />

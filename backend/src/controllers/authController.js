@@ -17,6 +17,12 @@ const {
 } = require("../services/eligibilityService");
 const { normalizeEmail } = require("../utils/cryptoUtils");
 
+const {
+  verifyEmailOtpService,
+  resendEmailOtpService,
+  createOrUpdateEmailChallenge,
+} = require("../services/verificationService");
+
 // ==========================================
 // REGISTER USER
 // ==========================================
@@ -26,6 +32,79 @@ const registerUser = async (req, res, next) => {
     const result = await registerUserService(req.body);
 
     return res.status(201).json({
+      success: true,
+      message: result.message,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// EMAIL OTP VERIFICATION ENDPOINTS
+// ==========================================
+
+const sendEmailOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email address is required",
+      });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (user && user.emailVerified) {
+      return res.status(200).json({
+        success: true,
+        alreadyVerified: true,
+        message: "Email is already verified. You can log in directly.",
+      });
+    }
+
+    const result = await createOrUpdateEmailChallenge({
+      email: normalizedEmail,
+      name: user ? user.name : "User",
+      phone: user ? user.phone : "",
+      role: user ? user.role : "client",
+      existingUserId: user ? user._id : null,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyEmailOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    const result = await verifyEmailOtpService({ email, otp });
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendEmailOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const result = await resendEmailOtpService({ email });
+
+    return res.status(200).json({
       success: true,
       message: result.message,
       ...result,
@@ -94,7 +173,7 @@ const refreshAccessToken = async (req, res) => {
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "User is not active",
+        message: "User account is not active",
       });
     }
 
@@ -324,6 +403,9 @@ const changePassword = async (req, res, next) => {
 
 module.exports = {
   registerUser,
+  sendEmailOtp,
+  verifyEmailOtp,
+  resendEmailOtp,
   loginUser,
   refreshAccessToken,
   logoutUser,

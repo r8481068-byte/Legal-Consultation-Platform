@@ -5,3 +5,8 @@ node_modules/
 dist/
 build/
 coverage/
+.agents/
+skills-lock.json
+backend/uploads/
+uploads/
+backend/test-results.txt

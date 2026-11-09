@@ -26,6 +26,23 @@ function Login() {
     }));
   }
 
+  function handleSuccessfulLogin(result) {
+    login(result);
+
+    // Role-aware redirection
+    const redirectParam = searchParams.get("redirect");
+    const userRole = result.user?.role;
+    if (redirectParam && userRole === "client") {
+      navigate(redirectParam, { replace: true });
+    } else if (userRole === "lawyer") {
+      navigate("/lawyer-dashboard", { replace: true });
+    } else if (userRole === "admin") {
+      navigate("/admin", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (loading || isSubmittingRef.current) return;
@@ -40,27 +57,11 @@ function Login() {
         password: formData.password,
       });
 
-
-
       if (!result || !result.accessToken) {
         throw new Error("Login response did not contain an access token.");
       }
 
-      // Store auth session
-      login(result);
-
-      // Role-aware redirection
-      const redirectParam = searchParams.get("redirect");
-      const userRole = result.user?.role;
-      if (redirectParam && userRole === "client") {
-        navigate(redirectParam, { replace: true });
-      } else if (userRole === "lawyer") {
-        navigate("/lawyer-dashboard", { replace: true });
-      } else if (userRole === "admin") {
-        navigate("/admin", { replace: true });
-      } else {
-        navigate("/dashboard", { replace: true });
-      }
+      handleSuccessfulLogin(result);
     } catch (err) {
       const isNetworkError =
         (err.name === "TypeError" &&
@@ -79,44 +80,41 @@ function Login() {
     }
   }
 
-  const getPortalInfo = () => {
-    if (roleHint === "lawyer") {
-      return {
-        badge: "Lawyer Portal",
-        badgeColor: "bg-amber-100 text-amber-900 border-amber-200",
-        icon: Briefcase,
-        heading: "Lawyer Portal Login",
-        subtitle: "Access your consultations, client appointments, and bookable slots.",
-      };
-    }
-    if (roleHint === "admin") {
-      return {
-        badge: "Admin Portal",
-        badgeColor: "bg-emerald-100 text-emerald-900 border-emerald-200",
-        icon: Shield,
-        heading: "Administrator Login",
-        subtitle: "Platform moderation, lawyer verification, and metrics.",
-      };
-    }
-    return {
+  // Portal branding configurations
+  const portalConfig = {
+    lawyer: {
+      heading: "Advocate Portal",
+      subtitle: "Sign in to manage client bookings, manage availability, and conduct legal consultations.",
+      badge: "Advocate Access",
+      badgeColor: "bg-amber-50 text-amber-900 border-amber-200",
+      icon: Briefcase,
+    },
+    admin: {
+      heading: "System Administration",
+      subtitle: "Secure administration portal for verifying advocates, tracking dispute tickets, and system governance.",
+      badge: "Administrator Portal",
+      badgeColor: "bg-emerald-50 text-emerald-900 border-emerald-200",
+      icon: Shield,
+    },
+    default: {
+      heading: "Sign in to LegalConnect",
+      subtitle: "Access verified advocates, online video consultations, and your legal document repository.",
       badge: "Client Portal",
-      badgeColor: "bg-blue-100 text-blue-900 border-blue-200",
+      badgeColor: "bg-blue-50 text-blue-900 border-blue-200",
       icon: User,
-      heading: "Client Login",
-      subtitle: "Sign in to book consultations, chat with advocates, and view receipts.",
-    };
+    },
   };
 
-  const portal = getPortalInfo();
+  const portal = portalConfig[roleHint] || portalConfig.default;
   const Icon = portal.icon;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <main className="min-h-screen bg-[#F8FAFC] px-4 py-12 flex items-center justify-center font-sans">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200/90 bg-white p-8 shadow-xl ring-1 ring-slate-900/5">
         <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="text-xs font-bold text-blue-800 hover:underline"
+            className="text-xs font-bold text-[#2457D6] hover:underline"
           >
             ← Back to Home
           </Link>
@@ -126,17 +124,28 @@ function Login() {
           </span>
         </div>
 
-        <h1 className="mt-6 text-2xl font-black text-slate-900 sm:text-3xl">
-          {portal.heading}
-        </h1>
-        <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+        <div className="mt-6 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B132B] text-white shadow-2xs">
+            <Scale className="h-5 w-5 text-[#D9A441]" />
+          </div>
+          <div>
+            <h1 className="font-heading text-xl font-bold text-slate-900 tracking-tight">
+              {portal.heading}
+            </h1>
+            <p className="text-xs text-slate-500">
+              Bar Council of India Compliant
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-3 text-xs text-slate-600 leading-relaxed">
           {portal.subtitle}
         </p>
 
         {error && (
           <p
             role="alert"
-            className="mt-5 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200"
+            className="mt-4 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200"
           >
             {error}
           </p>
@@ -146,7 +155,7 @@ function Login() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1 block text-xs font-bold text-slate-700 uppercase tracking-wide"
+              className="mb-1.5 block text-[11px] font-bold text-slate-700 uppercase tracking-wide"
             >
               Email address
             </label>
@@ -160,21 +169,21 @@ function Login() {
               autoComplete="email"
               required
               placeholder="name@example.com"
-              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
+              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-[#2457D6] focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:cursor-not-allowed transition"
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="password"
-                className="block text-xs font-bold text-slate-700 uppercase tracking-wide"
+                className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide"
               >
                 Password
               </label>
               <Link
                 to="/forgot-password"
-                className="text-xs font-semibold text-blue-800 hover:underline"
+                className="text-xs font-semibold text-[#2457D6] hover:underline"
               >
                 Forgot password?
               </Link>
@@ -189,14 +198,14 @@ function Login() {
               autoComplete="current-password"
               required
               placeholder="Enter your password"
-              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
+              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-[#2457D6] focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:cursor-not-allowed transition"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-blue-900 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-800 transition disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-[#2457D6] py-3 text-xs font-bold uppercase tracking-wide text-white shadow-2xs hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer active:scale-[0.99]"
           >
             {loading ? "Authenticating..." : `Login to ${portal.badge}`}
           </button>
@@ -204,10 +213,10 @@ function Login() {
 
         {/* Portal Switching Links */}
         <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-          <p className="text-xs text-slate-500 mb-2">Access other accounts:</p>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Switch Portal:</p>
           <div className="flex items-center justify-center gap-3 text-xs font-semibold">
             {roleHint !== "" && (
-              <Link to="/login" className="text-blue-700 hover:underline">
+              <Link to="/login" className="text-[#2457D6] hover:underline">
                 Client
               </Link>
             )}
@@ -228,16 +237,16 @@ function Login() {
           New client?{" "}
           <Link
             to={searchParams.get("redirect") ? `/register?redirect=${encodeURIComponent(searchParams.get("redirect"))}` : "/register"}
-            className="font-bold text-blue-800 hover:underline"
+            className="font-bold text-[#2457D6] hover:underline"
           >
             Create an Account
           </Link>
           {" · "}
           <Link
             to="/lawyer/signup"
-            className="font-bold text-blue-800 hover:underline"
+            className="font-bold text-[#2457D6] hover:underline"
           >
-            Apply as Lawyer
+            Apply as Advocate
           </Link>
         </p>
       </div>

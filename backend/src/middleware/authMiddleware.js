@@ -26,7 +26,7 @@ const protect = async (req, res, next) => {
     }
 
     // Immediate database check: Block suspended/deactivated users in real-time
-    const userDoc = await User.findById(userId).select("isActive role name email");
+    const userDoc = await User.findById(userId).select("isActive isVerified emailVerified role name email");
     if (userDoc && userDoc.isActive === false) {
       return res.status(403).json({
         success: false,

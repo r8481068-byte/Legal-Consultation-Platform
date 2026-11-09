@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Scale,
   ShieldCheck,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 
 export default function About() {
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-12">
@@ -265,7 +267,7 @@ export default function About() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              to="/lawyers"
+              to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3 text-xs font-black text-slate-950 shadow-md hover:bg-amber-300 transition-colors"
             >
               <Scale className="h-4 w-4" /> Consult a Lawyer

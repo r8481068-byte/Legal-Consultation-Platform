@@ -16,6 +16,9 @@ import {
   ArrowLeft,
   Briefcase,
   UserCheck,
+  Loader2,
+  CalendarDays,
+  Sparkles,
 } from "lucide-react";
 
 export default function LawyerAvailabilityPage() {
@@ -95,37 +98,38 @@ export default function LawyerAvailabilityPage() {
   const bookedCount = mySlots.filter((s) => s.status === "booked").length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-5xl">
+      <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl space-y-6">
           {/* Top navigation trail */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <Link
               to="/lawyer-dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-blue-900 transition"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-navy transition"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Lawyer Dashboard
+              <span>Back to Lawyer Dashboard</span>
             </Link>
 
             <Link
-              to="/lawyer/edit-profile"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:underline"
+              to="/lawyer/profile/edit"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-royal hover:underline"
             >
-              Edit Lawyer Profile →
+              <span>Edit Lawyer Profile</span>
+              <span>→</span>
             </Link>
           </div>
 
-          {/* Page Header */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-6">
+          {/* Page Header Card */}
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 border-b border-slate-100 pb-6">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-royal">
                   Consultation Schedule Manager
                 </span>
-                <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900">
+                <h1 className="mt-1 text-2xl sm:text-3xl font-heading font-extrabold text-navy tracking-tight">
                   Availability & Slot Manager
                 </h1>
                 <p className="mt-1 text-xs text-slate-500">
@@ -133,13 +137,13 @@ export default function LawyerAvailabilityPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-blue-50 border border-blue-200 px-4 py-2 text-center">
-                  <span className="text-xl font-black text-blue-900">{availableCount}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 block">Available</span>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="rounded-2xl bg-blue-50/80 border border-blue-200 px-4 py-2.5 text-center min-w-[90px]">
+                  <span className="text-2xl font-heading font-black text-navy">{availableCount}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-royal block">Available</span>
                 </div>
-                <div className="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-2 text-center">
-                  <span className="text-xl font-black text-amber-900">{bookedCount}</span>
+                <div className="rounded-2xl bg-amber-50/80 border border-amber-200 px-4 py-2.5 text-center min-w-[90px]">
+                  <span className="text-2xl font-heading font-black text-amber-900">{bookedCount}</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block">Booked</span>
                 </div>
               </div>
@@ -147,31 +151,34 @@ export default function LawyerAvailabilityPage() {
 
             {/* Alerts */}
             {error && (
-              <div className="mt-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-xs font-semibold text-red-700 border border-red-200">
-                <AlertCircle className="h-4 w-4 shrink-0" />
+              <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-rose-50 p-4 text-xs font-semibold text-rose-800 border border-rose-200">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
                 <span>{error}</span>
               </div>
             )}
 
             {message && (
-              <div className="mt-4 flex items-center gap-2 rounded-2xl bg-green-50 p-4 text-xs font-semibold text-green-800 border border-green-200">
-                <CheckCircle className="h-4 w-4 shrink-0" />
+              <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 border border-emerald-200">
+                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
                 <span>{message}</span>
               </div>
             )}
 
             {/* Slot Creator Form */}
-            <form onSubmit={handleCreateSlot} className="mt-6 rounded-2xl bg-slate-50 p-5 border border-slate-200">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                Add New 30-Minute Consultation Slot
-              </h3>
+            <form onSubmit={handleCreateSlot} className="mt-6 rounded-2xl bg-slate-50/80 p-5 sm:p-6 border border-slate-200/80">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Clock className="h-4 w-4 text-royal" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-navy">
+                  Add New 30-Minute Consultation Slot
+                </h3>
+              </div>
               <p className="text-xs text-slate-500 mb-4">
                 Choose a future date and start time. The system will automatically configure a 30-minute consultation window.
               </p>
 
               <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[240px]">
-                  <label htmlFor="slotDateInput" className="block text-xs font-semibold text-slate-700 mb-1">
+                <div className="flex-1 min-w-[260px]">
+                  <label htmlFor="slotDateInput" className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Start Date & Time (IST)
                   </label>
                   <input
@@ -180,33 +187,42 @@ export default function LawyerAvailabilityPage() {
                     value={slotDate}
                     onChange={(e) => setSlotDate(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-royal focus:ring-1 focus:ring-royal transition shadow-2xs"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={slotCreating}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 transition disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-navy px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-navy-light transition disabled:opacity-50"
                 >
-                  <PlusCircle className="h-4 w-4" />
-                  {slotCreating ? "Creating..." : "Create Slot"}
+                  {slotCreating ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <PlusCircle className="h-4 w-4 text-gold" />
+                  )}
+                  <span>{slotCreating ? "Creating..." : "Create Slot"}</span>
                 </button>
               </div>
             </form>
           </div>
 
           {/* Slots List Card */}
-          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-              <h2 className="text-lg font-bold text-slate-900">
-                All Scheduled Slots ({mySlots.length})
-              </h2>
+              <div>
+                <h2 className="text-lg font-heading font-bold text-navy">
+                  All Scheduled Slots ({mySlots.length})
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Manage upcoming available and booked appointments
+                </p>
+              </div>
 
               <button
                 type="button"
                 onClick={loadSlots}
-                className="text-xs font-semibold text-blue-700 hover:underline"
+                className="text-xs font-bold text-royal hover:underline"
               >
                 Refresh Slots
               </button>
@@ -214,12 +230,13 @@ export default function LawyerAvailabilityPage() {
 
             {loading ? (
               <div className="py-12 text-center text-xs text-slate-400">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-royal mb-2" />
                 Loading availability schedule...
               </div>
             ) : mySlots.length === 0 ? (
               <div className="py-12 text-center space-y-2">
-                <Calendar className="mx-auto h-8 w-8 text-slate-300" />
-                <p className="text-sm font-bold text-slate-800">No Consultation Slots Created</p>
+                <CalendarDays className="mx-auto h-9 w-9 text-slate-300" />
+                <p className="text-sm font-heading font-bold text-navy">No Consultation Slots Created</p>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Create your first consultation slot above so clients can view and book legal advice appointments with you.
                 </p>
@@ -233,22 +250,22 @@ export default function LawyerAvailabilityPage() {
                   return (
                     <div
                       key={slot._id}
-                      className={`rounded-2xl border p-4 transition ${
+                      className={`rounded-2xl border p-4.5 transition ${
                         isBooked
                           ? "bg-amber-50/40 border-amber-200 shadow-2xs"
                           : isPast
                           ? "bg-slate-50 border-slate-200 opacity-60"
-                          : "bg-white border-blue-200 shadow-xs hover:border-blue-400"
+                          : "bg-white border-slate-200 shadow-2xs hover:border-royal/50 hover:shadow-xs"
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                             isBooked
-                              ? "bg-amber-100 text-amber-800"
+                              ? "bg-amber-100 text-amber-800 border border-amber-200"
                               : isPast
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-emerald-100 text-emerald-800"
+                              ? "bg-slate-100 text-slate-600 border border-slate-200"
+                              : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                           }`}
                         >
                           {isBooked ? "Booked" : isPast ? "Expired" : "Available"}
@@ -259,7 +276,7 @@ export default function LawyerAvailabilityPage() {
                             type="button"
                             onClick={() => handleDeleteSlot(slot._id)}
                             disabled={deletingSlotId === slot._id}
-                            className="text-slate-400 hover:text-red-600 transition p-1"
+                            className="text-slate-400 hover:text-rose-600 transition p-1"
                             title="Delete Slot"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -267,10 +284,11 @@ export default function LawyerAvailabilityPage() {
                         )}
                       </div>
 
-                      <p className="mt-3 text-sm font-bold text-slate-900">
+                      <p className="mt-3 text-sm font-heading font-bold text-navy">
                         {formatDate(slot.startAt)}
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-slate-400" />
                         Until {new Date(slot.endAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
