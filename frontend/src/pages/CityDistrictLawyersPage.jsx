@@ -14,8 +14,10 @@ import {
 import { getLocationBySlug } from "../data/indiaLocationsData";
 import { LEGAL_SERVICES } from "../data/legalServicesData";
 import { getLawyers } from "../services/lawyerService";
+import { useAuth } from "../context/AuthContext";
 
 export default function CityDistrictLawyersPage() {
+  const { user } = useAuth();
   const { stateSlug, citySlug } = useParams();
   const stateData = getLocationBySlug(stateSlug);
 
@@ -261,7 +263,7 @@ export default function CityDistrictLawyersPage() {
                 View All {stateData.name} Advocates
               </Link>
               <Link
-                to="/lawyers"
+                to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
                 className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
               >
                 Browse Pan-India Lawyers
@@ -332,7 +334,13 @@ export default function CityDistrictLawyersPage() {
                         Profile
                       </Link>
                       <Link
-                        to={`/book-appointment?lawyerId=${lawyer._id}`}
+                        to={
+                          !user
+                            ? `/register?redirect=${encodeURIComponent(`/book-appointment?lawyerId=${lawyer._id}`)}`
+                            : user.role === "client"
+                            ? `/book-appointment?lawyerId=${lawyer._id}`
+                            : "/lawyer-dashboard?restricted=booking"
+                        }
                         className="rounded-xl bg-amber-400 px-3.5 py-1.5 text-xs font-black text-slate-950 hover:bg-amber-300 transition shadow-sm"
                       >
                         Book

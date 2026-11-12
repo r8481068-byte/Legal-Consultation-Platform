@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   BookOpen,
   Search,
@@ -16,6 +17,7 @@ import {
 import { BLOG_CATEGORIES, BLOG_POSTS } from "../data/blogsData";
 
 export default function Blogs() {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -222,7 +224,7 @@ export default function Blogs() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              to="/lawyers"
+              to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3 text-xs font-black text-slate-950 shadow-md hover:bg-amber-300 transition-colors"
             >
               <Scale className="h-4 w-4" /> Consult a Verified Lawyer

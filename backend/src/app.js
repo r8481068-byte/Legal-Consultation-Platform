@@ -22,21 +22,50 @@ const app = express();
 
 app.use(helmet());
 
+/**
+ * Resolves permitted CORS origins based on environment.
+ * In production: strictly permits only explicitly configured production domains.
+ * Localhost and 127.0.0.1 are never permitted in production.
+ * In development/test: includes local development origins alongside any configured URLs.
+ */
+const getAllowedOrigins = () => {
+    const isProduction = process.env.NODE_ENV === "production";
 
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174"
-].filter(Boolean);
+    const configured = [
+        process.env.FRONTEND_URL,
+        process.env.CLIENT_URL,
+    ]
+        .filter(Boolean)
+        .flatMap((val) => val.split(","))
+        .map((origin) => origin.trim().replace(/\/+$/, ""))
+        .filter(Boolean);
 
+    if (isProduction) {
+        return configured;
+    }
+
+    const devOrigins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ];
+
+    return Array.from(new Set([...configured, ...devOrigins]));
+};
 
 app.use(
     cors({
         origin: function (origin, callback) {
             // Allow requests with no origin (like mobile apps, curl, or Postman)
-            if (!origin || allowedOrigins.includes(origin)) {
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+            const currentAllowed = getAllowedOrigins();
+
+            if (currentAllowed.includes(normalizedOrigin)) {
                 return callback(null, true);
             }
             return callback(new Error("Not allowed by CORS"));

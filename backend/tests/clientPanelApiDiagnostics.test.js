@@ -17,10 +17,7 @@ const {
 const { searchLawyers } = require("../src/controllers/lawyerController");
 const { getMyAppointments } = require("../src/controllers/appointmentController");
 
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Client Panel API Diagnostics & Verification", () => {
   let clientUser;
@@ -30,9 +27,7 @@ describe("Client Panel API Diagnostics & Verification", () => {
   let testAppointment;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
 
@@ -114,7 +109,7 @@ describe("Client Panel API Diagnostics & Verification", () => {
     if (lawyerProfile) await Lawyer.deleteOne({ _id: lawyerProfile._id });
     if (lawyerUser) await User.deleteOne({ _id: lawyerUser._id });
     if (clientUser) await User.deleteOne({ _id: clientUser._id });
-    await mongoose.disconnect();
+    await disconnectTestDB();
   });
 
   // 1. Find Lawyer API returns actual lawyers

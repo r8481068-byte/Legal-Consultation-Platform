@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const { isValidPinCode } = require("../utils/cryptoUtils");
 
@@ -96,7 +97,18 @@ function calculateIdentityStatus(user) {
  * 6. Aadhaar and PAN format-verified requirements satisfied
  */
 async function checkBookingEligibility(userId) {
-  const user = await User.findById(userId);
+  let cleanId = userId;
+  if (userId && typeof userId === "object" && !mongoose.isValidObjectId(userId)) {
+    cleanId = userId.clientId || userId.userId || userId._id;
+  }
+
+  if (!cleanId || !mongoose.isValidObjectId(cleanId)) {
+    const error = new Error("Invalid client User ID provided for booking eligibility check");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findById(cleanId);
 
   if (!user) {
     const error = new Error("Active client account not found");

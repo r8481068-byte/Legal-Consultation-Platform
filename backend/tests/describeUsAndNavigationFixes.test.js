@@ -13,10 +13,7 @@ const {
   searchLawyersService,
 } = require("../src/services/lawyerService");
 
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Describe Us, Lawyer Search & Profile Navigation Verification Suite", () => {
   let lawyerUser1;
@@ -26,9 +23,7 @@ describe("Describe Us, Lawyer Search & Profile Navigation Verification Suite", (
   let clientUser;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
 
@@ -99,7 +94,7 @@ describe("Describe Us, Lawyer Search & Profile Navigation Verification Suite", (
       if (lawyerDoc2) await Lawyer.deleteOne({ _id: lawyerDoc2._id });
       if (clientUser) await User.deleteOne({ _id: clientUser._id });
     } finally {
-      await mongoose.disconnect();
+      await disconnectTestDB();
     }
   });
 

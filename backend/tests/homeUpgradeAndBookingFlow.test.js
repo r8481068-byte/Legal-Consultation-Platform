@@ -24,10 +24,7 @@ const {
   getLawyerByIdService,
 } = require("../src/services/lawyerService");
 
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Home Page Upgrade & Booking Eligibility Flow Verification", () => {
   let incompleteClient;
@@ -39,9 +36,7 @@ describe("Home Page Upgrade & Booking Eligibility Flow Verification", () => {
   let bookedAppointment;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
 
@@ -128,7 +123,7 @@ describe("Home Page Upgrade & Booking Eligibility Flow Verification", () => {
     if (lawyerUser) await User.deleteOne({ _id: lawyerUser._id });
     if (incompleteClient) await User.deleteOne({ _id: incompleteClient._id });
     if (completeClient) await User.deleteOne({ _id: completeClient._id });
-    await mongoose.disconnect();
+    await disconnectTestDB();
   });
 
   test("1. Lawyer discovery search and filters work on backend", async () => {

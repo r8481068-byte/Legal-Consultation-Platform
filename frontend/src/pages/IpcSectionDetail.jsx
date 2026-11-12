@@ -46,15 +46,15 @@ export default function IpcSectionDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F8FAFC] py-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="mx-auto max-w-5xl space-y-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <Link to="/" className="hover:text-blue-900">Home</Link>
+          <Link to="/" className="hover:text-navy">Home</Link>
           <ChevronRight className="h-3 w-3" />
-          <Link to="/ipc-sections" className="hover:text-blue-900">IPC & BNS Sections</Link>
+          <Link to="/ipc-sections" className="hover:text-navy">IPC & BNS Sections</Link>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-slate-900 font-bold truncate max-w-xs">
+          <span className="text-navy font-bold truncate max-w-xs">
             IPC {section.ipcSection} / BNS {section.bnsSection}
           </span>
         </nav>
@@ -62,15 +62,15 @@ export default function IpcSectionDetail() {
         {/* Back Link */}
         <Link
           to="/ipc-sections"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 hover:text-blue-950"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-royal hover:underline"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to all criminal provisions
         </Link>
 
         {/* Header Hero Card */}
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-sm space-y-6">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 sm:p-10 shadow-xs space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold text-blue-900 border border-blue-100">
+            <span className="rounded-full bg-blue-50 px-3.5 py-1 text-xs font-bold text-navy border border-blue-200">
               {section.category}
             </span>
 
@@ -79,7 +79,7 @@ export default function IpcSectionDetail() {
                 className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
                   section.bailable === "Bailable"
                     ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                    : "bg-red-50 text-red-800 border border-red-200"
+                    : "bg-rose-50 text-rose-800 border border-rose-200"
                 }`}
               >
                 {section.bailable}
@@ -91,23 +91,23 @@ export default function IpcSectionDetail() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5 space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-wider text-blue-700">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 space-y-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-royal">
                 Indian Penal Code (Historical - Pre 1 July 2024)
               </span>
-              <h2 className="text-2xl font-black text-blue-950">
+              <h2 className="text-2xl font-heading font-black text-navy">
                 Section {section.ipcSection}
               </h2>
-              <p className="text-sm font-bold text-blue-900">
+              <p className="text-sm font-bold text-navy">
                 {section.ipcTitle}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 space-y-1">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-1">
               <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700">
                 Bharatiya Nyaya Sanhita (Current - From 1 July 2024)
               </span>
-              <h2 className="text-2xl font-black text-emerald-950">
+              <h2 className="text-2xl font-heading font-black text-emerald-950">
                 Section {section.bnsSection}
               </h2>
               <p className="text-sm font-bold text-emerald-900">

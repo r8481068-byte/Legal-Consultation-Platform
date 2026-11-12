@@ -81,159 +81,159 @@ export default function Footer() {
     { name: "Lawyers in Karnataka", to: "/lawyers-in-india/karnataka" },
   ];
 
-  // Configurable Social Links (Official WhatsApp is known, others configurable via env or placeholder)
+  // Configurable Social Links
   const socialProfiles = [
     {
       name: "Facebook",
       icon: FacebookIcon,
       url: import.meta.env.VITE_FACEBOOK_URL || "https://facebook.com/legalconnect.official",
       ariaLabel: "Follow LegalConnect on Facebook",
-      colorClass: "hover:text-blue-500 hover:border-blue-500/50 hover:bg-blue-500/10"
+      colorClass: "hover:text-blue-400 hover:border-blue-400/40 hover:bg-blue-400/10"
     },
     {
       name: "Instagram",
       icon: InstagramIcon,
       url: import.meta.env.VITE_INSTAGRAM_URL || "https://instagram.com/legalconnect.official",
       ariaLabel: "Follow LegalConnect on Instagram",
-      colorClass: "hover:text-pink-500 hover:border-pink-500/50 hover:bg-pink-500/10"
+      colorClass: "hover:text-pink-400 hover:border-pink-400/40 hover:bg-pink-400/10"
     },
     {
       name: "X (Twitter)",
       icon: XIcon,
       url: import.meta.env.VITE_TWITTER_URL || "https://x.com/legalconnect_in",
       ariaLabel: "Follow LegalConnect on X (formerly Twitter)",
-      colorClass: "hover:text-slate-100 hover:border-slate-400/50 hover:bg-white/10"
+      colorClass: "hover:text-slate-100 hover:border-slate-400/40 hover:bg-white/10"
     },
     {
       name: "YouTube",
       icon: YouTubeIcon,
       url: import.meta.env.VITE_YOUTUBE_URL || "https://youtube.com/@legalconnect",
       ariaLabel: "Subscribe to LegalConnect YouTube channel",
-      colorClass: "hover:text-red-500 hover:border-red-500/50 hover:bg-red-500/10"
+      colorClass: "hover:text-red-400 hover:border-red-400/40 hover:bg-red-400/10"
     },
     {
       name: "LinkedIn",
       icon: LinkedInIcon,
       url: import.meta.env.VITE_LINKEDIN_URL || "https://linkedin.com/company/legalconnect-india",
       ariaLabel: "Connect with LegalConnect on LinkedIn",
-      colorClass: "hover:text-blue-400 hover:border-blue-400/50 hover:bg-blue-400/10"
+      colorClass: "hover:text-blue-400 hover:border-blue-400/40 hover:bg-blue-400/10"
     },
     {
       name: "WhatsApp",
       icon: WhatsAppIcon,
       url: "https://wa.me/918826669309",
       ariaLabel: "Chat with LegalConnect on WhatsApp: +91 8826669309",
-      colorClass: "hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-emerald-400"
+      colorClass: "hover:text-emerald-400 hover:border-emerald-400/40 hover:bg-emerald-400/10 text-emerald-400"
     }
   ];
 
   return (
-    <footer className="w-full border-t border-slate-200 bg-slate-950 text-slate-300">
-      {/* 1. TOP HIGHLIGHTS / TRUST BANNER (PRESERVED) */}
-      <div className="border-b border-slate-800 bg-slate-900/70 py-6">
+    <footer className="w-full border-t border-slate-800 bg-[#070D1E] text-slate-300 transition-colors">
+      {/* 1. TOP HIGHLIGHTS / TRUST BANNER */}
+      <div className="border-b border-slate-800/80 bg-[#0B132B]/90 py-7">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-900/50 text-blue-400">
-              <ShieldCheck className="h-5 w-5" />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-900/40 text-[#2457D6] border border-blue-800/50 shadow-2xs">
+              <ShieldCheck className="h-5 w-5 text-blue-400" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">Verified Advocates</h4>
-              <p className="text-xs text-slate-400">Strict Bar Council enrollment verification</p>
+              <h4 className="font-heading text-sm font-bold text-white tracking-tight">Verified Advocates</h4>
+              <p className="text-xs text-slate-400 mt-0.5">Strict Bar Council enrollment verification</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-900/40 text-amber-400">
-              <Award className="h-5 w-5" />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-900/30 text-[#D9A441] border border-amber-800/40 shadow-2xs">
+              <Award className="h-5 w-5 text-[#D9A441]" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">Genuine Client Reviews</h4>
-              <p className="text-xs text-slate-400">100% verified post-consultation ratings</p>
+              <h4 className="font-heading text-sm font-bold text-white tracking-tight">Genuine Client Reviews</h4>
+              <p className="text-xs text-slate-400 mt-0.5">100% verified post-consultation ratings</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-900/40 text-emerald-400">
-              <Scale className="h-5 w-5" />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-900/30 text-emerald-400 border border-emerald-800/40 shadow-2xs">
+              <Scale className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">Confidential & Secure</h4>
-              <p className="text-xs text-slate-400">Encrypted WebRTC & isolated documents</p>
+              <h4 className="font-heading text-sm font-bold text-white tracking-tight">Confidential & Secure</h4>
+              <p className="text-xs text-slate-400 mt-0.5">Encrypted WebRTC & isolated documents</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-900/40 text-purple-400">
-              <HeartHandshake className="h-5 w-5" />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-900/30 text-purple-400 border border-purple-800/40 shadow-2xs">
+              <HeartHandshake className="h-5 w-5 text-purple-400" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white">Transparent Pricing</h4>
-              <p className="text-xs text-slate-400">Direct booking with fixed fee</p>
+              <h4 className="font-heading text-sm font-bold text-white tracking-tight">Transparent Pricing</h4>
+              <p className="text-xs text-slate-400 mt-0.5">Direct booking with fixed fee</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* 2. THREE-COLUMN DIRECTORY: IMPORTANT LINKS, LEGAL SERVICES, LAWYERS IN INDIA */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Column A: Important Links (EXACTLY AS CURRENTLY APPEARING AND FUNCTIONING) */}
+          {/* Column A: Important Links */}
           <div>
-            <h3 className="border-b border-slate-800 pb-2 text-xs font-bold tracking-wider uppercase text-amber-400">
+            <h3 className="border-b border-slate-800 pb-2.5 text-xs font-black tracking-wider uppercase text-[#D9A441]">
               Important Links
             </h3>
             <ul className="mt-4 space-y-2.5 text-xs">
               <li>
-                <Link to="/" className="hover:text-white transition">
+                <Link to="/" className="hover:text-white transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-white transition">
+                <Link to="/about" className="hover:text-white transition-colors">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/legal-services" className="hover:text-white transition">
+                <Link to="/legal-services" className="hover:text-white transition-colors">
                   Legal Services
                 </Link>
               </li>
               <li>
-                <Link to="/how-we-work" className="hover:text-white transition">
+                <Link to="/how-we-work" className="hover:text-white transition-colors">
                   How We Work / Consultation Journey
                 </Link>
               </li>
               <li>
-                <Link to="/blogs" className="hover:text-white transition">
+                <Link to="/blogs" className="hover:text-white transition-colors">
                   Legal Guide & Codes
                 </Link>
               </li>
               <li>
-                <Link to="/ipc-sections" className="hover:text-white transition text-amber-300 font-semibold">
+                <Link to="/ipc-sections" className="hover:text-white transition-colors text-amber-300 font-semibold">
                   IPC & BNS Sections
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="hover:text-white transition">
+                <Link to="/privacy" className="hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-white transition">
+                <Link to="/terms" className="hover:text-white transition-colors">
                   Terms and Conditions
                 </Link>
               </li>
               <li className="pt-1">
-                <Link to="/legal-aid" className="text-blue-400 hover:text-blue-300 transition">
+                <Link to="/legal-aid" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
                   Free Legal Aid Info
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column B: Our Legal Services (EXACTLY AS CURRENTLY APPEARING AND FUNCTIONING) */}
+          {/* Column B: Our Legal Services */}
           <div>
-            <h3 className="border-b border-slate-800 pb-2 text-xs font-bold tracking-wider uppercase text-amber-400">
+            <h3 className="border-b border-slate-800 pb-2.5 text-xs font-black tracking-wider uppercase text-[#D9A441]">
               Our Legal Services
             </h3>
             <ul className="mt-4 space-y-2.5 text-xs">
@@ -241,16 +241,16 @@ export default function Footer() {
                 <li key={service.slug}>
                   <Link
                     to={`/legal-services/${service.slug}`}
-                    className="hover:text-white transition"
+                    className="hover:text-white transition-colors"
                   >
                     {service.shortTitle}
                   </Link>
                 </li>
               ))}
-              <li className="pt-1">
+              <li className="pt-2">
                 <Link
                   to="/legal-services"
-                  className="font-bold text-amber-400 hover:text-amber-300 transition flex items-center gap-1"
+                  className="font-bold text-[#D9A441] hover:text-amber-300 transition-colors flex items-center gap-1"
                 >
                   View All 19 Services <ArrowRight className="h-3 w-3" />
                 </Link>
@@ -258,15 +258,15 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column C: Lawyers in India (UPDATED PER REQUIREMENT 2) */}
+          {/* Column C: Lawyers in India */}
           <div>
-            <h3 className="border-b border-slate-800 pb-2 text-xs font-bold tracking-wider uppercase text-amber-400">
+            <h3 className="border-b border-slate-800 pb-2.5 text-xs font-black tracking-wider uppercase text-[#D9A441]">
               Lawyers in India
             </h3>
             <ul className="mt-4 space-y-2.5 text-xs">
               {footerStateLinks.map((st) => (
                 <li key={st.name}>
-                  <Link to={st.to} className="hover:text-white transition">
+                  <Link to={st.to} className="hover:text-white transition-colors">
                     {st.name}
                   </Link>
                 </li>
@@ -274,30 +274,30 @@ export default function Footer() {
               <li className="pt-2 border-t border-slate-900">
                 <Link
                   to="/lawyers-in-india"
-                  className="font-bold text-amber-400 hover:text-amber-300 transition flex items-center gap-1 text-xs"
+                  className="font-bold text-[#D9A441] hover:text-amber-300 transition-colors flex items-center gap-1 text-xs"
                 >
-                  View All →
+                  View All States & UTs →
                 </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* 3. FULL-WIDTH HORIZONTAL DIVIDER (PER REQUIREMENT 6) */}
-        <div className="my-10 border-t border-slate-800/90" />
+        {/* 3. FULL-WIDTH HORIZONTAL DIVIDER */}
+        <div className="my-10 border-t border-slate-800/80" />
 
-        {/* 4. SEPARATE ROW WITH TWO SIDE-BY-SIDE SECTIONS: SOCIAL LINKS & CONTACT (PER REQUIREMENT 6) */}
+        {/* 4. SEPARATE ROW WITH TWO SIDE-BY-SIDE SECTIONS: SOCIAL LINKS & CONTACT */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
           {/* LEFT: SOCIAL LINKS */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold tracking-wider uppercase text-amber-400">
+            <h4 className="text-xs font-black tracking-wider uppercase text-[#D9A441]">
               Connect With Us On Social Media
             </h4>
             <p className="text-xs text-slate-400 max-w-md leading-relaxed">
               Stay informed about landmark judicial rulings, legal awareness articles, and client consultation rights through our official digital channels.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
               {socialProfiles.map((item) => {
                 const IconComponent = item.icon;
                 return (
@@ -307,7 +307,7 @@ export default function Footer() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={item.ariaLabel}
-                    className={`inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 px-3.5 py-2 text-xs font-semibold text-slate-300 transition ${item.colorClass}`}
+                    className={`inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-xs font-semibold text-slate-300 transition shadow-2xs ${item.colorClass}`}
                   >
                     <IconComponent className="h-4 w-4 shrink-0" />
                     <span>{item.name}</span>
@@ -320,47 +320,47 @@ export default function Footer() {
 
           {/* RIGHT: CONTACT INFORMATION */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold tracking-wider uppercase text-amber-400">
+            <h4 className="text-xs font-black tracking-wider uppercase text-[#D9A441]">
               Contact Information & Registered Office
             </h4>
 
             <ul className="space-y-2.5 text-xs text-slate-300">
               {/* Address */}
               <li className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <MapPin className="h-4 w-4 text-[#D9A441] shrink-0 mt-0.5" />
                 <a
                   href="https://www.google.com/maps/search/?api=1&query=521+Mukherjee+Nagar+Delhi+110009"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition leading-relaxed flex items-center gap-1.5"
+                  className="hover:text-white transition-colors leading-relaxed flex items-center gap-1.5"
                   title="View Registered Office on Google Maps"
                 >
-                  <span>Address: 521, Mukherjee Nagar, Delhi-110009</span>
+                  <span>Address: Badauli Bangar Sector-154 UttarPradesh-201310</span>
                   <ExternalLink className="h-3 w-3 text-slate-500 shrink-0" />
                 </a>
               </li>
 
               {/* Phone */}
               <li className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-amber-400 shrink-0" />
+                <Phone className="h-4 w-4 text-[#D9A441] shrink-0" />
                 <span>Phone: </span>
                 <a
-                  href="tel:8826669309"
-                  className="text-white hover:text-amber-300 font-semibold transition"
+                  href="tel:8102718380"
+                  className="text-white hover:text-amber-300 font-semibold transition-colors"
                 >
-                  8826669309
+                  8102718380
                 </a>
               </li>
 
               {/* Email */}
               <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 text-amber-400 shrink-0" />
+                <Mail className="h-4 w-4 text-[#D9A441] shrink-0" />
                 <span>Email: </span>
                 <a
                   href="mailto:mylegalconsultants.mlc@gmail.com"
-                  className="text-white hover:text-amber-300 transition break-all"
+                  className="text-white hover:text-amber-300 transition-colors break-all"
                 >
-                  mylegalconsultants.mlc@gmail.com
+                  legalconsultants@gmail.com
                 </a>
               </li>
 
@@ -369,12 +369,12 @@ export default function Footer() {
                 <MessageCircle className="h-4 w-4 text-emerald-400 shrink-0" />
                 <span>WhatsApp: </span>
                 <a
-                  href="https://wa.me/918826669309"
+                  href="https://wa.me/8102718380"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 font-bold transition flex items-center gap-1"
+                  className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors flex items-center gap-1"
                 >
-                  <span>https://wa.me/918826669309</span>
+                  <span>https://wa.me/8102718380</span>
                   <ExternalLink className="h-3 w-3 text-emerald-500" />
                 </a>
               </li>
@@ -383,7 +383,7 @@ export default function Footer() {
             <div className="pt-2">
               <Link
                 to="/lawyer/signup"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9A441]/40 bg-[#D9A441]/10 px-4 py-2 text-xs font-bold text-[#D9A441] hover:bg-[#D9A441]/20 transition-colors shadow-2xs"
               >
                 <span>Advocate Registration Portal →</span>
               </Link>
@@ -393,10 +393,10 @@ export default function Footer() {
       </div>
 
       {/* 5. FOOTER BOTTOM */}
-      <div className="border-t border-slate-800/80 bg-black py-6 text-xs text-slate-500">
+      <div className="border-t border-slate-900 bg-[#050812] py-6 text-xs text-slate-500">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <Scale className="h-4 w-4 text-amber-400" />
+            <Scale className="h-4 w-4 text-[#D9A441]" />
             <span className="font-bold text-slate-300">LegalConnect</span>
             <span>—</span>
             <span>Online Legal Consultation & Technological Scheduling Intermediary</span>

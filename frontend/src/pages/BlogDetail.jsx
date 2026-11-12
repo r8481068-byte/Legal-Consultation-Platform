@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   BookOpen,
   Clock,
@@ -16,6 +17,7 @@ import { getBlogPostBySlug, BLOG_POSTS } from "../data/blogsData";
 import { LEGAL_SERVICES } from "../data/legalServicesData";
 
 export default function BlogDetail() {
+  const { user } = useAuth();
   const { articleSlug } = useParams();
   const post = useMemo(() => getBlogPostBySlug(articleSlug), [articleSlug]);
 
@@ -232,7 +234,7 @@ export default function BlogDetail() {
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
-              to="/lawyers"
+              to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300 transition-colors shadow"
             >
               <Scale className="h-4 w-4" /> Find Lawyers

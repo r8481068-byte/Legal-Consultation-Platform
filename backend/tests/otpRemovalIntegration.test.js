@@ -31,20 +31,18 @@ const {
 } = require("../src/services/authService");
 const { checkBookingEligibility } = require("../src/services/eligibilityService");
 const { generateAccessToken } = require("../src/utils/token");
-
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("OTP Removal End-to-End Integration Tests", () => {
   const timestamp = Date.now();
+  const makePhone = (idx) => "+919" + String(timestamp).slice(-6) + String(idx).padStart(3, "0");
   let createdUserIds = [];
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri);
-    }
+    await connectTestDB();
+    await User.deleteMany({
+      email: new RegExp(String(timestamp)),
+    });
   });
 
   after(async () => {
@@ -53,7 +51,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
       await Lawyer.deleteMany({ user: { $in: createdUserIds } });
       await RefreshToken.deleteMany({ user: { $in: createdUserIds } });
     }
-    await mongoose.connection.close();
+    await disconnectTestDB();
   });
 
   // 1. Client Registration & Login Without OTP
@@ -61,7 +59,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
     const clientData = {
       name: "Test Client",
       email: `client.no.otp.${timestamp}@example.com`,
-      phone: "+919876543210",
+      phone: makePhone(1),
       password: "ClientPassword123!",
       role: "client",
     };
@@ -100,7 +98,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
       name: "Existing Unverified User",
       email: `unverified.${timestamp}@example.com`,
       password: "UnverifiedPass123!",
-      phone: "+919123456789",
+      phone: makePhone(2),
       role: "client",
       emailVerified: false, // Legacy unverified email
       phoneVerified: false, // Legacy unverified phone
@@ -124,7 +122,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
     const lawyerData = {
       name: "Adv. Test Lawyer",
       email: `lawyer.no.otp.${timestamp}@example.com`,
-      phone: "+919988776655",
+      phone: makePhone(3),
       password: "LawyerPassword123!",
       role: "lawyer",
     };
@@ -168,7 +166,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
       name: "Admin User",
       email: `admin.test.${timestamp}@example.com`,
       password: "AdminPassword123!",
-      phone: "+919999900000",
+      phone: makePhone(4),
       role: "admin",
       isActive: true,
     });
@@ -189,7 +187,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
       name: "Refresh Token User",
       email: `refresh.user.${timestamp}@example.com`,
       password: "Password123!",
-      phone: "+919876543299",
+      phone: makePhone(5),
       role: "client",
       emailVerified: false, // OTP verification removed: should not block refresh
       phoneVerified: false,
@@ -219,7 +217,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
       name: "Forgot Pass User",
       email: `forgot.${timestamp}@example.com`,
       password: "OldPassword123!",
-      phone: "+919811122233",
+      phone: makePhone(6),
       role: "client",
       isActive: true,
     });
@@ -259,7 +257,7 @@ describe("OTP Removal End-to-End Integration Tests", () => {
       name: "Eligible Client",
       email: `eligible.client.${timestamp}@example.com`,
       password: "ClientPassword123!",
-      phone: "+919876543201",
+      phone: makePhone(7),
       role: "client",
       emailVerified: false, // OTP removed: unverified contact does not block booking
       phoneVerified: false,

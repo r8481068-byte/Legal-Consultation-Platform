@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Scale,
   ChevronRight,
@@ -41,6 +42,7 @@ const iconMap = {
 };
 
 export default function LegalServiceDetail() {
+  const { user: currentUser } = useAuth();
   const { categorySlug } = useParams();
   const navigate = useNavigate();
 
@@ -110,55 +112,55 @@ export default function LegalServiceDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans">
       {/* 1. BREADCRUMBS & HERO */}
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-12 px-4 sm:px-6 lg:px-8 text-white border-b border-slate-800">
+      <section className="bg-white border-b border-slate-200 py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {/* Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2 text-xs text-slate-400 mb-4 flex-wrap">
-            <Link to="/" className="hover:text-amber-400 transition">
+          <nav className="flex items-center gap-2 text-xs text-slate-500 mb-5 flex-wrap">
+            <Link to="/" className="text-[#2457D6] hover:underline font-semibold transition">
               Home
             </Link>
-            <span>/</span>
-            <Link to="/legal-services" className="hover:text-amber-400 transition">
+            <span className="text-slate-300">/</span>
+            <Link to="/legal-services" className="text-[#2457D6] hover:underline font-semibold transition">
               Legal Services
             </Link>
-            <span>/</span>
-            <span className="text-amber-300 font-semibold">{service.title}</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-900 font-bold">{service.title}</span>
           </nav>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-md">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B132B] text-[#D9A441] shadow-md shrink-0">
                   <Icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold text-blue-300 border border-blue-400/30 uppercase tracking-wider">
+                  <span className="inline-block rounded-full bg-blue-50 px-3 py-0.5 text-xs font-bold text-[#1D4ED8] border border-blue-200 uppercase tracking-wider">
                     Specialized Practice Area
                   </span>
-                  <h1 className="mt-1 text-2xl font-black text-white sm:text-4xl">
+                  <h1 className="mt-1 text-2xl font-heading font-extrabold text-slate-900 sm:text-3xl lg:text-4xl tracking-tight">
                     {service.title}
                   </h1>
                 </div>
               </div>
 
-              <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-2xl">
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl font-normal">
                 {service.fullDescription}
               </p>
 
               {/* Statutory Framework Badges */}
               <div className="pt-2">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300 mb-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">
                   Governing Acts & Statutes:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {service.statutoryFramework.map((act) => (
                     <span
                       key={act}
-                      className="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1 text-xs text-slate-200 border border-white/10"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 shadow-2xs"
                     >
-                      <Scale className="h-3 w-3 text-amber-400" />
+                      <Scale className="h-3.5 w-3.5 text-[#2457D6]" />
                       {act}
                     </span>
                   ))}
@@ -167,33 +169,41 @@ export default function LegalServiceDetail() {
             </div>
 
             {/* Quick Action Card */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 text-white shadow-xl">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" /> Need Legal Consultation?
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-6 shadow-sm">
+              <h3 className="text-sm font-heading font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" /> Need Legal Consultation?
               </h3>
-              <p className="mt-2 text-xs text-slate-300 leading-relaxed">
+              <p className="mt-2 text-xs text-slate-600 leading-relaxed">
                 Connect with verified advocates specializing in {service.shortTitle} for case assessment, document review, and strategic guidance.
               </p>
 
               <div className="mt-5 space-y-2.5">
                 <Link
-                  to={`/lawyers?specialization=${encodeURIComponent(service.specialization)}`}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 py-3 text-xs font-extrabold uppercase tracking-wider text-slate-950 hover:bg-amber-300 transition shadow-md"
+                  to={
+                    !currentUser
+                      ? `/register?redirect=${encodeURIComponent(`/lawyers?specialization=${encodeURIComponent(service.specialization)}`)}`
+                      : currentUser.role === "client"
+                      ? `/lawyers?specialization=${encodeURIComponent(service.specialization)}`
+                      : "/lawyer-dashboard?restricted=booking"
+                  }
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#2457D6] py-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-blue-700 transition shadow-xs"
                 >
-                  <Calendar className="h-4 w-4" /> Book {service.shortTitle} Lawyer
+                  <Calendar className="h-4 w-4 text-[#D9A441]" /> Book {service.shortTitle} Lawyer
                 </Link>
 
                 <Link
-                  to="/ask-question"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 py-3 text-xs font-bold text-white hover:bg-white/10 transition"
+                  to={!currentUser ? "/register?redirect=/ask-question" : "/ask-question"}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-3 text-xs font-bold text-slate-800 hover:bg-slate-50 transition shadow-2xs"
                 >
-                  <HelpCircle className="h-4 w-4 text-amber-400" /> Ask a Free Question
+                  <HelpCircle className="h-4 w-4 text-[#2457D6]" /> Ask a Free Question
                 </Link>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                 <span>Direct Slot Booking</span>
+                <span>•</span>
                 <span>Fixed Rate</span>
+                <span>•</span>
                 <span>Encrypted Video</span>
               </div>
             </div>
@@ -340,7 +350,13 @@ export default function LegalServiceDetail() {
               </h2>
             </div>
             <Link
-              to={`/lawyers?specialization=${encodeURIComponent(service.specialization)}`}
+              to={
+                !currentUser
+                  ? `/register?redirect=${encodeURIComponent(`/lawyers?specialization=${service.specialization}`)}`
+                  : currentUser.role === "client"
+                  ? `/lawyers?specialization=${encodeURIComponent(service.specialization)}`
+                  : "/lawyer-dashboard?restricted=booking"
+              }
               className="text-xs font-bold text-blue-800 hover:text-blue-900"
             >
               View Filtered Directory →
@@ -368,13 +384,13 @@ export default function LegalServiceDetail() {
               </p>
               <div className="mt-4 flex justify-center gap-3">
                 <Link
-                  to="/lawyers"
+                  to={!currentUser ? "/register?redirect=/lawyers" : currentUser.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
                   className="rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800"
                 >
                   All Advocates
                 </Link>
                 <Link
-                  to="/ask-question"
+                  to={!currentUser ? "/register?redirect=/ask-question" : "/ask-question"}
                   className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
                 >
                   Ask a Free Question
@@ -439,7 +455,7 @@ export default function LegalServiceDetail() {
           </Link>
           <div className="flex items-center gap-3">
             <Link
-              to="/lawyers"
+              to={!currentUser ? "/register?redirect=/lawyers" : currentUser.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
               className="text-xs font-bold text-slate-600 hover:text-slate-900"
             >
               Browse Lawyers

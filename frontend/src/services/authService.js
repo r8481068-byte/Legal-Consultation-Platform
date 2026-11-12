@@ -66,6 +66,63 @@ export async function registerUser(userData) {
   return handleResponse(response);
 }
 
+export async function verifyEmailOtp({ email, otp }) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/verify-email-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, otp }),
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect to the authentication server. Please check your network and try again."
+    );
+  }
+
+  return handleResponse(response);
+}
+
+export async function resendEmailOtp({ email }) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/resend-email-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect to the authentication server. Please check your network and try again."
+    );
+  }
+
+  return handleResponse(response);
+}
+
+export async function sendEmailOtp({ email }) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/send-email-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect to the authentication server. Please check your network and try again."
+    );
+  }
+
+  return handleResponse(response);
+}
+
 export async function loginUser(credentials) {
   let response;
   try {

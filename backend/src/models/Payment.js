@@ -46,6 +46,7 @@ const paymentSchema = new mongoose.Schema(
         "captured",
         "failed",
         "refunded",
+        "refund_pending",
       ],
       default: "created",
       required: true,
@@ -66,10 +67,24 @@ const paymentSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    orderInProgress: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 paymentSchema.index({ client: 1, createdAt: -1 });
+
+// Ensure only one active 'created' payment order can exist per appointment across instances
+paymentSchema.index(
+  { appointment: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: "created" },
+  }
+);
 
 module.exports = mongoose.model("Payment", paymentSchema);

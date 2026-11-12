@@ -27,7 +27,7 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const mongoose = require("mongoose");
-const connectDB = require("../src/config/db");
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 const User = require("../src/models/User");
 const Lawyer = require("../src/models/Lawyer");
 const lawyerRouter = require("../src/routes/lawyerRoutes");
@@ -52,9 +52,7 @@ describe("Lawyer Registration Submission & Application Linking Test Suite", () =
   let adminUserId = null;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await connectDB();
-    }
+    await connectTestDB();
 
     // Ensure an admin user exists for verification testing
     let admin = await User.findOne({ role: "admin" });
@@ -80,9 +78,7 @@ describe("Lawyer Registration Submission & Application Linking Test Suite", () =
       if (createdUserIds.length > 0) {
         await User.deleteMany({ _id: { $in: createdUserIds } });
       }
-      if (mongoose.connection.readyState !== 0) {
-        await mongoose.disconnect();
-      }
+      await disconnectTestDB();
     } catch (e) {
       console.error("Cleanup error:", e.message);
     }

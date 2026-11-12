@@ -33,10 +33,7 @@ const {
   cancelAppointmentService,
 } = require("../src/services/appointmentService");
 
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Client Panel Upgrade Test Suite", () => {
   let clientUser;
@@ -47,9 +44,7 @@ describe("Client Panel Upgrade Test Suite", () => {
   let appointmentDoc;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
 
@@ -148,7 +143,7 @@ describe("Client Panel Upgrade Test Suite", () => {
     if (lawyerDoc) await Lawyer.deleteOne({ _id: lawyerDoc._id });
     if (slotDoc) await LawyerAvailability.deleteOne({ _id: slotDoc._id });
     if (appointmentDoc) await Appointment.deleteOne({ _id: appointmentDoc._id });
-    await mongoose.disconnect();
+    await disconnectTestDB();
   });
 
   test("1. Client updates About Me, Gender, Date of Birth, and Profile Image", async () => {

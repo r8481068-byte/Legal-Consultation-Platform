@@ -251,6 +251,64 @@ export default function LawyerSignup() {
     setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
+  const buildApplicationPayload = () => {
+    const docs = [
+      {
+        title: "Bar Council Enrolment Certificate",
+        url: formData.barCertificateUrl.trim(),
+        documentType: "bar_certificate",
+      },
+    ];
+
+    if (formData.idProofUrl && formData.idProofUrl.trim()) {
+      docs.push({
+        title: "Identity Proof (Bar ID / Govt ID)",
+        url: formData.idProofUrl.trim(),
+        documentType: "identity_proof",
+      });
+    }
+
+    if (formData.degreeCertUrl && formData.degreeCertUrl.trim()) {
+      docs.push({
+        title: "Law Degree Certificate",
+        url: formData.degreeCertUrl.trim(),
+        documentType: "degree_certificate",
+      });
+    }
+
+    if (formData.supportingDocUrl && formData.supportingDocUrl.trim()) {
+      docs.push({
+        title: "Additional Supporting Document",
+        url: formData.supportingDocUrl.trim(),
+        documentType: "supporting_doc",
+      });
+    }
+
+    return {
+      phone: formData.phone.trim(),
+      profileImage: formData.profileImage.trim() || undefined,
+      barCouncilId: formData.barCouncilId.trim(),
+      stateOfEnrolment: formData.stateOfEnrolment,
+      city: formData.city,
+      experienceYears: Number(formData.experienceYears) || 1,
+      consultationFee: Number(formData.consultationFee) || 500,
+      specialization: formData.specializations,
+      languages: formData.languages.split(",").map((l) => l.trim()).filter(Boolean),
+      bio: formData.bio.trim(),
+      lawCollege: formData.institution.trim(),
+      graduationYear: Number(formData.year) || 2020,
+      consultationModes: formData.consultationModes,
+      education: [
+        {
+          degree: formData.degree.trim(),
+          institution: formData.institution.trim(),
+          year: Number(formData.year) || 2020,
+        },
+      ],
+      verificationDocuments: docs,
+    };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -268,10 +326,8 @@ export default function LawyerSignup() {
     setLoading(true);
 
     try {
-      // If user is not logged in, register account first and authenticate
-      let activeUser = user;
-      if (!activeUser) {
-        // 1. Create account using existing registration API
+      if (!user) {
+        // Unauthenticated lawyer: Register and login directly without OTP
         await registerUser({
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -281,79 +337,25 @@ export default function LawyerSignup() {
           role: "client",
         });
 
-        // 2. Log in using the newly created credentials to obtain JWT session tokens
         const loginRes = await loginUser({
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
         });
 
-        if (loginRes && loginRes.accessToken) {
-          login(loginRes);
-          activeUser = loginRes.user;
-        } else {
-          throw new Error("Advocate account created, but automatic sign-in failed. Please log in to complete your application.");
-        }
+        login(loginRes);
+
+        const payload = buildApplicationPayload();
+        await applyAsLawyer(payload);
+
+        setSuccess(true);
+        await checkApplicationStatus();
+      } else {
+        // Authenticated client/lawyer applying
+        const payload = buildApplicationPayload();
+        await applyAsLawyer(payload);
+        setSuccess(true);
+        await checkApplicationStatus();
       }
-
-      const docs = [
-        {
-          title: "Bar Council Enrolment Certificate",
-          url: formData.barCertificateUrl.trim(),
-          documentType: "bar_certificate",
-        },
-      ];
-
-      if (formData.idProofUrl && formData.idProofUrl.trim()) {
-        docs.push({
-          title: "Identity Proof (Bar ID / Govt ID)",
-          url: formData.idProofUrl.trim(),
-          documentType: "identity_proof",
-        });
-      }
-
-      if (formData.degreeCertUrl && formData.degreeCertUrl.trim()) {
-        docs.push({
-          title: "Law Degree Certificate",
-          url: formData.degreeCertUrl.trim(),
-          documentType: "degree_certificate",
-        });
-      }
-
-      if (formData.supportingDocUrl && formData.supportingDocUrl.trim()) {
-        docs.push({
-          title: "Additional Supporting Document",
-          url: formData.supportingDocUrl.trim(),
-          documentType: "supporting_doc",
-        });
-      }
-
-      const payload = {
-        phone: formData.phone.trim(),
-        profileImage: formData.profileImage.trim() || undefined,
-        barCouncilId: formData.barCouncilId.trim(),
-        stateOfEnrolment: formData.stateOfEnrolment,
-        city: formData.city,
-        experienceYears: Number(formData.experienceYears) || 1,
-        consultationFee: Number(formData.consultationFee) || 500,
-        specialization: formData.specializations,
-        languages: formData.languages.split(",").map((l) => l.trim()).filter(Boolean),
-        bio: formData.bio.trim(),
-        lawCollege: formData.institution.trim(),
-        graduationYear: Number(formData.year) || 2020,
-        consultationModes: formData.consultationModes,
-        education: [
-          {
-            degree: formData.degree.trim(),
-            institution: formData.institution.trim(),
-            year: Number(formData.year) || 2020,
-          },
-        ],
-        verificationDocuments: docs,
-      };
-
-      await applyAsLawyer(payload);
-      setSuccess(true);
-      await checkApplicationStatus();
     } catch (err) {
       setError(err.message || "Failed to submit lawyer application. Please verify details.");
     } finally {
@@ -1189,6 +1191,8 @@ export default function LawyerSignup() {
             </Link>
           </div>
         </div>
+
+
       </div>
     </div>
   );

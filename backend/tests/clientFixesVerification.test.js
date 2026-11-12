@@ -14,20 +14,14 @@ const {
   updateClientIdentityService,
 } = require("../src/services/authService");
 const { generateAccessToken, generateRefreshToken } = require("../src/utils/token");
-
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Client Fixes & Profile Functionality Test Suite", () => {
   let clientUser;
   let refreshTokenDoc;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
     clientUser = await User.create({
@@ -59,7 +53,7 @@ describe("Client Fixes & Profile Functionality Test Suite", () => {
   after(async () => {
     if (clientUser) await User.deleteOne({ _id: clientUser._id });
     if (refreshTokenDoc) await RefreshToken.deleteOne({ _id: refreshTokenDoc._id });
-    await mongoose.disconnect();
+    await disconnectTestDB();
   });
 
   test("1. Profile Save: Update personal info and address without overwriting unedited fields", async () => {

@@ -207,19 +207,42 @@ export default function ClientDetailModal({
                               </span>
                             </div>
 
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                app.status === "completed"
-                                  ? "bg-green-100 text-green-800"
-                                  : app.status === "confirmed"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : app.status === "pending"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-slate-100 text-slate-700"
-                              }`}
-                            >
-                              {app.status}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {app.isPaid !== undefined && (
+                                <span
+                                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                    app.isPaid
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : app.paymentStatus === "refunded"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : app.paymentStatus === "refund_pending"
+                                      ? "bg-indigo-100 text-indigo-800"
+                                      : "bg-amber-100 text-amber-800"
+                                  }`}
+                                >
+                                  {app.isPaid
+                                    ? "Paid"
+                                    : app.paymentStatus === "refunded"
+                                    ? "Refunded"
+                                    : app.paymentStatus === "refund_pending"
+                                    ? "Refund Pending"
+                                    : "Unpaid"}
+                                </span>
+                              )}
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                  app.status === "completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : app.status === "confirmed"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : app.status === "pending"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-slate-100 text-slate-700"
+                                }`}
+                              >
+                                {app.status}
+                              </span>
+                            </div>
                           </div>
 
                           {app.notes && (

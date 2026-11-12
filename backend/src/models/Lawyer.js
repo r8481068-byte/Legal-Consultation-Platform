@@ -94,6 +94,11 @@ const lawyerSchema = new mongoose.Schema(
         trim: true,
         default: ""
       },
+      organization: {
+        type: String,
+        trim: true,
+        default: ""
+      },
       role: {
         type: String,
         trim: true,
@@ -110,6 +115,11 @@ const lawyerSchema = new mongoose.Schema(
         default: ""
       },
       responsibilities: {
+        type: String,
+        trim: true,
+        default: ""
+      },
+      description: {
         type: String,
         trim: true,
         default: ""

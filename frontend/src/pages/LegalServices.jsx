@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Scale,
   Search,
@@ -33,6 +34,7 @@ const iconMap = {
 };
 
 export default function LegalServices() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
 
@@ -75,25 +77,25 @@ export default function LegalServices() {
   }, [searchQuery, selectedFilter]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans">
       {/* 1. HERO HEADER */}
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-16 px-4 sm:px-6 lg:px-8 text-white border-b border-slate-800">
+      <section className="bg-[#0B132B] bg-gradient-to-br from-[#070D1E] via-[#0B132B] to-[#1E3A8A] py-16 px-4 sm:px-6 lg:px-8 text-white border-b border-slate-800">
         <div className="mx-auto max-w-7xl">
           <Link
             to="/"
-            className="text-xs font-semibold text-amber-400 hover:text-white transition"
+            className="text-xs font-semibold text-gold hover:text-white transition"
           >
             ← Back to Home
           </Link>
 
           <div className="mt-4 max-w-3xl space-y-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 px-3 py-1 text-xs font-bold text-amber-300 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 border border-gold/30 px-3 py-1 text-xs font-bold text-gold uppercase tracking-wider">
               <Briefcase className="h-3.5 w-3.5" /> 19 Practice Areas
             </span>
-            <h1 className="text-3xl font-black text-white sm:text-5xl">
+            <h1 className="text-3xl font-heading font-black text-white sm:text-5xl tracking-tight">
               Legal Services & Practice Categories
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
               LegalConnect provides a comprehensive directory of specialized legal services. Explore practice frameworks, common disputes, and connect directly with approved advocates practicing before District Courts, High Courts, and Tribunals across India.
             </p>
           </div>
@@ -107,7 +109,7 @@ export default function LegalServices() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search legal categories or legal issues (e.g., bail, RERA, divorce, trademark, GST)..."
-                className="w-full rounded-xl bg-white/10 border border-white/20 py-3 pl-10 pr-4 text-sm text-white placeholder-slate-400 outline-none focus:border-amber-400 focus:bg-white/15"
+                className="w-full rounded-xl bg-white/10 border border-white/20 py-3 pl-10 pr-4 text-sm text-white placeholder-slate-400 outline-none focus:border-gold focus:bg-white/15 transition"
               />
             </div>
 
@@ -124,7 +126,7 @@ export default function LegalServices() {
                   onClick={() => setSelectedFilter(pill.id)}
                   className={`rounded-xl px-4 py-2.5 text-xs font-bold whitespace-nowrap transition ${
                     selectedFilter === pill.id
-                      ? "bg-amber-400 text-slate-950 shadow-md"
+                      ? "bg-gold text-navy shadow-md font-extrabold"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >
@@ -140,7 +142,7 @@ export default function LegalServices() {
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between pb-6 border-b border-slate-200 mb-8">
           <div>
-            <h2 className="text-xl font-black text-slate-900">
+            <h2 className="text-xl font-heading font-black text-navy">
               Browse All Legal Services
             </h2>
             <p className="text-xs text-slate-500">
@@ -149,8 +151,8 @@ export default function LegalServices() {
           </div>
 
           <Link
-            to="/lawyers"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 hover:text-blue-900"
+            to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-royal hover:underline"
           >
             <PhoneCall className="h-3.5 w-3.5 text-emerald-600" />
             <span>Search by Lawyer Name or City →</span>
@@ -158,9 +160,9 @@ export default function LegalServices() {
         </div>
 
         {filteredServices.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center max-w-md mx-auto">
-            <Search className="mx-auto h-10 w-10 text-slate-400 mb-3" />
-            <h3 className="text-base font-bold text-slate-900">No Services Found</h3>
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center max-w-md mx-auto shadow-xs">
+            <Search className="mx-auto h-10 w-10 text-slate-300 mb-3" />
+            <h3 className="text-base font-heading font-bold text-navy">No Services Found</h3>
             <p className="mt-1 text-xs text-slate-500">
               No legal practice area matched "{searchQuery}". Try searching for broader terms like "Property", "Criminal", or "Contract".
             </p>
@@ -170,7 +172,7 @@ export default function LegalServices() {
                 setSearchQuery("");
                 setSelectedFilter("all");
               }}
-              className="mt-4 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800"
+              className="mt-4 rounded-xl bg-navy px-4 py-2 text-xs font-bold text-white hover:bg-navy-light"
             >
               Clear Filters
             </button>
@@ -182,11 +184,11 @@ export default function LegalServices() {
               return (
                 <div
                   key={service.slug}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-blue-300 transition"
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs hover:shadow-md hover:border-royal/40 transition group"
                 >
                   <div>
                     <div className="flex items-start justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-950 text-amber-400 shadow-sm">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-navy text-gold shadow-xs group-hover:scale-105 transition">
                         <Icon className="h-6 w-6" />
                       </div>
                       <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600">
@@ -194,7 +196,7 @@ export default function LegalServices() {
                       </span>
                     </div>
 
-                    <h3 className="mt-4 text-lg font-bold text-slate-900">
+                    <h3 className="mt-4 text-lg font-heading font-bold text-navy">
                       {service.title}
                     </h3>
                     <p className="mt-2 text-xs text-slate-600 leading-relaxed">
@@ -208,7 +210,7 @@ export default function LegalServices() {
                       <ul className="space-y-1 text-xs text-slate-700">
                         {service.commonIssues.slice(0, 3).map((issue) => (
                           <li key={issue} className="flex items-start gap-1.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-gold mt-1.5 shrink-0" />
                             <span>{issue}</span>
                           </li>
                         ))}
@@ -219,14 +221,21 @@ export default function LegalServices() {
                   <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
                     <Link
                       to={`/legal-services/${service.slug}`}
-                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-blue-50 py-2.5 px-3 text-xs font-bold text-blue-900 hover:bg-blue-100 transition"
+                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-blue-50/80 py-2.5 px-3 text-xs font-bold text-navy hover:bg-blue-100 transition shadow-2xs"
                     >
-                      Know More <ChevronRight className="h-3.5 w-3.5" />
+                      <span>Know More</span>
+                      <ChevronRight className="h-3.5 w-3.5 text-royal" />
                     </Link>
 
                     <Link
-                      to={`/lawyers?specialization=${encodeURIComponent(service.specialization)}`}
-                      className="inline-flex items-center justify-center rounded-xl bg-blue-900 py-2.5 px-4 text-xs font-bold text-white hover:bg-blue-800 transition"
+                      to={
+                        !user
+                          ? `/register?redirect=${encodeURIComponent(`/lawyers?specialization=${encodeURIComponent(service.specialization)}`)}`
+                          : user.role === "client"
+                          ? `/lawyers?specialization=${encodeURIComponent(service.specialization)}`
+                          : "/lawyer-dashboard?restricted=booking"
+                      }
+                      className="inline-flex items-center justify-center rounded-xl bg-navy py-2.5 px-4 text-xs font-bold text-white hover:bg-navy-light transition shadow-2xs"
                       title={`Find verified ${service.shortTitle} advocates`}
                     >
                       Lawyers
@@ -239,28 +248,28 @@ export default function LegalServices() {
         )}
 
         {/* 3. CONSULTATION CALL TO ACTION */}
-        <div className="mt-16 rounded-3xl bg-gradient-to-r from-blue-950 via-slate-900 to-blue-900 p-8 sm:p-12 text-white text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-8 shadow-xl">
+        <div className="mt-16 rounded-3xl bg-[#0B132B] bg-gradient-to-r from-[#070D1E] via-[#0B132B] to-[#1E3A8A] p-8 sm:p-12 text-white text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-8 shadow-xl">
           <div className="space-y-2 max-w-2xl">
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-3 py-1 text-xs font-bold text-gold">
               <CheckCircle2 className="h-3.5 w-3.5" /> Not Sure Which Category Applies?
             </span>
-            <h3 className="text-2xl font-black sm:text-3xl">
+            <h3 className="text-2xl font-heading font-black sm:text-3xl text-white">
               Post Your Query for Free Advocate Guidance
             </h3>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
               Submit your legal question anonymously. Our panel of advocates provides preliminary guidance regarding applicable legal sections and recommended steps.
             </p>
           </div>
 
           <div className="mt-6 sm:mt-0 flex flex-col sm:flex-row items-center gap-3 shrink-0">
             <Link
-              to="/ask-question"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-slate-950 shadow-md hover:bg-amber-300 transition"
+              to={!user ? "/register?redirect=/ask-question" : "/ask-question"}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gold px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-navy shadow-md hover:bg-gold-light transition"
             >
               Ask a Free Question
             </Link>
             <Link
-              to="/lawyers"
+              to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-6 py-3.5 text-xs font-bold text-white hover:bg-white/20 transition"
             >
               Browse Lawyers Directory

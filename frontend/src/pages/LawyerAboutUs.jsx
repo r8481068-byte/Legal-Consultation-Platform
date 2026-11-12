@@ -111,11 +111,11 @@ export default function LawyerAboutUs() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
         <Navbar />
         <main className="flex-1 flex items-center justify-center p-8 text-slate-500">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-900 border-t-transparent"></div>
+            <Loader2 className="h-8 w-8 animate-spin text-royal" />
             <p className="text-sm font-semibold text-slate-600">
               Loading professional information...
             </p>
@@ -127,21 +127,21 @@ export default function LawyerAboutUs() {
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
         <Navbar />
         <main className="flex-1 px-4 py-12 max-w-3xl mx-auto w-full">
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-            <AlertCircle className="h-10 w-10 text-red-600 mx-auto mb-3" />
-            <h2 className="text-lg font-bold text-red-900">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+            <AlertCircle className="h-10 w-10 text-rose-600 mx-auto mb-3" />
+            <h2 className="text-lg font-heading font-bold text-rose-900">
               Failed to Load Profile
             </h2>
-            <p className="text-sm text-red-700 mt-1">
+            <p className="text-sm text-rose-700 mt-1">
               {error || "Lawyer profile not found. Please log in or complete your profile."}
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <button
                 onClick={() => navigate("/lawyer-dashboard")}
-                className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700"
+                className="rounded-xl bg-navy px-4 py-2 text-xs font-bold text-white hover:bg-navy-light"
               >
                 Back to Dashboard
               </button>
@@ -217,39 +217,32 @@ export default function LawyerAboutUs() {
   ].filter((v, i, a) => a.indexOf(v) === i);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 px-4 py-8 sm:px-6">
+      <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl space-y-6">
           {/* Top Navigation Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <Link
               to="/lawyer-dashboard"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-navy transition"
             >
-              <ArrowLeft className="h-4 w-4 text-blue-900" />
+              <ArrowLeft className="h-4 w-4 text-royal" />
               <span>Back to Dashboard</span>
             </Link>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+              <span className="text-xs font-semibold text-slate-500">
                 Professional Profile Overview
               </span>
-              <Link
-                to="/lawyer/edit-profile"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
-              >
-                <Edit className="h-4 w-4" />
-                <span>Edit Profile</span>
-              </Link>
             </div>
           </div>
 
           {/* ========================================================================= */}
           {/* SECTION A: PROFILE HEADER HERO CARD                                       */}
           {/* ========================================================================= */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               {/* Profile Image with fallback */}
               <div className="relative shrink-0">
@@ -257,7 +250,7 @@ export default function LawyerAboutUs() {
                   <img
                     src={profile.user.profileImage}
                     alt={lawyerName}
-                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-4 border-white shadow-md ring-2 ring-slate-200"
+                    className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl object-cover border-2 border-slate-200 shadow-xs"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                       if (e.currentTarget.nextSibling) {
@@ -267,7 +260,7 @@ export default function LawyerAboutUs() {
                   />
                 ) : null}
                 <div
-                  className={`h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-3xl border-4 border-white shadow-md ring-2 ring-slate-200 ${
+                  className={`h-24 w-24 sm:h-28 sm:w-28 rounded-2xl bg-gradient-to-br from-navy via-navy-light to-royal text-white flex items-center justify-center font-heading font-black text-3xl border-2 border-slate-200 shadow-xs ${
                     profile.user?.profileImage ? "hidden" : "flex"
                   }`}
                 >
@@ -275,7 +268,7 @@ export default function LawyerAboutUs() {
                 </div>
                 {isVerified && (
                   <div
-                    className="absolute bottom-0 right-0 rounded-full bg-emerald-600 p-1.5 text-white ring-2 ring-white shadow-xs"
+                    className="absolute -bottom-1 -right-1 rounded-full bg-emerald-600 p-1.5 text-white ring-2 ring-white shadow-xs"
                     title="Verified Advocate"
                   >
                     <ShieldCheck className="h-4 w-4" />
@@ -286,13 +279,13 @@ export default function LawyerAboutUs() {
               {/* Title & Core Credentials */}
               <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                  <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-navy tracking-tight">
                     {lawyerName}
                   </h1>
                   {isVerified ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                      Verified Advocate
+                      BCI Verified Advocate
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
@@ -302,7 +295,7 @@ export default function LawyerAboutUs() {
                   )}
                 </div>
 
-                <p className="text-sm sm:text-base font-semibold text-blue-900">
+                <p className="text-sm sm:text-base font-semibold text-royal">
                   {profile.headline || `${profile.designation || "Advocate"} | ${primarySpecialization}`}
                 </p>
 
@@ -319,16 +312,16 @@ export default function LawyerAboutUs() {
                 {/* Badges Bar */}
                 <div className="flex flex-wrap items-center gap-2.5 pt-2">
                   <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">
-                    <Scale className="h-3.5 w-3.5 text-blue-900" />
+                    <Scale className="h-3.5 w-3.5 text-royal" />
                     {primarySpecialization}
                   </span>
 
                   <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">
-                    <Briefcase className="h-3.5 w-3.5 text-blue-900" />
+                    <Briefcase className="h-3.5 w-3.5 text-royal" />
                     {profile.experienceYears || 0} Years Experience
                   </span>
 
-                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-1 text-xs font-bold text-blue-900 border border-blue-200">
+                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-1 text-xs font-bold text-navy border border-blue-200">
                     ₹{profile.consultationFee || 0} / Consultation
                   </span>
 
@@ -344,11 +337,11 @@ export default function LawyerAboutUs() {
           {/* ========================================================================= */}
           {/* SECTION: DESCRIBE US                                                      */}
           {/* ========================================================================= */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2.5">
-                <FileText className="h-5 w-5 text-blue-900" />
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                <FileText className="h-5 w-5 text-royal" />
+                <h2 className="text-base sm:text-lg font-heading font-bold text-navy">
                   Describe Us
                 </h2>
               </div>
@@ -357,9 +350,9 @@ export default function LawyerAboutUs() {
                 <button
                   type="button"
                   onClick={handleStartEditDescribeUs}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-900 hover:bg-blue-100 transition shadow-2xs"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-1.5 text-xs font-bold text-navy hover:bg-blue-100 transition shadow-2xs"
                 >
-                  <Edit className="h-3.5 w-3.5" />
+                  <Edit className="h-3.5 w-3.5 text-royal" />
                   <span>Edit</span>
                 </button>
               )}
@@ -373,8 +366,8 @@ export default function LawyerAboutUs() {
             )}
 
             {describeUsError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
                 <span>{describeUsError}</span>
               </div>
             )}
@@ -389,14 +382,14 @@ export default function LawyerAboutUs() {
                   onChange={(e) => setDescribeUsText(e.target.value)}
                   rows={6}
                   placeholder="Introduce yourself, your legal background, practice philosophy, and experience..."
-                  className="w-full rounded-xl border border-slate-300 p-4 text-sm text-slate-800 focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none leading-relaxed transition"
+                  className="w-full rounded-xl border border-slate-200 p-4 text-sm text-slate-800 focus:border-royal focus:ring-1 focus:ring-royal outline-none leading-relaxed transition"
                 />
                 <div className="flex items-center justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={handleCancelEditDescribeUs}
                     disabled={savingDescribeUs}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
                   >
                     <X className="h-3.5 w-3.5" />
                     <span>Cancel</span>
@@ -405,7 +398,7 @@ export default function LawyerAboutUs() {
                     type="button"
                     onClick={handleSaveDescribeUs}
                     disabled={savingDescribeUs}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-navy px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-navy-light transition disabled:opacity-50"
                   >
                     {savingDescribeUs ? (
                       <>
@@ -414,7 +407,7 @@ export default function LawyerAboutUs() {
                       </>
                     ) : (
                       <>
-                        <Save className="h-3.5 w-3.5" />
+                        <Save className="h-3.5 w-3.5 text-gold" />
                         <span>Save</span>
                       </>
                     )}
@@ -435,9 +428,9 @@ export default function LawyerAboutUs() {
                     <button
                       type="button"
                       onClick={handleStartEditDescribeUs}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-navy px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-navy-light transition"
                     >
-                      <Edit className="h-3.5 w-3.5" />
+                      <Edit className="h-3.5 w-3.5 text-gold" />
                       <span>Add Description</span>
                     </button>
                   </div>
@@ -882,18 +875,10 @@ export default function LawyerAboutUs() {
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200">
             <Link
               to="/lawyer-dashboard"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-400 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-navy transition"
             >
-              <ArrowLeft className="h-4 w-4 text-blue-900" />
+              <ArrowLeft className="h-4 w-4 text-royal" />
               <span>Back to Dashboard</span>
-            </Link>
-
-            <Link
-              to="/lawyer/edit-profile"
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition"
-            >
-              <Edit className="h-4 w-4" />
-              <span>Edit Professional Profile</span>
             </Link>
           </div>
         </div>

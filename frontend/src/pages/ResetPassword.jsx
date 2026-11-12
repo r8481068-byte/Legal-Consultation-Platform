@@ -120,7 +120,7 @@ export default function ResetPassword() {
                   onChange={(e) => setToken(e.target.value)}
                   disabled={loading}
                   required
-                  placeholder="Paste your 32-character reset token"
+                  placeholder="Paste your 64-character reset token or click link from email"
                   className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 text-xs font-mono outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
                 />
               </div>

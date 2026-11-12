@@ -4,14 +4,14 @@ const path = require("node:path");
 
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
-const connectDB = require("../src/config/db");
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 const Lawyer = require("../src/models/Lawyer");
 const User = require("../src/models/User");
 const { searchLawyersService, getDirectorySummaryService } = require("../src/services/lawyerService");
 
 test("Lawyers in India - State-Wise Directory Comprehensive Suite", async (t) => {
-  await connectDB();
-
+  await connectTestDB();
+  try {
   await t.test("1. Directory Summary Service aggregates state counts accurately", async () => {
     const summary = await getDirectorySummaryService();
     assert.ok(summary, "Summary must be returned");
@@ -77,4 +77,7 @@ test("Lawyers in India - State-Wise Directory Comprehensive Suite", async (t) =>
     assert.equal(res.pagination.page, 1, "Page number must be 1");
     assert.equal(res.pagination.limit, 1, "Limit must be 1");
   });
+  } finally {
+    await disconnectTestDB();
+  }
 });

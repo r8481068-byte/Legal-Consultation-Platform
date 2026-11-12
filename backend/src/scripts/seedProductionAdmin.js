@@ -58,7 +58,7 @@ async function seedProductionAdmin() {
       role: "admin",
       phone: adminPhone,
       emailVerified: true,
-      phoneVerified: true,
+      phoneVerified: false,
       isVerified: true,
       isActive: true,
     });

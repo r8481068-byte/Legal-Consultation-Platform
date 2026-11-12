@@ -15,7 +15,8 @@ const {
 
 const {
   protect,
-  authorize
+  authorize,
+  optionalProtect
 } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -69,7 +70,7 @@ router.get("/clients/:clientId", protect, authorize("lawyer"), getAuthorizedClie
 // Public directory state counts summary
 router.get("/directory-summary", getDirectorySummary);
 
-// Public single lawyer profile (defined last to prevent parameterized collision)
-router.get("/:lawyerId", getLawyerById);
+// Public & authenticated lawyer directory profile view
+router.get("/:lawyerId", optionalProtect, getLawyerById);
 
 module.exports = router;

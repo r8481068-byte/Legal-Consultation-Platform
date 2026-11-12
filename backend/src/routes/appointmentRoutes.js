@@ -8,6 +8,7 @@ const {
   confirmAppointment,
   completeAppointment,
   rejectAppointment,
+  cancelLawyerAppointment,
   getBookingEligibility,
 } = require("../controllers/appointmentController");
 
@@ -114,6 +115,16 @@ router.patch(
   validateAppointmentId,
   validateRequest,
   rejectAppointment
+);
+
+// Cancel appointment by lawyer
+router.patch(
+  "/:appointmentId/cancel",
+  protect,
+  authorize("lawyer"),
+  validateAppointmentId,
+  validateRequest,
+  cancelLawyerAppointment
 );
 
 // ==================== VIDEO CONSULTATION ====================

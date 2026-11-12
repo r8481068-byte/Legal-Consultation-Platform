@@ -15,7 +15,7 @@ const upload = require("../middleware/uploadMiddleware");
 // All document routes require authentication
 router.use(protect);
 
-router.post("/upload", upload.single("file"), uploadDocument);
+router.post("/upload", upload.single("file"), upload.validateUploadedFile, uploadDocument);
 router.get("/appointment/:appointmentId", getAppointmentDocuments);
 router.get("/my", getMyDocuments);
 router.get("/:documentId/download", downloadDocument);

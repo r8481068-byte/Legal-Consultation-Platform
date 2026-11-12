@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   HelpCircle,
   Scale,
@@ -13,13 +14,20 @@ import {
 
 export default function AskQuestion() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/register?redirect=/ask-question", { replace: true });
+    }
+  }, [user, navigate]);
 
   const [formData, setFormData] = useState({
     title: "",
     category: "Property Law",
     city: "New Delhi",
     question: "",
-    contactEmail: "",
+    contactEmail: user?.email || "",
   });
 
   const [submitted, setSubmitted] = useState(false);
@@ -86,7 +94,11 @@ export default function AskQuestion() {
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => navigate("/lawyers")}
+                  onClick={() => {
+                    if (!user) navigate("/register?redirect=/lawyers");
+                    else if (user.role === "client") navigate("/lawyers");
+                    else navigate("/lawyer-dashboard?restricted=booking");
+                  }}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800"
                 >
                   <PhoneCall className="h-3.5 w-3.5" /> Consult a Lawyer Online

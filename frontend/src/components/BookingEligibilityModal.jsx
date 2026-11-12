@@ -150,7 +150,7 @@ export default function BookingEligibilityModal({
 
           <button
             type="button"
-            onClick={() => handleAction("/client/profile")}
+            onClick={() => handleAction("/dashboard?tab=profile")}
             className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 shadow-sm transition"
           >
             Complete My Profile <ArrowRight className="h-3.5 w-3.5" />

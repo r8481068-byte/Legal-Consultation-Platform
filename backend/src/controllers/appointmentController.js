@@ -120,12 +120,33 @@ const rejectAppointment = async (req, res, next) => {
       await updateLawyerAppointmentStatusService(
         req.user.userId,
         req.params.appointmentId,
-        "rejected"
+        "rejected",
+        req.body?.reason
       );
 
     return res.status(200).json({
       success: true,
       message: "Appointment rejected successfully",
+      appointment
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cancelLawyerAppointment = async (req, res, next) => {
+  try {
+    const appointment =
+      await updateLawyerAppointmentStatusService(
+        req.user.userId,
+        req.params.appointmentId,
+        "cancelled",
+        req.body?.reason
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment cancelled successfully",
       appointment
     });
   } catch (error) {
@@ -190,6 +211,7 @@ module.exports = {
   confirmAppointment,
   completeAppointment,
   rejectAppointment,
+  cancelLawyerAppointment,
   getVideoAccess,
   endConsultationCall,
   getBookingEligibility,

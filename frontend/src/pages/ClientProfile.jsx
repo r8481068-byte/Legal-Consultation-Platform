@@ -307,11 +307,23 @@ export default function ClientProfile() {
     setError("");
 
     try {
-      const cleanAadhaar = identityForm.aadhaar.trim();
+      const cleanAadhaar = identityForm.aadhaar.replace(/[\s\-]/g, "");
       const cleanPan = identityForm.pan.trim().toUpperCase();
 
       if (!cleanAadhaar || !cleanPan) {
         throw new Error("Both Aadhaar number and PAN number are required.");
+      }
+
+      if (!/^[2-9]\d{11}$/.test(cleanAadhaar)) {
+        throw new Error(
+          "Invalid Aadhaar number format. Must be a 12-digit number starting with 2-9."
+        );
+      }
+
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+        throw new Error(
+          "Invalid PAN format. Must be 10 characters (5 uppercase letters, 4 digits, 1 letter, e.g. ABCDE1234F)."
+        );
       }
 
       const res = await updateClientIdentity({
@@ -327,7 +339,7 @@ export default function ClientProfile() {
         }));
       }
 
-      showNotification("Identity documents securely submitted and encrypted.");
+      showNotification("Identity details updated and encrypted with AES-256-GCM successfully.");
       setIsEditingIdentity(false);
       setIdentityForm({ aadhaar: "", pan: "" });
       await loadUserProfile();
@@ -392,11 +404,11 @@ export default function ClientProfile() {
   const isProfileComplete = completeness === 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-5xl space-y-7">
+      <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl space-y-6">
           {/* Notifications */}
           {error && (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
@@ -440,95 +452,10 @@ export default function ClientProfile() {
             </div>
           )}
 
-          {/* Pending Consultation / 100% Profile Completion Gate Notice */}
-          {pendingBooking && (
-            <div
-              className={`rounded-3xl border p-5 shadow-xs transition-all ${
-                isProfileComplete
-                  ? "border-emerald-300 bg-emerald-50/80 text-emerald-950"
-                  : "border-amber-300 bg-amber-50/90 text-amber-950"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${
-                      isProfileComplete
-                        ? "bg-emerald-200 text-emerald-900"
-                        : "bg-amber-200 text-amber-900"
-                    }`}
-                  >
-                    {isProfileComplete ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <ShieldAlert className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold leading-snug">
-                      {isProfileComplete
-                        ? "Profile 100% Complete! You can now book your consultation."
-                        : `100% Profile Completion Required to Book Consultation`}
-                    </h3>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {isProfileComplete ? (
-                        <>
-                          Your client credentials and Indian address details meet all legal compliance standards. Continue booking your appointment with{" "}
-                          <span className="font-semibold text-slate-900">
-                            Advocate {pendingBooking.lawyerName || "your selected lawyer"}
-                          </span>.
-                        </>
-                      ) : (
-                        <>
-                          You were redirected here because booking an appointment with{" "}
-                          <span className="font-semibold text-slate-900">
-                            Advocate {pendingBooking.lawyerName || "your selected lawyer"}
-                          </span>{" "}
-                          requires your profile to be 100% completed. Currently at{" "}
-                          <span className="font-bold text-amber-800">{completeness}%</span>. Please complete any missing personal, address, and identity fields below.
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                  {isProfileComplete ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetId = pendingBooking.lawyerId;
-                        navigate(targetId ? `/book-appointment?lawyerId=${targetId}` : "/book-appointment", {
-                          state: pendingBooking,
-                        });
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 shadow-sm transition"
-                    >
-                      Return to Advocate & Continue Booking
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingBooking(null);
-                      sessionStorage.removeItem("pendingConsultation");
-                    }}
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200/80 hover:text-slate-700 transition"
-                    title="Dismiss alert"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* ========================================================================= */}
           {/* A. PROFILE HEADER CARD                                                    */}
           {/* ========================================================================= */}
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
+          <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 {/* Large Client Profile Image */}
@@ -538,7 +465,7 @@ export default function ClientProfile() {
                       <img
                         src={profileData.profileImage}
                         alt={clientName}
-                        className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-4 border-slate-100 shadow-md"
+                        className="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl object-cover border-2 border-slate-200 shadow-xs"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                           if (e.currentTarget.nextSibling) {
@@ -548,7 +475,7 @@ export default function ClientProfile() {
                       />
                     ) : null}
                     <div
-                      className={`h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-linear-to-br from-blue-900 via-blue-800 to-slate-900 text-white flex items-center justify-center font-extrabold text-3xl sm:text-4xl border-4 border-slate-100 shadow-md ${
+                      className={`h-24 w-24 sm:h-28 sm:w-28 rounded-2xl bg-gradient-to-br from-navy via-navy-light to-royal text-white flex items-center justify-center font-heading font-black text-3xl sm:text-4xl border-2 border-slate-200 shadow-xs ${
                         profileData?.profileImage ? "hidden" : "flex"
                       }`}
                     >
@@ -558,13 +485,13 @@ export default function ClientProfile() {
                     {/* Change Photo Trigger */}
                     <label
                       htmlFor="profile-header-photo-input"
-                      className="cursor-pointer absolute bottom-0 right-0 rounded-full bg-blue-900 p-2 text-white shadow-md hover:bg-blue-800 transition"
+                      className="cursor-pointer absolute -bottom-1 -right-1 rounded-full bg-navy p-2 text-white shadow-xs hover:bg-navy-light transition"
                       title="Upload New Profile Image"
                     >
                       {uploadingImage ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
                       ) : (
-                        <Camera className="h-4 w-4" />
+                        <Camera className="h-4 w-4 text-gold" />
                       )}
                       <input
                         id="profile-header-photo-input"
@@ -582,26 +509,26 @@ export default function ClientProfile() {
                 {/* Profile Header Details */}
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-navy tracking-tight">
                       {clientName}
                     </h1>
 
-                    <span className="rounded-full bg-blue-100 px-3 py-0.5 text-xs font-bold text-blue-900 border border-blue-200 uppercase">
+                    <span className="rounded-full bg-blue-50 px-3 py-0.5 text-xs font-bold text-navy border border-blue-200 uppercase">
                       Client
                     </span>
 
                     {/* Appropriate Status Badge */}
                     {isGenuinelyCertified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
-                        <ShieldCheck className="h-3.5 w-3.5" /> Certified Client
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Certified Client
                       </span>
                     ) : isProfileComplete ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-0.5 text-xs font-bold text-blue-800 border border-blue-200">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Profile Complete
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-0.5 text-xs font-bold text-royal border border-blue-200">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-royal" /> Profile Complete
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
-                        <Clock className="h-3.5 w-3.5" /> Profile in Progress
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+                        <Clock className="h-3.5 w-3.5 text-amber-600" /> Profile in Progress
                       </span>
                     )}
                   </div>
@@ -634,11 +561,11 @@ export default function ClientProfile() {
                   <div className="pt-2 max-w-xs">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-semibold text-slate-500">Profile Completion:</span>
-                      <span className="font-extrabold text-blue-900">{completeness}%</span>
+                      <span className="font-extrabold text-navy">{completeness}%</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden border border-slate-200">
                       <div
-                        className="h-full rounded-full bg-linear-to-r from-blue-700 to-indigo-600 transition-all duration-500"
+                        className="h-full rounded-full bg-gradient-to-r from-navy via-navy-light to-royal transition-all duration-500"
                         style={{ width: `${completeness}%` }}
                       />
                     </div>
@@ -650,9 +577,9 @@ export default function ClientProfile() {
               <button
                 type="button"
                 onClick={() => setIsEditingPersonal(!isEditingPersonal)}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 transition shrink-0"
+                className="inline-flex items-center gap-2 rounded-xl bg-navy px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-navy-light transition shrink-0"
               >
-                <Edit3 className="h-3.5 w-3.5" />
+                <Edit3 className="h-3.5 w-3.5 text-gold" />
                 <span>{isEditingPersonal ? "Cancel Edit" : "Edit Profile"}</span>
               </button>
             </div>
@@ -985,7 +912,7 @@ export default function ClientProfile() {
               <div>
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-blue-900" />
-                  Identity Information & Verification
+                  Identity Documents & Verification
                 </h2>
                 <p className="text-xs text-slate-500">
                   Stored securely with AES-256-GCM encryption at rest. Never exposed publicly.
@@ -1094,7 +1021,7 @@ export default function ClientProfile() {
                     className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                    <span>Encrypt & Save Identity</span>
+                    <span>Update Identity Details</span>
                   </button>
                 </div>
               </form>

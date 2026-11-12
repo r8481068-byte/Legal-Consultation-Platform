@@ -1,16 +1,27 @@
 const rawBaseUrl =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
+  (typeof process !== "undefined" && process.env?.VITE_API_URL) ||
+  "http://localhost:5000/api";
 export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
 
 let isRefreshing = false;
 let refreshSubscribers = [];
 
-function subscribeTokenRefresh(cb) {
-  refreshSubscribers.push(cb);
+function subscribeTokenRefresh(cb, errCb) {
+  refreshSubscribers.push({ cb, errCb });
 }
 
 function onRefreshed(token) {
-  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers.forEach(({ cb }) => {
+    if (typeof cb === "function") cb(token);
+  });
+  refreshSubscribers = [];
+}
+
+function onRefreshFailed(err) {
+  refreshSubscribers.forEach(({ errCb }) => {
+    if (typeof errCb === "function") errCb(err);
+  });
   refreshSubscribers = [];
 }
 
@@ -41,6 +52,9 @@ export async function refreshAccessTokenApi() {
   }
 
   sessionStorage.setItem("accessToken", data.accessToken);
+  if (data.refreshToken) {
+    sessionStorage.setItem("refreshToken", data.refreshToken);
+  }
   return data.accessToken;
 }
 
@@ -50,8 +64,11 @@ export async function refreshAccessTokenApi() {
 export async function authFetch(url, options = {}) {
   let token = sessionStorage.getItem("accessToken");
 
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+
   const headers = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
@@ -86,30 +103,36 @@ export async function authFetch(url, options = {}) {
           });
         } catch (refreshErr) {
           isRefreshing = false;
-          refreshSubscribers = [];
           sessionStorage.removeItem("accessToken");
           sessionStorage.removeItem("refreshToken");
           sessionStorage.removeItem("user");
-          throw new Error("Session expired. Please log in again.");
+          const sessionErr = new Error("Session expired. Please log in again.");
+          onRefreshFailed(sessionErr);
+          throw sessionErr;
         }
       } else {
         // Wait for active refresh to complete and retry
         return new Promise((resolve, reject) => {
-          subscribeTokenRefresh(async (newToken) => {
-            try {
-              const retryHeaders = {
-                ...headers,
-                Authorization: `Bearer ${newToken}`,
-              };
-              const retryResponse = await fetch(url, {
-                ...options,
-                headers: retryHeaders,
-              });
-              resolve(retryResponse);
-            } catch (err) {
+          subscribeTokenRefresh(
+            async (newToken) => {
+              try {
+                const retryHeaders = {
+                  ...headers,
+                  Authorization: `Bearer ${newToken}`,
+                };
+                const retryResponse = await fetch(url, {
+                  ...options,
+                  headers: retryHeaders,
+                });
+                resolve(retryResponse);
+              } catch (err) {
+                reject(err);
+              }
+            },
+            (err) => {
               reject(err);
             }
-          });
+          );
         });
       }
     }

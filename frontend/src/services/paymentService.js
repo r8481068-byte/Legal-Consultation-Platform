@@ -1,14 +1,4 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem("accessToken");
-
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+import { authFetch, API_BASE_URL } from "./apiClient";
 
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
@@ -22,9 +12,11 @@ const handleResponse = async (response) => {
 
 // Create Razorpay payment order for an appointment
 export const createPaymentOrder = async (appointmentId) => {
-  const response = await fetch(`${API_BASE_URL}/payments/order`, {
+  const response = await authFetch(`${API_BASE_URL}/payments/order`, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ appointmentId }),
   });
 
@@ -33,9 +25,11 @@ export const createPaymentOrder = async (appointmentId) => {
 
 // Verify Razorpay payment signature
 export const verifyPayment = async (verificationData) => {
-  const response = await fetch(`${API_BASE_URL}/payments/verify`, {
+  const response = await authFetch(`${API_BASE_URL}/payments/verify`, {
     method: "POST",
-    headers: getAuthHeaders(),
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(verificationData),
   });
 

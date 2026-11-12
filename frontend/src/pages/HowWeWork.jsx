@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Scale,
   Search,
@@ -17,9 +18,12 @@ import {
   Users,
   Shield,
   HelpCircle,
+  Award,
+  Briefcase,
 } from "lucide-react";
 
 export default function HowWeWork() {
+  const { user } = useAuth();
   useEffect(() => {
     document.title = "How We Work — 7-Step Consultation Journey | LegalConnect";
   }, []);
@@ -105,25 +109,25 @@ export default function HowWeWork() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans">
       {/* 1. HERO HEADER */}
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-16 px-4 sm:px-6 lg:px-8 text-white border-b border-slate-800">
+      <section className="bg-gradient-to-br from-navy via-navy-light to-royal py-16 px-4 sm:px-6 lg:px-8 text-white border-b border-slate-800">
         <div className="mx-auto max-w-7xl">
           <Link
             to="/"
-            className="text-xs font-semibold text-amber-400 hover:text-white transition"
+            className="text-xs font-semibold text-gold hover:text-white transition"
           >
             ← Back to Home
           </Link>
 
           <div className="mt-4 max-w-3xl space-y-4">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 px-3 py-1 text-xs font-bold text-amber-300 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 border border-gold/30 px-3 py-1 text-xs font-bold text-gold uppercase tracking-wider">
               <Scale className="h-3.5 w-3.5" /> Transparent Consultation Process
             </span>
-            <h1 className="text-3xl font-black text-white sm:text-5xl">
+            <h1 className="text-3xl font-heading font-black text-white sm:text-5xl tracking-tight">
               How LegalConnect Works
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
               LegalConnect bridges citizens with verified advocates through a structured, transparent, and technology-driven workflow. Here is how your consultation journey unfolds from discovery to verified review.
             </p>
           </div>
@@ -155,15 +159,15 @@ export default function HowWeWork() {
                 } gap-6 sm:gap-12`}
               >
                 {/* Step Marker Dot */}
-                <div className="absolute left-5 sm:left-1/2 -translate-x-1/2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-950 text-amber-400 font-black text-sm border-4 border-slate-50 shadow-md z-10">
+                <div className="absolute left-5 sm:left-1/2 -translate-x-1/2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-gold font-heading font-black text-sm border-4 border-[#F8FAFC] shadow-md z-10">
                   {item.step}
                 </div>
 
                 {/* Content Box */}
                 <div className="ml-12 sm:ml-0 sm:w-1/2">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:border-blue-400 hover:shadow-md transition">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs hover:border-royal/50 hover:shadow-md transition">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="rounded-full bg-amber-400/15 text-amber-900 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="rounded-full bg-gold/15 text-navy border border-gold/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                         {item.badge}
                       </span>
                       <span className="text-xs font-bold text-slate-400">
@@ -171,7 +175,7 @@ export default function HowWeWork() {
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900">
+                    <h3 className="text-base font-heading font-bold text-navy">
                       {item.title}
                     </h3>
                     <p className="mt-2 text-xs text-slate-600 leading-relaxed">
@@ -200,13 +204,13 @@ export default function HowWeWork() {
       </section>
 
       {/* 3. PLATFORM INTEGRITY PILLARS */}
-      <section className="bg-slate-900 py-16 px-4 sm:px-6 lg:px-8 text-white border-t border-slate-800">
+      <section className="bg-navy py-16 px-4 sm:px-6 lg:px-8 text-white border-t border-slate-800">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="inline-block rounded-full bg-amber-400/10 border border-amber-400/30 px-3 py-1 text-xs font-bold text-amber-300 uppercase tracking-wider">
+            <span className="inline-block rounded-full bg-gold/15 border border-gold/30 px-3 py-1 text-xs font-bold text-gold uppercase tracking-wider">
               Platform Standards
             </span>
-            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+            <h2 className="mt-2 text-2xl font-heading font-black text-white sm:text-3xl">
               Our Security & Verification Pillars
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-slate-300">
@@ -215,34 +219,34 @@ export default function HowWeWork() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xs">
               <ShieldCheck className="h-8 w-8 text-emerald-400 mb-3" />
-              <h3 className="text-sm font-bold text-white">Bar Council Verification</h3>
-              <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
+              <h3 className="text-sm font-heading font-bold text-white">Bar Council Verification</h3>
+              <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
                 Advocates undergo administrative verification of enrollment details and certificates prior to public listing.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
-              <Lock className="h-8 w-8 text-blue-400 mb-3" />
-              <h3 className="text-sm font-bold text-white">Private Case Isolation</h3>
-              <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xs">
+              <Lock className="h-8 w-8 text-royal mb-3" />
+              <h3 className="text-sm font-heading font-bold text-white">Private Case Isolation</h3>
+              <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
                 Uploaded case files are isolated outside public web directories and streamed only via authenticated session tokens.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
-              <CreditCard className="h-8 w-8 text-amber-400 mb-3" />
-              <h3 className="text-sm font-bold text-white">Server-Calculated Fees</h3>
-              <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xs">
+              <CreditCard className="h-8 w-8 text-gold mb-3" />
+              <h3 className="text-sm font-heading font-bold text-white">Server-Calculated Fees</h3>
+              <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
                 Prices are fetched exclusively from the advocate's database profile. Client-side price tampering is completely prevented.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xs">
               <Award className="h-8 w-8 text-purple-400 mb-3" />
-              <h3 className="text-sm font-bold text-white">Eligible Reviews Only</h3>
-              <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
+              <h3 className="text-sm font-heading font-bold text-white">Eligible Reviews Only</h3>
+              <p className="mt-1.5 text-xs text-slate-300 leading-relaxed">
                 Review submissions are restricted exclusively to clients who completed verified consultation sessions.
               </p>
             </div>
@@ -252,12 +256,12 @@ export default function HowWeWork() {
 
       {/* 4. CALL TO ACTION */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 shadow-sm space-y-5">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-950 text-amber-400 mx-auto shadow-md">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-8 sm:p-12 shadow-xs space-y-5">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-navy text-gold mx-auto shadow-md">
             <Scale className="h-6 w-6" />
           </div>
 
-          <h2 className="text-2xl font-black text-slate-900 sm:text-3xl">
+          <h2 className="text-2xl font-heading font-black text-navy sm:text-3xl">
             Ready to Begin Your Consultation?
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
@@ -266,22 +270,22 @@ export default function HowWeWork() {
 
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/lawyers"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:bg-amber-300 transition shadow-md"
+              to={!user ? "/register?redirect=/lawyers" : user.role === "client" ? "/lawyers" : "/lawyer-dashboard?restricted=booking"}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gold px-6 py-3.5 text-xs font-black uppercase tracking-wider text-navy hover:bg-gold-light transition shadow-md"
             >
               <PhoneCall className="h-4 w-4" /> Find an Advocate
             </Link>
 
             <Link
               to="/legal-services"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-white hover:bg-blue-900 transition"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-navy px-6 py-3.5 text-xs font-extrabold uppercase tracking-wider text-white hover:bg-navy-light transition"
             >
-              <Briefcase className="h-4 w-4 text-amber-400" /> Explore 19 Services
+              <Briefcase className="h-4 w-4 text-gold" /> Explore 19 Services
             </Link>
 
             <Link
-              to="/ask-question"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-6 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              to={!user ? "/register?redirect=/ask-question" : "/ask-question"}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
             >
               Ask a Free Question
             </Link>

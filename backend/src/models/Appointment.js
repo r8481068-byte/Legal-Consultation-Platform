@@ -73,6 +73,11 @@ const appointmentSchema = new mongoose.Schema(
       default: "pending"
     },
 
+    fee: {
+      type: Number,
+      default: 0,
+    },
+
     notes: {
       type: String,
       trim: true,
@@ -99,6 +104,23 @@ const appointmentSchema = new mongoose.Schema(
     isReviewed: {
       type: Boolean,
       default: false
+    },
+
+    cancellationReason: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    cancelledBy: {
+      type: String,
+      enum: ["client", "lawyer", "admin", null],
+      default: null,
+    },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
     }
   },
   { timestamps: true }

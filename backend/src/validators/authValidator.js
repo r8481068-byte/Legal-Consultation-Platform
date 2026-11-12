@@ -68,6 +68,35 @@ const loginValidator = [
     .withMessage("Password is required"),
 ];
 
+const verifyOtpValidator = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+
+  body("otp")
+    .trim()
+    .notEmpty()
+    .withMessage("Verification code is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("Verification code must be exactly 6 digits")
+    .isNumeric()
+    .withMessage("Verification code must only contain digits"),
+];
+
+const emailOnlyValidator = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
+];
+
 const clientProfileValidator = [
   body("state")
     .trim()
@@ -150,6 +179,8 @@ const identityValidator = [
 module.exports = {
   registerValidator,
   loginValidator,
+  verifyOtpValidator,
+  emailOnlyValidator,
   clientProfileValidator,
   identityValidator,
 };

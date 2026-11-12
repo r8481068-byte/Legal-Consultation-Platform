@@ -25,9 +25,17 @@ const protect = async (req, res, next) => {
       });
     }
 
-    // Immediate database check: Block suspended/deactivated users in real-time
-    const userDoc = await User.findById(userId).select("isActive role name email");
-    if (userDoc && userDoc.isActive === false) {
+    // Immediate database check: Verify user existence and active status
+    const userDoc = await User.findById(userId).select("isActive isVerified emailVerified role name email");
+
+    if (!userDoc) {
+      return res.status(401).json({
+        success: false,
+        message: "User account no longer exists",
+      });
+    }
+
+    if (userDoc.isActive === false) {
       return res.status(403).json({
         success: false,
         message: "Account has been deactivated or suspended by Administrator",
@@ -39,7 +47,7 @@ const protect = async (req, res, next) => {
       _id: userId,
       id: userId,
       userId: userId,
-      role: userDoc ? userDoc.role : decoded.role,
+      role: userDoc.role,
     };
 
     next();
@@ -64,4 +72,27 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+const optionalProtect = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded._id || decoded.userId;
+    if (userId) {
+      req.user = {
+        ...decoded,
+        _id: userId,
+        id: userId,
+        userId: userId,
+      };
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
+module.exports = { protect, authorize, optionalProtect };

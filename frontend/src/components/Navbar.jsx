@@ -19,6 +19,7 @@ import {
   CheckCircle,
   FileText,
   Info,
+  ChevronDown,
 } from "lucide-react";
 
 export default function Navbar({ onOpenProfileSettings }) {
@@ -106,7 +107,7 @@ export default function Navbar({ onOpenProfileSettings }) {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs">
+    <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-2xs">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Brand Logo */}
         <Link
@@ -119,14 +120,14 @@ export default function Navbar({ onOpenProfileSettings }) {
               ? "/admin"
               : "/"
           }
-          className="flex items-center gap-2.5 transition hover:opacity-90"
+          className="flex items-center gap-2.5 transition-transform hover:scale-[1.01]"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-900 via-blue-800 to-indigo-700 text-white shadow-md shadow-blue-900/20">
-            <Scale className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B132B] via-[#101C3A] to-[#2457D6] text-white shadow-sm ring-1 ring-slate-900/10">
+            <Scale className="h-5 w-5 text-[#D9A441]" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              Legal<span className="text-blue-700">Connect</span>
+            <span className="font-heading text-xl font-extrabold tracking-tight text-slate-900">
+              Legal<span className="text-[#2457D6]">Connect</span>
             </span>
             <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
               Consultation Platform
@@ -135,14 +136,14 @@ export default function Navbar({ onOpenProfileSettings }) {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1.5 md:flex">
           {user?.role === "client" ? (
             <>
               <Link
                 to="/"
-                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                   isActive("/")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
@@ -150,9 +151,9 @@ export default function Navbar({ onOpenProfileSettings }) {
               </Link>
               <Link
                 to="/client/lawyers"
-                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                   isActive("/client/lawyers")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
@@ -160,9 +161,9 @@ export default function Navbar({ onOpenProfileSettings }) {
               </Link>
               <Link
                 to="/dashboard"
-                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                   isActive("/dashboard")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
@@ -170,95 +171,99 @@ export default function Navbar({ onOpenProfileSettings }) {
               </Link>
               <Link
                 to="/my-appointments"
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                   isActive("/my-appointments")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
-                <Calendar className="h-4 w-4" />
-                My Appointment
+                <Calendar className="h-3.5 w-3.5" />
+                <span>My Appointments</span>
               </Link>
               <Link
-                to="/client/profile"
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                  isActive("/client/profile") || isActive("/my-profile")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
+                to="/dashboard?tab=profile"
+                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
+                  (location.pathname === "/dashboard" && location.search.includes("tab=profile")) ||
+                  location.pathname === "/client/profile" ||
+                  location.pathname === "/my-profile"
+                    ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
-                <UserIcon className="h-4 w-4" />
-                My Profile
+                <UserIcon className="h-3.5 w-3.5" />
+                <span>My Profile</span>
               </Link>
             </>
           ) : (
             <>
               <Link
                 to="/"
-                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                   isActive("/")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
+                    ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
                 Home
               </Link>
-              <Link
-                to="/lawyers"
-                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition ${
-                  isActive("/lawyers") || isActive("/client/lawyers")
-                    ? "bg-blue-50 text-blue-800 font-semibold"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                Find Lawyer
-              </Link>
+              {user?.role !== "lawyer" && (
+                <Link
+                  to={!user ? "/register?redirect=/lawyers" : "/lawyers"}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
+                    isActive("/lawyers") || isActive("/client/lawyers")
+                      ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  Find Lawyer
+                </Link>
+              )}
 
               {user?.role === "lawyer" && (
                 <>
                   <Link
                     to="/lawyer-dashboard"
-                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                    className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                       isActive("/lawyer-dashboard")
-                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <Briefcase className="h-4 w-4" />
-                    Dashboard
+                    <Briefcase className="h-3.5 w-3.5" />
+                    <span>Dashboard</span>
                   </Link>
                   <Link
                     to="/lawyer/edit-profile"
-                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                    className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                       isActive("/lawyer/edit-profile")
-                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <UserIcon className="h-4 w-4" />
-                    My Profile
+                    <UserIcon className="h-3.5 w-3.5" />
+                    <span>My Profile</span>
                   </Link>
                   <Link
                     to="/lawyer/availability"
-                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                    className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                       isActive("/lawyer/availability")
-                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <Calendar className="h-4 w-4" />
-                    Availability
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Availability</span>
                   </Link>
                   <Link
                     to="/lawyer/about-us"
-                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                    className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                       isActive("/lawyer/about-us") || isActive("/lawyer/about")
-                        ? "bg-blue-50 text-blue-800 font-semibold"
+                        ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
-                    <Info className="h-4 w-4" />
-                    About Us
+                    <Info className="h-3.5 w-3.5" />
+                    <span>About Us</span>
                   </Link>
                 </>
               )}
@@ -266,14 +271,14 @@ export default function Navbar({ onOpenProfileSettings }) {
               {user?.role === "admin" && (
                 <Link
                   to="/admin"
-                  className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition ${
+                  className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
                     isActive("/admin")
-                      ? "bg-blue-50 text-blue-800 font-semibold"
+                      ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >
-                  <ShieldAlert className="h-4 w-4 text-amber-600" />
-                  Admin
+                  <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                  <span>Admin</span>
                 </Link>
               )}
             </>
@@ -289,12 +294,12 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="relative rounded-full p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                  className="relative rounded-xl p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 transition"
                   aria-label="Notifications"
                 >
-                  <Bell className="h-5 w-5" />
+                  <Bell className="h-5 w-5 text-slate-600" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-xs">
+                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-xs ring-2 ring-white">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -302,12 +307,12 @@ export default function Navbar({ onOpenProfileSettings }) {
 
                 {/* Notifications Dropdown */}
                 {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-50">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-2xl ring-1 ring-slate-900/5 z-50 animate-in fade-in slide-in-from-top-1">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 px-2">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-slate-800">Notifications</h3>
+                        <h3 className="font-heading text-sm font-bold text-slate-900">Notifications</h3>
                         {unreadCount > 0 && (
-                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#2457D6] border border-blue-200">
                             {unreadCount} new
                           </span>
                         )}
@@ -316,7 +321,7 @@ export default function Navbar({ onOpenProfileSettings }) {
                         <button
                           type="button"
                           onClick={handleMarkAllRead}
-                          className="text-xs font-medium text-blue-700 hover:underline"
+                          className="text-xs font-semibold text-[#2457D6] hover:underline"
                         >
                           Mark all as read
                         </button>
@@ -338,10 +343,10 @@ export default function Navbar({ onOpenProfileSettings }) {
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <p className={`text-xs ${n.isRead ? "font-medium text-slate-800" : "font-bold text-blue-950"}`}>
+                              <p className={`text-xs ${n.isRead ? "font-medium text-slate-800" : "font-bold text-[#0B132B]"}`}>
                                 {n.title}
                               </p>
-                              <span className="text-[10px] text-slate-400 shrink-0">
+                              <span className="text-[10px] text-slate-400 shrink-0 font-medium">
                                 {new Date(n.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                               </span>
                             </div>
@@ -361,7 +366,7 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-1.5 transition hover:bg-slate-100 cursor-pointer focus:outline-none"
+                  className="flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 transition hover:bg-slate-100/80 cursor-pointer focus:outline-none"
                 >
                   {user.profileImage ? (
                     <img
@@ -370,52 +375,53 @@ export default function Navbar({ onOpenProfileSettings }) {
                       className="h-7 w-7 rounded-lg object-cover border border-slate-200"
                     />
                   ) : (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-900 text-xs font-bold text-white uppercase">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0B132B] text-xs font-bold text-white uppercase shadow-2xs">
                       {user.name ? user.name.charAt(0) : "U"}
                     </div>
                   )}
-                  <span className="hidden text-sm font-semibold text-slate-800 sm:inline max-w-[120px] truncate">
+                  <span className="hidden text-xs font-bold text-slate-800 sm:inline max-w-[120px] truncate">
                     {user.name}
                   </span>
-                  <span className="hidden rounded-full bg-slate-200/70 px-2 py-0.5 text-[10px] font-bold text-slate-600 capitalize sm:inline">
+                  <span className="hidden rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-600 capitalize sm:inline">
                     {user.role}
                   </span>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                 </button>
 
                 {/* Dropdown Menu */}
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50">
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-xl ring-1 ring-slate-900/5 z-50 animate-in fade-in slide-in-from-top-1">
                     <div className="border-b border-slate-100 px-3 py-2">
-                      <p className="text-xs font-semibold text-slate-400">Signed in as</p>
-                      <p className="truncate text-sm font-bold text-slate-900">{user.email}</p>
+                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Signed in as</p>
+                      <p className="truncate text-xs font-bold text-slate-900">{user.email}</p>
                     </div>
 
-                    <div className="mt-1 space-y-0.5 text-sm">
+                    <div className="mt-1 space-y-0.5 text-xs">
                       {user.role === "client" && (
                         <>
                           <Link
-                            to="/client/profile"
+                            to="/dashboard?tab=profile"
                             onClick={() => setProfileDropdownOpen(false)}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
                             <UserIcon className="h-4 w-4 text-slate-400" />
-                            My Profile
+                            <span>My Profile</span>
                           </Link>
                           <Link
                             to="/dashboard"
                             onClick={() => setProfileDropdownOpen(false)}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
                             <Briefcase className="h-4 w-4 text-slate-400" />
-                            Dashboard
+                            <span>Dashboard</span>
                           </Link>
                           <Link
                             to="/my-appointments"
                             onClick={() => setProfileDropdownOpen(false)}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
                             <Calendar className="h-4 w-4 text-slate-400" />
-                            My Appointments
+                            <span>My Appointments</span>
                           </Link>
                           <button
                             type="button"
@@ -424,10 +430,10 @@ export default function Navbar({ onOpenProfileSettings }) {
                               logout();
                               navigate("/");
                             }}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50 font-medium transition border-t border-slate-100 mt-1"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50 font-semibold transition border-t border-slate-100 mt-1"
                           >
                             <LogOut className="h-4 w-4" />
-                            Logout
+                            <span>Logout</span>
                           </button>
                         </>
                       )}
@@ -437,26 +443,26 @@ export default function Navbar({ onOpenProfileSettings }) {
                           <Link
                             to="/lawyer-dashboard"
                             onClick={() => setProfileDropdownOpen(false)}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
                             <Briefcase className="h-4 w-4 text-slate-400" />
-                            Dashboard
+                            <span>Dashboard</span>
                           </Link>
                           <Link
                             to="/lawyer/edit-profile"
                             onClick={() => setProfileDropdownOpen(false)}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
                             <UserIcon className="h-4 w-4 text-slate-400" />
-                            My Profile
+                            <span>My Profile</span>
                           </Link>
                           <Link
                             to="/lawyer/availability"
                             onClick={() => setProfileDropdownOpen(false)}
-                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium"
+                            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
                             <Calendar className="h-4 w-4 text-slate-400" />
-                            Availability
+                            <span>Availability</span>
                           </Link>
                         </>
                       )}
@@ -465,10 +471,10 @@ export default function Navbar({ onOpenProfileSettings }) {
                         <Link
                           to="/admin"
                           onClick={() => setProfileDropdownOpen(false)}
-                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50"
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                         >
                           <ShieldAlert className="h-4 w-4 text-slate-400" />
-                          Admin Portal
+                          <span>Admin Portal</span>
                         </Link>
                       )}
 
@@ -479,10 +485,10 @@ export default function Navbar({ onOpenProfileSettings }) {
                             setProfileDropdownOpen(false);
                             onOpenProfileSettings();
                           }}
-                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50 font-semibold transition"
                         >
                           <FileText className="h-4 w-4 text-slate-400" />
-                          Profile & Password
+                          <span>Profile & Password</span>
                         </button>
                       )}
 
@@ -493,10 +499,10 @@ export default function Navbar({ onOpenProfileSettings }) {
                             setProfileDropdownOpen(false);
                             logout();
                           }}
-                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50"
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-red-600 hover:bg-red-50 font-semibold transition border-t border-slate-100 mt-1"
                         >
                           <LogOut className="h-4 w-4" />
-                          Sign Out
+                          <span>Sign Out</span>
                         </button>
                       )}
                     </div>
@@ -508,13 +514,13 @@ export default function Navbar({ onOpenProfileSettings }) {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
               >
                 Login
               </Link>
               <Link
                 to="/register"
-                className="rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+                className="rounded-xl bg-[#0B132B] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800"
               >
                 Get Started
               </Link>
@@ -525,7 +531,7 @@ export default function Navbar({ onOpenProfileSettings }) {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden"
+            className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 md:hidden transition"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -535,16 +541,16 @@ export default function Navbar({ onOpenProfileSettings }) {
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
-          <div className="flex flex-col gap-2">
+        <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden animate-in slide-in-from-top-1">
+          <div className="flex flex-col gap-1.5">
             {user?.role === "client" ? (
               <>
                 <Link
                   to="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  className={`rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase transition ${
                     isActive("/")
-                      ? "bg-blue-50 text-blue-800 font-bold"
+                      ? "bg-blue-50 text-[#2457D6] font-bold"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
@@ -553,9 +559,9 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <Link
                   to="/client/lawyers"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  className={`rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase transition ${
                     isActive("/client/lawyers")
-                      ? "bg-blue-50 text-blue-800 font-bold"
+                      ? "bg-blue-50 text-[#2457D6] font-bold"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
@@ -564,9 +570,9 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <Link
                   to="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  className={`rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase transition ${
                     isActive("/dashboard")
-                      ? "bg-blue-50 text-blue-800 font-bold"
+                      ? "bg-blue-50 text-[#2457D6] font-bold"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
@@ -575,20 +581,22 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <Link
                   to="/my-appointments"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  className={`rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase transition ${
                     isActive("/my-appointments")
-                      ? "bg-blue-50 text-blue-800 font-bold"
+                      ? "bg-blue-50 text-[#2457D6] font-bold"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  My Appointment
+                  My Appointments
                 </Link>
                 <Link
-                  to="/client/profile"
+                  to="/dashboard?tab=profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                    isActive("/client/profile") || isActive("/my-profile")
-                      ? "bg-blue-50 text-blue-800 font-bold"
+                  className={`rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase transition ${
+                    (location.pathname === "/dashboard" && location.search.includes("tab=profile")) ||
+                    location.pathname === "/client/profile" ||
+                    location.pathname === "/my-profile"
+                      ? "bg-blue-50 text-[#2457D6] font-bold"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
@@ -601,7 +609,7 @@ export default function Navbar({ onOpenProfileSettings }) {
                     logout();
                     navigate("/");
                   }}
-                  className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  className="rounded-xl px-3.5 py-2.5 text-left text-xs font-bold uppercase text-red-600 hover:bg-red-50 flex items-center gap-2 mt-1 border-t border-slate-100"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -612,45 +620,47 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <Link
                   to="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                 >
                   Home
                 </Link>
-                <Link
-                  to="/lawyers"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Find Lawyer
-                </Link>
+                {user?.role !== "lawyer" && (
+                  <Link
+                    to={!user ? "/register?redirect=/lawyers" : "/lawyers"}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
+                  >
+                    Find Lawyer
+                  </Link>
+                )}
 
                 {user?.role === "lawyer" && (
                   <>
                     <Link
                       to="/lawyer-dashboard"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                     >
                       Dashboard
                     </Link>
                     <Link
                       to="/lawyer/edit-profile"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                     >
                       My Profile
                     </Link>
                     <Link
                       to="/lawyer/availability"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                     >
                       Availability
                     </Link>
                     <Link
                       to="/lawyer/about-us"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                     >
                       About Us
                     </Link>
@@ -661,7 +671,7 @@ export default function Navbar({ onOpenProfileSettings }) {
                   <Link
                     to="/admin"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                   >
                     Admin Portal
                   </Link>
@@ -671,7 +681,7 @@ export default function Navbar({ onOpenProfileSettings }) {
                   <Link
                     to="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    className="rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase text-slate-700 hover:bg-slate-100"
                   >
                     Account Overview
                   </Link>

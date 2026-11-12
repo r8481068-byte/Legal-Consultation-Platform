@@ -33,10 +33,7 @@ const {
   getLawyerAppointmentsService,
 } = require("../src/services/appointmentService");
 
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Lawyer Dashboard and Edit Profile Test Suite", () => {
   let lawyerUser;
@@ -48,9 +45,7 @@ describe("Lawyer Dashboard and Edit Profile Test Suite", () => {
   let reviewDoc;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
 
@@ -166,7 +161,7 @@ describe("Lawyer Dashboard and Edit Profile Test Suite", () => {
     if (appointmentCompleted) await Appointment.deleteOne({ _id: appointmentCompleted._id });
     if (reviewDoc) await Review.deleteOne({ _id: reviewDoc._id });
     await LawyerAvailability.deleteMany({ lawyer: lawyerDoc?._id });
-    await mongoose.disconnect();
+    await disconnectTestDB();
   });
 
   test("1. Update lawyer profile across all sections with detailed professional biography", async () => {
