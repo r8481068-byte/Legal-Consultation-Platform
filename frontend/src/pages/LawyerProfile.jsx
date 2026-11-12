@@ -294,14 +294,13 @@ export default function LawyerProfile() {
     try {
       const eligibility = await getBookingEligibility();
 
-      // If client profile is incomplete (< 100%)
+      // If client profile is incomplete (< 100%), redirect directly to Client Portal My Profile
       if (!eligibility.eligible || eligibility.checks?.profilePercentage !== 100 || !eligibility.checks?.profileCompleted) {
-        navigate("/client/profile", {
+        navigate("/dashboard?tab=profile", {
           state: {
             fromBooking: true,
             lawyerId: lawyer._id,
             lawyerName: name,
-            message: "100% profile completion is required before booking a consultation. Please complete the remaining fields below.",
           },
         });
         return;

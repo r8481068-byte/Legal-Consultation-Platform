@@ -33,6 +33,10 @@ lawyerAvailabilitySchema.index(
 
 lawyerAvailabilitySchema.index({ lawyer: 1, status: 1, startAt: 1 });
 
+lawyerAvailabilitySchema.virtual("isBooked").get(function () {
+  return this.status === "booked";
+});
+
 module.exports = mongoose.model(
   "LawyerAvailability",
   lawyerAvailabilitySchema

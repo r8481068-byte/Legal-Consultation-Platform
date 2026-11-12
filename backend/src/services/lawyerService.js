@@ -2,6 +2,9 @@
 const Lawyer = require("../models/Lawyer");
 const User = require("../models/User");
 const Appointment = require("../models/Appointment");
+const Payment = require("../models/Payment");
+const { escapeRegex } = require("../utils/searchUtils");
+const { selectAuthoritativePayment } = require("../utils/paymentUtils");
 
 const createLawyerProfileService = async (userId, data) => {
   const user = await User.findById(userId);
@@ -82,6 +85,7 @@ const updateLawyerProfileService = async (userId, data) => {
     "consultationModes",
     "languages",
     "city",
+    "district",
     "state",
     "officeAddress",
     "phone",
@@ -191,62 +195,97 @@ const searchLawyersService = async (query) => {
 
   // Specialization filter
   if (query.specialization && query.specialization !== "All Practice Areas" && query.specialization !== "All Specializations") {
-    filter.specialization = {
-      $regex: query.specialization,
-      $options: "i"
-    };
+    const specTerm = escapeRegex(query.specialization.trim());
+    if (specTerm) {
+      filter.specialization = {
+        $regex: specTerm,
+        $options: "i"
+      };
+    }
   }
 
   // Court Level filter
   if (query.courtLevel && query.courtLevel !== "All Courts") {
-    filter.courtLevels = {
-      $regex: query.courtLevel,
-      $options: "i"
-    };
+    const courtTerm = escapeRegex(query.courtLevel.trim());
+    if (courtTerm) {
+      filter.courtLevels = {
+        $regex: courtTerm,
+        $options: "i"
+      };
+    }
   }
 
   // State filter
   if (query.state && query.state !== "All States") {
-    const stateTerm = query.state.trim();
-    andClauses.push({
-      $or: [
-        { state: { $regex: stateTerm, $options: "i" } },
-        { stateOfEnrolment: { $regex: stateTerm, $options: "i" } },
-        { officeAddress: { $regex: stateTerm, $options: "i" } },
-        { city: { $regex: stateTerm, $options: "i" } }
-      ]
-    });
+    const stateTerm = escapeRegex(query.state.trim());
+    if (stateTerm) {
+      andClauses.push({
+        $or: [
+          { state: { $regex: stateTerm, $options: "i" } },
+          { stateOfEnrolment: { $regex: stateTerm, $options: "i" } },
+          { officeAddress: { $regex: stateTerm, $options: "i" } },
+          { city: { $regex: stateTerm, $options: "i" } }
+        ]
+      });
+    }
   }
 
   // District filter
   const districtTerm = (query.district || "").trim();
   if (districtTerm && districtTerm !== "All Districts") {
-    andClauses.push({
-      $or: [
-        { district: { $regex: districtTerm, $options: "i" } },
-        { city: { $regex: districtTerm, $options: "i" } },
-        { officeAddress: { $regex: districtTerm, $options: "i" } }
-      ]
-    });
+    const escapedDistrict = escapeRegex(districtTerm);
+    if (escapedDistrict) {
+      andClauses.push({
+        $or: [
+          { district: { $regex: escapedDistrict, $options: "i" } },
+          { city: { $regex: escapedDistrict, $options: "i" } },
+          { officeAddress: { $regex: escapedDistrict, $options: "i" } }
+        ]
+      });
+    }
   }
 
   // General Location filter (city or location query parameter)
   const locTerm = (query.location || query.city || "").trim();
   if (locTerm && locTerm !== "All Cities" && locTerm !== "All Locations") {
-    andClauses.push({
-      $or: [
-        { city: { $regex: locTerm, $options: "i" } },
-        { district: { $regex: locTerm, $options: "i" } },
-        { state: { $regex: locTerm, $options: "i" } },
-        { stateOfEnrolment: { $regex: locTerm, $options: "i" } },
-        { officeAddress: { $regex: locTerm, $options: "i" } }
-      ]
-    });
+    const escapedLoc = escapeRegex(locTerm);
+    if (escapedLoc) {
+      andClauses.push({
+        $or: [
+          { city: { $regex: escapedLoc, $options: "i" } },
+          { district: { $regex: escapedLoc, $options: "i" } },
+          { state: { $regex: escapedLoc, $options: "i" } },
+          { stateOfEnrolment: { $regex: escapedLoc, $options: "i" } },
+          { officeAddress: { $regex: escapedLoc, $options: "i" } }
+        ]
+      });
+    }
   }
 
-  // Verified lawyers only filter
-  if (query.verifiedOnly === "true" || query.isVerified === "true") {
+  // Verification status filter
+  if (query.verificationStatus && query.verificationStatus !== "all" && query.verificationStatus !== "All") {
+    filter.verificationStatus = query.verificationStatus;
+    delete filter.isAvailable;
+  } else if (query.verificationStatus === "all" || query.verificationStatus === "All") {
+    delete filter.verificationStatus;
+    delete filter.isAvailable;
+  } else if (query.verifiedOnly === "true" || query.isVerified === "true") {
     filter.verificationStatus = "approved";
+  }
+
+  // Practice area filter
+  if (query.practiceArea && query.practiceArea !== "All Practice Areas" && query.practiceArea !== "All") {
+    const paTerm = escapeRegex(query.practiceArea.trim());
+    if (paTerm) {
+      andClauses.push({
+        $or: [
+          { specialization: { $regex: paTerm, $options: "i" } },
+          { secondarySpecializations: { $regex: paTerm, $options: "i" } },
+          { practiceCourts: { $regex: paTerm, $options: "i" } },
+          { jurisdictions: { $regex: paTerm, $options: "i" } }
+        ]
+      });
+    }
   }
 
   // Experience filter
@@ -292,32 +331,36 @@ const searchLawyersService = async (query) => {
 
   // Search by lawyer name specifically
   if (query.name && query.name.trim()) {
-    const nameTerm = query.name.trim();
-    const matchingUsers = await User.find({
-      name: { $regex: nameTerm, $options: "i" }
-    }).select("_id").lean();
-    const userIds = matchingUsers.map((u) => u._id);
-    filter.user = { $in: userIds };
+    const nameTerm = escapeRegex(query.name.trim());
+    if (nameTerm) {
+      const matchingUsers = await User.find({
+        name: { $regex: nameTerm, $options: "i" }
+      }).select("_id").lean();
+      const userIds = matchingUsers.map((u) => u._id);
+      filter.user = { $in: userIds };
+    }
   }
 
   // General text search (name, specialization, city, bio)
   if (query.search && query.search.trim()) {
-    const term = query.search.trim();
-    const matchingUsers = await User.find({
-      name: { $regex: term, $options: "i" }
-    }).select("_id").lean();
-    const userIds = matchingUsers.map((u) => u._id);
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const matchingUsers = await User.find({
+        name: { $regex: term, $options: "i" }
+      }).select("_id").lean();
+      const userIds = matchingUsers.map((u) => u._id);
 
-    andClauses.push({
-      $or: [
-        { user: { $in: userIds } },
-        { city: { $regex: term, $options: "i" } },
-        { state: { $regex: term, $options: "i" } },
-        { specialization: { $regex: term, $options: "i" } },
-        { headline: { $regex: term, $options: "i" } },
-        { bio: { $regex: term, $options: "i" } }
-      ]
-    });
+      andClauses.push({
+        $or: [
+          { user: { $in: userIds } },
+          { city: { $regex: term, $options: "i" } },
+          { state: { $regex: term, $options: "i" } },
+          { specialization: { $regex: term, $options: "i" } },
+          { headline: { $regex: term, $options: "i" } },
+          { bio: { $regex: term, $options: "i" } }
+        ]
+      });
+    }
   }
 
   if (andClauses.length > 0) {
@@ -340,7 +383,7 @@ const searchLawyersService = async (query) => {
 
   const [lawyers, total] = await Promise.all([
     Lawyer.find(filter)
-      .select("-barCouncilId -__v")
+      .select("-verificationDocuments -internalNotes -decisionReason -reviewedBy -barCouncilId -__v")
       .populate("user", "name profileImage")
       .sort(sortOption)
       .skip(skip)
@@ -433,16 +476,18 @@ const getLawyerByIdService = async (lawyerId, requesterUserId = null) => {
     (lawyer.user?._id?.toString() === requesterUserId.toString() ||
       lawyer.user?.toString() === requesterUserId.toString());
 
-  if (!isOwner && (lawyer.verificationStatus !== "approved" || !lawyer.isAvailable)) {
+  if (!isOwner && !requesterUserId && (lawyer.verificationStatus !== "approved" || !lawyer.isAvailable)) {
     const error = new Error("Available lawyer not found");
     error.statusCode = 404;
     throw error;
   }
 
-  // Remove barCouncilId and private verification docs from public view
+  // Remove private verification docs and internal audit data from public/directory view
   if (!isOwner) {
-    delete lawyer.barCouncilId;
     delete lawyer.verificationDocuments;
+    delete lawyer.internalNotes;
+    delete lawyer.decisionReason;
+    delete lawyer.reviewedBy;
   }
   delete lawyer.__v;
 
@@ -471,7 +516,7 @@ const getAuthorizedClientDetailService = async (lawyerUserId, clientId) => {
     client: clientId
   })
     .sort({ scheduledAt: -1 })
-    .select("scheduledAt durationMinutes consultationType status notes meetingRoomId isPaid createdAt")
+    .select("scheduledAt durationMinutes consultationType status notes meetingRoomId createdAt")
     .lean();
 
   if (!appointments || appointments.length === 0) {
@@ -493,10 +538,45 @@ const getAuthorizedClientDetailService = async (lawyerUserId, clientId) => {
     throw error;
   }
 
+  // Bulk lookup payments for all retrieved appointments to avoid N+1 queries
+  const appointmentIds = appointments.map((a) => a._id);
+  const payments = await Payment.find({
+    appointment: { $in: appointmentIds }
+  })
+    .sort({ createdAt: -1, _id: -1 })
+    .select("appointment status amount paidAt createdAt _id")
+    .lean();
+
+  // Group payments by appointment preserving deterministic descending order
+  const paymentsByAppointment = new Map();
+  for (const p of payments) {
+    const appId = p.appointment.toString();
+    if (!paymentsByAppointment.has(appId)) {
+      paymentsByAppointment.set(appId, []);
+    }
+    paymentsByAppointment.get(appId).push(p);
+  }
+
+  const enrichedAppointments = appointments.map((app) => {
+    const appPayments = paymentsByAppointment.get(app._id.toString()) || [];
+    const payment = selectAuthoritativePayment(appPayments);
+    const isPaid = payment?.status === "captured";
+    const paymentStatus = payment
+      ? (payment.status === "captured" ? "paid" : payment.status)
+      : "unpaid";
+
+    return {
+      ...app,
+      isPaid,
+      paymentStatus,
+      paidAt: payment?.paidAt || null
+    };
+  });
+
   return {
     client,
-    appointmentsCount: appointments.length,
-    appointments
+    appointmentsCount: enrichedAppointments.length,
+    appointments: enrichedAppointments
   };
 };
 

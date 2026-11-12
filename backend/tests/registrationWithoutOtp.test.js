@@ -31,11 +31,7 @@ const {
   updateClientIdentityService,
 } = require("../src/services/authService");
 const { checkBookingEligibility } = require("../src/services/eligibilityService");
-
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Registration & Login Without OTP Verification Test Suite", () => {
   const timestamp = Date.now();
@@ -43,9 +39,7 @@ describe("Registration & Login Without OTP Verification Test Suite", () => {
   const createdUserIds = [];
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri);
-    }
+    await connectTestDB();
   });
 
   after(async () => {
@@ -54,7 +48,7 @@ describe("Registration & Login Without OTP Verification Test Suite", () => {
       await Lawyer.deleteMany({ user: { $in: createdUserIds } });
       await RefreshToken.deleteMany({ user: { $in: createdUserIds } });
     }
-    await mongoose.connection.close();
+    await disconnectTestDB();
   });
 
   // 1. Client can register with mandatory Email ID and Mobile Number without OTP

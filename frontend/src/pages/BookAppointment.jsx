@@ -91,21 +91,19 @@ export default function BookAppointment() {
 
         if (!active) return;
 
-        // If client profile is incomplete (< 100%), redirect immediately to My Profile
+        // If client profile is incomplete (< 100%), redirect directly to Client Portal My Profile
         if (
           eligData &&
           (!eligData.eligible ||
             eligData.checks?.profilePercentage !== 100 ||
             !eligData.checks?.profileCompleted)
         ) {
-          navigate("/client/profile", {
+          navigate("/dashboard?tab=profile", {
             replace: true,
             state: {
               fromBooking: true,
               lawyerId: parsed.lawyerId,
               lawyerName: lawyerData?.user?.name || "Advocate",
-              message:
-                "100% profile completion is required before booking an advocate consultation. Please fill in the remaining profile fields below to proceed.",
             },
           });
           return;
@@ -276,13 +274,11 @@ export default function BookAppointment() {
       });
     } catch (err) {
       if (err.data?.code === "BOOKING_INELIGIBLE" || err.data?.eligibility) {
-        navigate("/client/profile", {
+        navigate("/dashboard?tab=profile", {
           state: {
             fromBooking: true,
             lawyerId: lawyer._id,
             lawyerName,
-            message:
-              "100% profile completion is required before booking an advocate consultation. Please complete the remaining fields below.",
           },
         });
       } else {
@@ -417,8 +413,8 @@ export default function BookAppointment() {
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => navigate("/my-appointments")}
-                  className="w-full sm:flex-1 rounded-xl bg-navy py-3.5 px-5 text-sm font-bold text-white shadow-xs hover:bg-navy-light transition flex items-center justify-center gap-2"
+                  onClick={() => navigate("/dashboard")}
+                  className="w-full sm:flex-1 rounded-xl bg-navy py-3.5 px-5 text-sm font-bold text-white shadow-xs hover:bg-navy-light transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Calendar className="h-4 w-4 text-gold" />
                   View My Appointments
@@ -427,7 +423,7 @@ export default function BookAppointment() {
                 <button
                   type="button"
                   onClick={() => navigate("/")}
-                  className="w-full sm:w-auto rounded-xl border border-slate-200 py-3.5 px-6 text-sm font-bold text-slate-700 hover:bg-slate-50 transition flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto rounded-xl border border-slate-200 py-3.5 px-6 text-sm font-bold text-slate-700 hover:bg-slate-50 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Home className="h-4 w-4 text-slate-400" />
                   Back to Home

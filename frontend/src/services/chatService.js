@@ -1,8 +1,6 @@
 import { io } from "socket.io-client";
+import { authFetch, API_BASE_URL } from "./apiClient";
 
-const rawBaseUrl =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
 const SOCKET_URL = API_BASE_URL.replace(/\/api$/, "");
 
 let socketInstance = null;
@@ -11,7 +9,7 @@ export const getSocket = () => {
   const token = sessionStorage.getItem("accessToken");
   if (!token) return null;
 
-  if (!socketInstance || !socketInstance.connected) {
+  if (!socketInstance) {
     socketInstance = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket", "polling"],
@@ -19,6 +17,15 @@ export const getSocket = () => {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
+  } else {
+    // Update token if it has changed since socket creation
+    if (socketInstance.auth?.token !== token) {
+      socketInstance.auth = { token };
+    }
+    // Reconnect only if disconnected
+    if (socketInstance.disconnected) {
+      socketInstance.connect();
+    }
   }
 
   return socketInstance;
@@ -31,14 +38,6 @@ export const disconnectSocket = () => {
   }
 };
 
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem("accessToken");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
-
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -49,11 +48,10 @@ const handleResponse = async (response) => {
 
 // Fetch messages for an appointment
 export const getAppointmentMessages = async (appointmentId) => {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE_URL}/chat/messages/${appointmentId}`,
     {
       method: "GET",
-      headers: getAuthHeaders(),
     }
   );
   return handleResponse(response);
@@ -61,11 +59,13 @@ export const getAppointmentMessages = async (appointmentId) => {
 
 // Send a message
 export const sendMessage = async (appointmentId, messageData) => {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE_URL}/chat/messages/${appointmentId}`,
     {
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(messageData),
     }
   );
@@ -74,9 +74,8 @@ export const sendMessage = async (appointmentId, messageData) => {
 
 // Get conversations list
 export const getUserConversations = async () => {
-  const response = await fetch(`${API_BASE_URL}/chat/conversations`, {
+  const response = await authFetch(`${API_BASE_URL}/chat/conversations`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };

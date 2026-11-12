@@ -90,6 +90,45 @@ function getStatusBadge(status) {
   }
 }
 
+function getPaymentBadge(appt) {
+  const isPaid = Boolean(appt?.isPaid || appt?.paymentStatus === "paid" || appt?.payment?.status === "captured");
+  const rawStatus = appt?.paymentStatus || appt?.payment?.status;
+
+  if (isPaid || rawStatus === "paid" || rawStatus === "captured") {
+    return {
+      label: "Paid",
+      classes: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      status: "paid",
+    };
+  }
+  if (rawStatus === "refund_pending") {
+    return {
+      label: "Refund Pending",
+      classes: "bg-indigo-50 text-indigo-800 border-indigo-200",
+      status: "refund_pending",
+    };
+  }
+  if (rawStatus === "refunded") {
+    return {
+      label: "Refunded",
+      classes: "bg-purple-50 text-purple-800 border-purple-200",
+      status: "refunded",
+    };
+  }
+  if (rawStatus === "failed") {
+    return {
+      label: "Failed",
+      classes: "bg-red-50 text-red-800 border-red-200",
+      status: "failed",
+    };
+  }
+  return {
+    label: "Unpaid",
+    classes: "bg-amber-50 text-amber-800 border-amber-200",
+    status: "unpaid",
+  };
+}
+
 export default function MyAppointments() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -449,9 +488,17 @@ export default function MyAppointments() {
 
                 const statusInfo = getStatusBadge(appt.status);
                 const StatusIcon = statusInfo.icon;
+                const paymentBadgeInfo = getPaymentBadge(appt);
 
                 const bookingRef = `#LC-${appt._id.slice(-6).toUpperCase()}`;
-                const isPaid = appt.isPaid || Boolean(appt.payment);
+                const isSettledOrPendingRefund =
+                  paymentBadgeInfo.status === "paid" ||
+                  paymentBadgeInfo.status === "refund_pending" ||
+                  paymentBadgeInfo.status === "refunded";
+                const canPay =
+                  !isSettledOrPendingRefund &&
+                  appt.status !== "cancelled" &&
+                  appt.status !== "rejected";
                 const isPending = appt.status === "pending";
                 const isConfirmed = appt.status === "confirmed";
                 const isCompleted = appt.status === "completed";
@@ -506,7 +553,7 @@ export default function MyAppointments() {
 
                         {/* Lawyer & Consultation Metadata */}
                         <div className="space-y-2 min-w-0 flex-1">
-                          {/* Top row: Status Badge & Reference ID */}
+                          {/* Top row: Status Badge, Payment Status Badge & Reference ID */}
                           <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-bold border ${statusInfo.classes}`}
@@ -515,12 +562,20 @@ export default function MyAppointments() {
                               {statusInfo.label}
                             </span>
 
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${paymentBadgeInfo.classes}`}
+                              title={`Payment: ${paymentBadgeInfo.label}`}
+                            >
+                              <CreditCard className="h-3.5 w-3.5" />
+                              {paymentBadgeInfo.label}
+                            </span>
+
                             <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
                               Ref: {bookingRef}
                             </span>
 
                             <span className="text-xs font-semibold text-[#2457D6] capitalize bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
-                              {appt.consultationType === "video" ? (
+                              {appt.consultationType === "video" || appt.consultationType === "both" ? (
                                 <Video className="h-3 w-3" />
                               ) : (
                                 <MapPin className="h-3 w-3" />
@@ -617,7 +672,7 @@ export default function MyAppointments() {
                         </button>
 
                         {/* Join Consultation Button (For Confirmed Video Calls) */}
-                        {isConfirmed && appt.consultationType === "video" && (
+                        {isConfirmed && (appt.consultationType === "video" || appt.consultationType === "both") && (
                           <Link
                             to={`/video-room/${appt._id}`}
                             className="inline-flex items-center gap-1.5 rounded-xl bg-[#2457D6] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-blue-700 transition"
@@ -652,8 +707,8 @@ export default function MyAppointments() {
                           </button>
                         )}
 
-                        {/* Payment Button if not paid */}
-                        {!isPaid && !appt.isPaid && appt.status !== "cancelled" && appt.status !== "rejected" && (
+                        {/* Payment Button if not settled and not refunded/refund-pending */}
+                        {canPay && (
                           <button
                             type="button"
                             onClick={() => handlePay(appt)}
@@ -661,7 +716,13 @@ export default function MyAppointments() {
                             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 disabled:opacity-50 transition"
                           >
                             <CreditCard className="h-3.5 w-3.5" />
-                            <span>{payingId === appt._id ? "Processing..." : "Pay Fee"}</span>
+                            <span>
+                              {payingId === appt._id
+                                ? "Processing..."
+                                : paymentBadgeInfo.status === "failed"
+                                ? "Retry Payment"
+                                : "Pay Fee"}
+                            </span>
                           </button>
                         )}
 
@@ -744,6 +805,15 @@ export default function MyAppointments() {
                   <span className="font-semibold text-slate-500">Status:</span>
                   <span className="font-bold capitalize text-slate-900">
                     {detailAppointment.status}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-500">Payment Status:</span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border ${getPaymentBadge(detailAppointment).classes}`}
+                  >
+                    <CreditCard className="h-3 w-3" />
+                    {getPaymentBadge(detailAppointment).label}
                   </span>
                 </div>
               </div>

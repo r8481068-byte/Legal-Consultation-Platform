@@ -1,14 +1,4 @@
-const rawBaseUrl =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
-
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem("accessToken");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+import { authFetch, API_BASE_URL } from "./apiClient.js";
 
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
@@ -23,26 +13,23 @@ const handleResponse = async (response) => {
 // =========================================================================
 export const getAdminMetrics = async (params = {}) => {
   const qs = new URLSearchParams(params).toString();
-  const response = await fetch(`${API_BASE_URL}/admin/metrics${qs ? `?${qs}` : ""}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/metrics${qs ? `?${qs}` : ""}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminAnalytics = async (params = {}) => {
   const qs = new URLSearchParams(params).toString();
-  const response = await fetch(`${API_BASE_URL}/admin/analytics${qs ? `?${qs}` : ""}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/analytics${qs ? `?${qs}` : ""}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminRecentActivity = async () => {
-  const response = await fetch(`${API_BASE_URL}/admin/recent-activity`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/recent-activity`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
@@ -56,25 +43,22 @@ export const getAdminClients = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/clients?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/clients?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminClientDetail = async (clientId) => {
-  const response = await fetch(`${API_BASE_URL}/admin/clients/${clientId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/clients/${clientId}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const toggleClientBlock = async (clientId, isBlocked, blockReason = "") => {
-  const response = await fetch(`${API_BASE_URL}/admin/clients/${clientId}/block`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/clients/${clientId}/block`, {
     method: "PATCH",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ isBlocked, blockReason }),
   });
   return handleResponse(response);
@@ -89,25 +73,22 @@ export const getAdminLawyers = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/lawyers?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/lawyers?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminLawyerDetail = async (lawyerId) => {
-  const response = await fetch(`${API_BASE_URL}/admin/lawyers/${lawyerId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/lawyers/${lawyerId}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const toggleLawyerBlock = async (lawyerId, isBlocked, blockReason = "") => {
-  const response = await fetch(`${API_BASE_URL}/admin/lawyers/${lawyerId}/block`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/lawyers/${lawyerId}/block`, {
     method: "PATCH",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ isBlocked, blockReason }),
   });
   return handleResponse(response);
@@ -122,17 +103,15 @@ export const getAdminVerifications = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/verifications?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/verifications?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const updateLawyerVerification = async (lawyerId, status, decisionReason = "", internalNotes = "") => {
-  const response = await fetch(`${API_BASE_URL}/admin/verifications/${lawyerId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/verifications/${lawyerId}`, {
     method: "PATCH",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ status, decisionReason, internalNotes }),
   });
   return handleResponse(response);
@@ -151,25 +130,22 @@ export const getAdminAppointments = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/appointments?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/appointments?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminAppointmentDetail = async (appointmentId) => {
-  const response = await fetch(`${API_BASE_URL}/admin/appointments/${appointmentId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/appointments/${appointmentId}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const cancelAdminAppointment = async (appointmentId, reason) => {
-  const response = await fetch(`${API_BASE_URL}/admin/appointments/${appointmentId}/cancel`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/appointments/${appointmentId}/cancel`, {
     method: "PATCH",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ reason }),
   });
   return handleResponse(response);
@@ -184,17 +160,15 @@ export const getAdminReviews = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/reviews?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/reviews?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const moderateAdminReview = async (reviewId, status, moderationReason = "") => {
-  const response = await fetch(`${API_BASE_URL}/admin/reviews/${reviewId}/moderate`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/reviews/${reviewId}/moderate`, {
     method: "PATCH",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ status, moderationReason }),
   });
   return handleResponse(response);
@@ -209,25 +183,22 @@ export const getAdminPayments = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/payments?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/payments?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminPaymentDetail = async (paymentId) => {
-  const response = await fetch(`${API_BASE_URL}/admin/payments/${paymentId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/payments/${paymentId}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const processRefund = async (paymentId, reason = "") => {
-  const response = await fetch(`${API_BASE_URL}/admin/payments/${paymentId}/refund`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/payments/${paymentId}/refund`, {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ reason }),
   });
   return handleResponse(response);
@@ -242,25 +213,22 @@ export const getAdminComplaints = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/complaints?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/complaints?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const getAdminComplaintDetail = async (complaintId) => {
-  const response = await fetch(`${API_BASE_URL}/admin/complaints/${complaintId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/complaints/${complaintId}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const updateAdminComplaint = async (complaintId, payload) => {
-  const response = await fetch(`${API_BASE_URL}/admin/complaints/${complaintId}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/complaints/${complaintId}`, {
     method: "PATCH",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(response);
@@ -275,17 +243,15 @@ export const getAdminNotifications = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/notifications?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/notifications?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const broadcastNotification = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/admin/notifications/broadcast`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/notifications/broadcast`, {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(response);
@@ -296,9 +262,8 @@ export const broadcastNotification = async (payload) => {
 // =========================================================================
 export const getAdminReports = async (type, params = {}) => {
   const qs = new URLSearchParams({ type, ...params }).toString();
-  const response = await fetch(`${API_BASE_URL}/admin/reports?${qs}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/reports?${qs}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
@@ -312,9 +277,8 @@ export const getAdminActivityLogs = async (params = {}) => {
     if (v !== undefined && v !== null && v !== "") qs.append(k, v);
   });
 
-  const response = await fetch(`${API_BASE_URL}/admin/activity-logs?${qs.toString()}`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/activity-logs?${qs.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
@@ -323,35 +287,31 @@ export const getAdminActivityLogs = async (params = {}) => {
 // 12. ADMIN SETTINGS
 // =========================================================================
 export const getAdminSettings = async () => {
-  const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/settings`, {
     method: "GET",
-    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
 
 export const updateAdminProfile = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/admin/settings/profile`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/settings/profile`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(response);
 };
 
 export const changeAdminPassword = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/admin/settings/password`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/settings/password`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(response);
 };
 
 export const updatePlatformSettings = async (payload) => {
-  const response = await fetch(`${API_BASE_URL}/admin/settings/platform`, {
+  const response = await authFetch(`${API_BASE_URL}/admin/settings/platform`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(response);

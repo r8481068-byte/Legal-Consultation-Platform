@@ -21,8 +21,15 @@ const {
   verifyEmailOtpService,
   resendEmailOtpService,
   createOrUpdateEmailChallenge,
+  createOrUpdatePhoneChallenge,
+  verifyPhoneOtpService,
+  resendPhoneOtpService,
   sendPasswordResetEmail,
 } = require("../services/verificationService");
+const {
+  isMsg91Configured,
+  getMissingMsg91Config,
+} = require("../services/smsService");
 
 // ==========================================
 // REGISTER USER
@@ -437,11 +444,64 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+// ==========================================
+// PHONE OTP VERIFICATION ENDPOINTS (MSG91)
+// ==========================================
+
+const sendPhoneOtp = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId || req.user?._id;
+    const phone = req.body?.phone || req.user?.phone;
+    const result = await createOrUpdatePhoneChallenge({ userId, phone });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyPhoneOtp = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId || req.user?._id;
+    const phone = req.body?.phone || req.user?.phone;
+    const otp = req.body?.otp;
+    const result = await verifyPhoneOtpService({ userId, phone, otp });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendPhoneOtp = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId || req.user?._id;
+    const phone = req.body?.phone || req.user?.phone;
+    const result = await resendPhoneOtpService({ userId, phone });
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getSmsConfigStatus = async (req, res) => {
+  const configured = isMsg91Configured();
+  const missing = getMissingMsg91Config();
+  return res.status(200).json({
+    success: true,
+    configured,
+    missingConfig: missing,
+    provider: "MSG91",
+  });
+};
+
 module.exports = {
   registerUser,
   sendEmailOtp,
   verifyEmailOtp,
   resendEmailOtp,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+  resendPhoneOtp,
+  getSmsConfigStatus,
   loginUser,
   refreshAccessToken,
   logoutUser,

@@ -18,11 +18,7 @@ const {
 const {
   bookAppointmentService,
 } = require("../src/services/appointmentService");
-
-const mongoUri =
-  process.env.LOCAL_MONGO_URI ||
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/legalconnect";
+const { connectTestDB, disconnectTestDB } = require("./helpers/testDb");
 
 describe("Find Lawyer, Public Profile & Appointment Booking Upgrade Suite", () => {
   let incompleteClient;
@@ -34,9 +30,7 @@ describe("Find Lawyer, Public Profile & Appointment Booking Upgrade Suite", () =
   let configuredSlot;
 
   before(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
-    }
+    await connectTestDB();
 
     const stamp = Date.now();
 
@@ -179,6 +173,7 @@ describe("Find Lawyer, Public Profile & Appointment Booking Upgrade Suite", () =
     await Lawyer.deleteMany({ _id: { $in: [seniorLawyerDoc._id, juniorLawyerDoc._id] } });
     await LawyerAvailability.deleteMany({ lawyer: seniorLawyerDoc._id });
     await Appointment.deleteMany({ client: { $in: [incompleteClient._id, completeClient._id] } });
+    await disconnectTestDB();
   });
 
   // =========================================================================

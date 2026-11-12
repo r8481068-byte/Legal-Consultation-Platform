@@ -1,15 +1,9 @@
 import {
   FileText,
-  Calendar,
-  Clock,
   Video,
-  CreditCard,
-  User,
   CheckCircle,
   X,
   Printer,
-  ShieldCheck,
-  MessageSquare,
 } from "lucide-react";
 
 export default function AppointmentSummaryModal({
@@ -63,15 +57,51 @@ export default function AppointmentSummaryModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5 print:p-0">
           {/* Status banner */}
-          <div className="flex items-center justify-between rounded-2xl bg-green-50 p-4 border border-green-200 text-green-900">
+          <div
+            className={`flex items-center justify-between rounded-2xl p-4 border ${
+              appointment.status === "completed"
+                ? "bg-green-50 border-green-200 text-green-900"
+                : appointment.status === "confirmed"
+                ? "bg-blue-50 border-blue-200 text-blue-900"
+                : "bg-amber-50 border-amber-200 text-amber-900"
+            }`}
+          >
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-700 shrink-0" />
+              <CheckCircle
+                className={`h-5 w-5 shrink-0 ${
+                  appointment.status === "completed"
+                    ? "text-green-700"
+                    : appointment.status === "confirmed"
+                    ? "text-blue-700"
+                    : "text-amber-600"
+                }`}
+              />
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-green-800">
-                  Status: Completed
+                <p
+                  className={`text-xs font-bold uppercase tracking-wider ${
+                    appointment.status === "completed"
+                      ? "text-green-800"
+                      : appointment.status === "confirmed"
+                      ? "text-blue-800"
+                      : "text-amber-800"
+                  }`}
+                >
+                  Status: {appointment.status || "Completed"}
                 </p>
-                <p className="text-xs text-green-700">
-                  This legal consultation session was successfully concluded.
+                <p
+                  className={`text-xs ${
+                    appointment.status === "completed"
+                      ? "text-green-700"
+                      : appointment.status === "confirmed"
+                      ? "text-blue-700"
+                      : "text-amber-700"
+                  }`}
+                >
+                  {appointment.status === "confirmed"
+                    ? "This consultation session is confirmed and ready for consultation."
+                    : appointment.status === "pending"
+                    ? "This consultation request is pending advocate confirmation."
+                    : "This legal consultation session was successfully concluded."}
                 </p>
               </div>
             </div>
@@ -86,6 +116,43 @@ export default function AppointmentSummaryModal({
               </span>
             )}
           </div>
+
+          {/* Advocate Details (If populated) */}
+          {appointment.lawyer && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                Advocate Details
+              </h3>
+              <div className="flex items-center gap-3">
+                {appointment.lawyer.user?.profileImage ? (
+                  <img
+                    src={appointment.lawyer.user.profileImage}
+                    alt="Advocate"
+                    className="h-10 w-10 shrink-0 rounded-xl object-cover border border-slate-200"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-900 text-white font-bold text-sm">
+                    {appointment.lawyer.user?.name
+                      ? appointment.lawyer.user.name.charAt(0)
+                      : "A"}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-900 truncate">
+                    Advocate {appointment.lawyer.user?.name || "Verified Counsel"}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {Array.isArray(appointment.lawyer.specialization)
+                      ? appointment.lawyer.specialization.join(", ")
+                      : appointment.lawyer.specialization || "Legal Counsel"}
+                    {appointment.lawyer.city && ` • ${appointment.lawyer.city}`}
+                    {appointment.lawyer.barCouncilId &&
+                      ` • Bar ID: ${appointment.lawyer.barCouncilId}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Client Details */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
@@ -180,15 +247,27 @@ export default function AppointmentSummaryModal({
                   onClose();
                   onOpenDocuments(appointment);
                 }}
-                className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
               >
                 Case Documents
+              </button>
+            )}
+            {onOpenChat && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenChat(appointment);
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Chat
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-blue-900 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 transition"
+              className="rounded-xl bg-blue-900 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 transition cursor-pointer"
             >
               Done
             </button>

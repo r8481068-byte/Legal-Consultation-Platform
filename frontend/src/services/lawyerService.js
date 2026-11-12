@@ -9,7 +9,9 @@ export async function getLawyers(filters = {}) {
     }
   });
 
-  const response = await fetch(
+  const token = sessionStorage.getItem("accessToken");
+  const fetchFn = token ? authFetch : fetch;
+  const response = await fetchFn(
     `${API_BASE_URL}/lawyers?${params.toString()}`
   );
 
@@ -34,7 +36,9 @@ export async function getLawyers(filters = {}) {
 
 
 export async function getLawyerById(lawyerId) {
-  const response = await fetch(
+  const token = sessionStorage.getItem("accessToken");
+  const fetchFn = token ? authFetch : fetch;
+  const response = await fetchFn(
     `${API_BASE_URL}/lawyers/${lawyerId}`
   );
 

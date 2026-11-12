@@ -8,11 +8,8 @@ import {
   UserPlus,
   LogIn,
   LogOut,
-  Calendar,
-  Settings,
+  LayoutDashboard,
   ChevronDown,
-  ShieldCheck,
-  Info,
 } from "lucide-react";
 
 export default function AccountMenu({ onOpenProfileSettings, isMobile = false, onCloseMobile }) {
@@ -51,13 +48,6 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
     return "/dashboard";
   };
 
-  const getAppointmentsPath = () => {
-    if (!user) return "/login";
-    if (user.role === "lawyer") return "/lawyer-dashboard";
-    if (user.role === "admin") return "/admin";
-    return "/my-appointments";
-  };
-
   // Mobile layout
   if (isMobile) {
     if (user) {
@@ -69,7 +59,10 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
             </div>
             <div className="overflow-hidden">
               <p className="truncate text-sm font-semibold text-slate-800">{user.name}</p>
-              <p className="text-xs text-slate-500 capitalize">{user.role} Account</p>
+              <p className="truncate text-xs text-slate-500">{user.email}</p>
+              <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-800">
+                {user.role}
+              </span>
             </div>
           </div>
           <Link
@@ -77,76 +70,12 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
             onClick={handleLinkClick}
             className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
-            <Settings className="h-4 w-4 text-blue-700" /> Dashboard
+            <LayoutDashboard className="h-4 w-4 text-blue-700" /> Dashboard
           </Link>
-          {user.role === "lawyer" && (
-            <>
-              <Link
-                to="/lawyer/edit-profile"
-                onClick={handleLinkClick}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                <User className="h-4 w-4 text-blue-700" /> My Profile
-              </Link>
-              <Link
-                to="/lawyer/availability"
-                onClick={handleLinkClick}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                <Calendar className="h-4 w-4 text-blue-700" /> Availability
-              </Link>
-              <Link
-                to="/lawyer/about-us"
-                onClick={handleLinkClick}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                <Info className="h-4 w-4 text-blue-700" /> About Us
-              </Link>
-            </>
-          )}
-          {user.role !== "lawyer" && (
-            <Link
-              to={getAppointmentsPath()}
-              onClick={handleLinkClick}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              <Calendar className="h-4 w-4 text-blue-700" /> My Consultations
-            </Link>
-          )}
-          {user.role === "client" && (
-            <>
-              <Link
-                to="/client/profile"
-                onClick={handleLinkClick}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                <User className="h-4 w-4 text-blue-700" /> My Profile
-              </Link>
-              <Link
-                to="/client/profile-completion"
-                onClick={handleLinkClick}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-              >
-                <ShieldCheck className="h-4 w-4 text-emerald-600" /> Booking Eligibility & Profile
-              </Link>
-            </>
-          )}
-          {onOpenProfileSettings && (
-            <button
-              type="button"
-              onClick={() => {
-                onOpenProfileSettings();
-                handleLinkClick();
-              }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              <User className="h-4 w-4 text-blue-700" /> Profile Settings
-            </button>
-          )}
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 cursor-pointer"
           >
             <LogOut className="h-4 w-4" /> Logout
           </button>
@@ -229,91 +158,16 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
                   onClick={handleLinkClick}
                   className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
                 >
-                  <Settings className="h-4 w-4 text-slate-500" />
+                  <LayoutDashboard className="h-4 w-4 text-slate-500" />
                   Dashboard
                 </Link>
-
-                {user.role === "lawyer" && (
-                  <>
-                    <Link
-                      to="/lawyer/edit-profile"
-                      onClick={handleLinkClick}
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                    >
-                      <User className="h-4 w-4 text-slate-500" />
-                      My Profile
-                    </Link>
-                    <Link
-                      to="/lawyer/availability"
-                      onClick={handleLinkClick}
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                    >
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      Availability
-                    </Link>
-                    <Link
-                      to="/lawyer/about-us"
-                      onClick={handleLinkClick}
-                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                    >
-                      <Info className="h-4 w-4 text-slate-500" />
-                      About Us
-                    </Link>
-                  </>
-                )}
-
-                {user.role !== "lawyer" && (
-                  <Link
-                    to={getAppointmentsPath()}
-                    onClick={handleLinkClick}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                  >
-                    <Calendar className="h-4 w-4 text-slate-500" />
-                    My Consultations
-                  </Link>
-                )}
-
-                {onOpenProfileSettings && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onOpenProfileSettings();
-                      handleLinkClick();
-                    }}
-                    className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                  >
-                    <User className="h-4 w-4 text-slate-500" />
-                    Profile Settings
-                  </button>
-                )}
-
-                {user.role === "client" && (
-                  <>
-                    <Link
-                      to="/client/profile"
-                      onClick={handleLinkClick}
-                      className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                    >
-                      <User className="h-4 w-4 text-slate-500" />
-                      My Profile
-                    </Link>
-                    <Link
-                      to="/client/profile-completion"
-                      onClick={handleLinkClick}
-                      className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-800"
-                    >
-                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                      Booking Eligibility & Profile
-                    </Link>
-                  </>
-                )}
               </div>
 
               <div className="border-t border-slate-100 py-1">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50"
+                  className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
                 >
                   <LogOut className="h-4 w-4 text-red-500" />
                   Logout
@@ -401,3 +255,5 @@ export default function AccountMenu({ onOpenProfileSettings, isMobile = false, o
     </div>
   );
 }
+
+

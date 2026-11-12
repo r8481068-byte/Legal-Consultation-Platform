@@ -24,11 +24,12 @@ export const getLawyerAppointments = async () => {
 };
 
 // Update appointment status
-const updateAppointmentStatus = async (appointmentId, action) => {
+const updateAppointmentStatus = async (appointmentId, action, bodyData) => {
   const response = await authFetch(
     `${API_BASE_URL}/appointments/${appointmentId}/${action}`,
     {
       method: "PATCH",
+      ...(bodyData ? { body: JSON.stringify(bodyData) } : {}),
     }
   );
 
@@ -38,8 +39,11 @@ const updateAppointmentStatus = async (appointmentId, action) => {
 export const confirmLawyerAppointment = (appointmentId) =>
   updateAppointmentStatus(appointmentId, "confirm");
 
-export const rejectLawyerAppointment = (appointmentId) =>
-  updateAppointmentStatus(appointmentId, "reject");
+export const rejectLawyerAppointment = (appointmentId, reason = "") =>
+  updateAppointmentStatus(appointmentId, "reject", reason ? { reason } : undefined);
+
+export const cancelLawyerAppointment = (appointmentId, reason = "") =>
+  updateAppointmentStatus(appointmentId, "cancel", reason ? { reason } : undefined);
 
 export const completeLawyerAppointment = (appointmentId) =>
   updateAppointmentStatus(appointmentId, "complete");

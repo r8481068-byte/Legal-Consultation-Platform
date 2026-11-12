@@ -12,7 +12,7 @@ const verificationChallengeSchema = new mongoose.Schema(
 
     purpose: {
       type: String,
-      enum: ["email_verification"],
+      enum: ["email_verification", "phone_verification"],
       default: "email_verification",
       required: true,
     },

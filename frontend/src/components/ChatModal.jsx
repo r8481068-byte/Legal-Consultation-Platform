@@ -79,6 +79,11 @@ export default function ChatModal({ appointment, isOpen, onClose, onOpenDocument
         setTypingUser("");
       };
 
+      const handleReconnect = () => {
+        socket.emit("join_chat_room", { appointmentId: appointment._id });
+      };
+
+      socket.on("connect", handleReconnect);
       socket.on("new_message", handleNewMessage);
       socket.on("user_typing", handleUserTyping);
       socket.on("user_stop_typing", handleUserStopTyping);
@@ -86,6 +91,7 @@ export default function ChatModal({ appointment, isOpen, onClose, onOpenDocument
       return () => {
         mounted = false;
         socket.emit("leave_chat_room", { appointmentId: appointment._id });
+        socket.off("connect", handleReconnect);
         socket.off("new_message", handleNewMessage);
         socket.off("user_typing", handleUserTyping);
         socket.off("user_stop_typing", handleUserStopTyping);

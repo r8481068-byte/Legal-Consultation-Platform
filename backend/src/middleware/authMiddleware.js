@@ -72,4 +72,27 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+const optionalProtect = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded._id || decoded.userId;
+    if (userId) {
+      req.user = {
+        ...decoded,
+        _id: userId,
+        id: userId,
+        userId: userId,
+      };
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
+module.exports = { protect, authorize, optionalProtect };

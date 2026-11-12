@@ -16,6 +16,12 @@ const {
   generateAccessToken,
   generateRefreshToken,
 } = require("../utils/token");
+const {
+  isMsg91Configured,
+  getMissingMsg91Config,
+  normalizeIndianMobile,
+  sendSmsOtp,
+} = require("./smsService");
 
 const OTP_EXPIRY_MINUTES = 5;
 const COOLDOWN_SECONDS = 60;
@@ -683,12 +689,212 @@ async function resendEmailOtpService({ email }) {
   });
 }
 
+/**
+ * Creates or updates an active phone challenge for a user, enforcing cooldown and dispatching SMS via MSG91.
+ */
+async function createOrUpdatePhoneChallenge({ userId, phone }) {
+  if (!phone) {
+    const error = new Error("Phone number is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedPhone = normalizeIndianMobile(phone);
+  if (!normalizedPhone || normalizedPhone.length !== 12 || !normalizedPhone.startsWith("91")) {
+    const error = new Error("Please enter a valid 10-digit Indian mobile number");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!isMsg91Configured()) {
+    const missing = getMissingMsg91Config();
+    const error = new Error(
+      `SMS service is not configured. Missing required credentials: ${missing.join(", ")}. Please configure MSG91 credentials and DLT template ID before sending SMS.`
+    );
+    error.statusCode = 503;
+    error.code = "SMS_CONFIG_MISSING";
+    error.missingConfig = missing;
+    throw error;
+  }
+
+  const now = new Date();
+
+  // Enforce 60-second cooldown
+  const recentChallenge = await VerificationChallenge.findOne({
+    destination: normalizedPhone,
+    purpose: "phone_verification",
+    consumedAt: null,
+  }).sort({ createdAt: -1 });
+
+  if (recentChallenge) {
+    const elapsedSeconds = Math.floor(
+      (now.getTime() - new Date(recentChallenge.lastSentAt).getTime()) / 1000
+    );
+
+    if (elapsedSeconds < COOLDOWN_SECONDS) {
+      const waitTime = COOLDOWN_SECONDS - elapsedSeconds;
+      const error = new Error(
+        `Please wait ${waitTime} seconds before requesting a new SMS verification code.`
+      );
+      error.statusCode = 429;
+      error.retryAfter = waitTime;
+      throw error;
+    }
+  }
+
+  const otp = generateSixDigitOtp();
+  const tokenHash = hashOtp(otp, "phone_verification", normalizedPhone);
+  const expiresAt = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+  // Dispatch SMS via MSG91. If credentials missing, throws structured 503
+  await sendSmsOtp({
+    phone: normalizedPhone,
+    otp,
+  });
+
+  // Expire previous active challenges for this phone
+  await VerificationChallenge.updateMany(
+    {
+      destination: normalizedPhone,
+      purpose: "phone_verification",
+      consumedAt: null,
+    },
+    {
+      $set: { consumedAt: now },
+    }
+  );
+
+  await VerificationChallenge.create({
+    user: userId || null,
+    purpose: "phone_verification",
+    destination: normalizedPhone,
+    tokenHash,
+    expiresAt,
+    attempts: 0,
+    maxAttempts: MAX_ATTEMPTS,
+    lastSentAt: now,
+  });
+
+  return {
+    success: true,
+    message: "SMS verification code dispatched successfully.",
+    expiresAt,
+  };
+}
+
+/**
+ * Verifies a phone OTP against the latest active challenge and marks user.phoneVerified = true.
+ */
+async function verifyPhoneOtpService({ userId, phone, otp }) {
+  if (!phone || !otp) {
+    const error = new Error("Phone number and OTP code are required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedPhone = normalizeIndianMobile(phone);
+  const cleanOtp = String(otp).trim();
+  const now = new Date();
+
+  const challenge = await VerificationChallenge.findOne({
+    destination: normalizedPhone,
+    purpose: "phone_verification",
+    consumedAt: null,
+  })
+    .select("+tokenHash")
+    .sort({ createdAt: -1 });
+
+  if (!challenge) {
+    const error = new Error(
+      "No active verification code found for this phone number. Please request a new code."
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (now > challenge.expiresAt) {
+    challenge.consumedAt = now;
+    await challenge.save();
+
+    const error = new Error(
+      "Verification code has expired. Please request a new code."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (challenge.attempts >= challenge.maxAttempts) {
+    challenge.consumedAt = now;
+    await challenge.save();
+
+    const error = new Error(
+      "Maximum verification attempts exceeded. Please request a new verification code."
+    );
+    error.statusCode = 429;
+    throw error;
+  }
+
+  const isValid = verifyOtpHash(
+    cleanOtp,
+    "phone_verification",
+    normalizedPhone,
+    challenge.tokenHash
+  );
+
+  if (!isValid) {
+    challenge.attempts += 1;
+    await challenge.save();
+
+    const remaining = challenge.maxAttempts - challenge.attempts;
+    const error = new Error(
+      `Invalid verification code. ${
+        remaining > 0
+          ? `${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
+          : "Please request a new code."
+      }`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  challenge.consumedAt = now;
+  await challenge.save();
+
+  // If userId provided, mark user phoneVerified = true
+  if (userId) {
+    const rawDigits = normalizedPhone.startsWith("91") && normalizedPhone.length === 12
+      ? normalizedPhone.slice(2)
+      : normalizedPhone;
+
+    await User.findByIdAndUpdate(userId, {
+      phoneVerified: true,
+      phone: rawDigits,
+    });
+  }
+
+  return {
+    success: true,
+    phoneVerified: true,
+    message: "Phone number verified successfully.",
+  };
+}
+
+/**
+ * Resends a phone OTP enforcing cooldown.
+ */
+async function resendPhoneOtpService({ userId, phone }) {
+  return await createOrUpdatePhoneChallenge({ userId, phone });
+}
+
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
   createOrUpdateEmailChallenge,
   verifyEmailOtpService,
   resendEmailOtpService,
+  createOrUpdatePhoneChallenge,
+  verifyPhoneOtpService,
+  resendPhoneOtpService,
   getDevSimulatedOtp,
   setSimulateEmailDeliveryFailure,
 };

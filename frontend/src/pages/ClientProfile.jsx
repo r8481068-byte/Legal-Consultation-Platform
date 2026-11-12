@@ -307,11 +307,23 @@ export default function ClientProfile() {
     setError("");
 
     try {
-      const cleanAadhaar = identityForm.aadhaar.trim();
+      const cleanAadhaar = identityForm.aadhaar.replace(/[\s\-]/g, "");
       const cleanPan = identityForm.pan.trim().toUpperCase();
 
       if (!cleanAadhaar || !cleanPan) {
         throw new Error("Both Aadhaar number and PAN number are required.");
+      }
+
+      if (!/^[2-9]\d{11}$/.test(cleanAadhaar)) {
+        throw new Error(
+          "Invalid Aadhaar number format. Must be a 12-digit number starting with 2-9."
+        );
+      }
+
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+        throw new Error(
+          "Invalid PAN format. Must be 10 characters (5 uppercase letters, 4 digits, 1 letter, e.g. ABCDE1234F)."
+        );
       }
 
       const res = await updateClientIdentity({
@@ -327,7 +339,7 @@ export default function ClientProfile() {
         }));
       }
 
-      showNotification("Identity documents securely submitted and encrypted.");
+      showNotification("Identity details updated and encrypted with AES-256-GCM successfully.");
       setIsEditingIdentity(false);
       setIdentityForm({ aadhaar: "", pan: "" });
       await loadUserProfile();
@@ -437,91 +449,6 @@ export default function ClientProfile() {
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
-          )}
-
-          {/* Pending Consultation / 100% Profile Completion Gate Notice */}
-          {pendingBooking && (
-            <div
-              className={`rounded-3xl border p-5 shadow-xs transition-all ${
-                isProfileComplete
-                  ? "border-emerald-300 bg-emerald-50/80 text-emerald-950"
-                  : "border-amber-300 bg-amber-50/90 text-amber-950"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${
-                      isProfileComplete
-                        ? "bg-emerald-200 text-emerald-900"
-                        : "bg-amber-200 text-amber-900"
-                    }`}
-                  >
-                    {isProfileComplete ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <ShieldAlert className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold leading-snug">
-                      {isProfileComplete
-                        ? "Profile 100% Complete! You can now book your consultation."
-                        : `100% Profile Completion Required to Book Consultation`}
-                    </h3>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {isProfileComplete ? (
-                        <>
-                          Your client credentials and Indian address details meet all legal compliance standards. Continue booking your appointment with{" "}
-                          <span className="font-semibold text-slate-900">
-                            Advocate {pendingBooking.lawyerName || "your selected lawyer"}
-                          </span>.
-                        </>
-                      ) : (
-                        <>
-                          You were redirected here because booking an appointment with{" "}
-                          <span className="font-semibold text-slate-900">
-                            Advocate {pendingBooking.lawyerName || "your selected lawyer"}
-                          </span>{" "}
-                          requires your profile to be 100% completed. Currently at{" "}
-                          <span className="font-bold text-amber-800">{completeness}%</span>. Please complete any missing personal, address, and identity fields below.
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                  {isProfileComplete ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetId = pendingBooking.lawyerId;
-                        navigate(targetId ? `/book-appointment?lawyerId=${targetId}` : "/book-appointment", {
-                          state: pendingBooking,
-                        });
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 shadow-sm transition"
-                    >
-                      Return to Advocate & Continue Booking
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingBooking(null);
-                      sessionStorage.removeItem("pendingConsultation");
-                    }}
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200/80 hover:text-slate-700 transition"
-                    title="Dismiss alert"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
@@ -985,7 +912,7 @@ export default function ClientProfile() {
               <div>
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-blue-900" />
-                  Identity Information & Verification
+                  Identity Documents & Verification
                 </h2>
                 <p className="text-xs text-slate-500">
                   Stored securely with AES-256-GCM encryption at rest. Never exposed publicly.
@@ -1094,7 +1021,7 @@ export default function ClientProfile() {
                     className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                    <span>Encrypt & Save Identity</span>
+                    <span>Update Identity Details</span>
                   </button>
                 </div>
               </form>

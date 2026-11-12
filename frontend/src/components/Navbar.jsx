@@ -181,9 +181,11 @@ export default function Navbar({ onOpenProfileSettings }) {
                 <span>My Appointments</span>
               </Link>
               <Link
-                to="/client/profile"
+                to="/dashboard?tab=profile"
                 className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition ${
-                  isActive("/client/profile") || isActive("/my-profile")
+                  (location.pathname === "/dashboard" && location.search.includes("tab=profile")) ||
+                  location.pathname === "/client/profile" ||
+                  location.pathname === "/my-profile"
                     ? "bg-blue-50 text-[#2457D6] border border-blue-100 shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
@@ -398,7 +400,7 @@ export default function Navbar({ onOpenProfileSettings }) {
                       {user.role === "client" && (
                         <>
                           <Link
-                            to="/client/profile"
+                            to="/dashboard?tab=profile"
                             onClick={() => setProfileDropdownOpen(false)}
                             className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-slate-700 hover:bg-slate-50 font-semibold transition"
                           >
@@ -588,10 +590,12 @@ export default function Navbar({ onOpenProfileSettings }) {
                   My Appointments
                 </Link>
                 <Link
-                  to="/client/profile"
+                  to="/dashboard?tab=profile"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase transition ${
-                    isActive("/client/profile") || isActive("/my-profile")
+                    (location.pathname === "/dashboard" && location.search.includes("tab=profile")) ||
+                    location.pathname === "/client/profile" ||
+                    location.pathname === "/my-profile"
                       ? "bg-blue-50 text-[#2457D6] font-bold"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}

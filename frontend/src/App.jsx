@@ -124,16 +124,12 @@ function App() {
           <Route path="/client/dashboard" element={<Navigate to="/dashboard" replace />} />
           <Route path="/lawyer/dashboard" element={<Navigate to="/lawyer-dashboard" replace />} />
 
-          {/* Client Profile Completion */}
+          {/* Client Profile Completion - Redirects directly to Client Portal My Profile */}
           <Route
             path="/client/profile-completion"
-            element={
-              <RoleRoute allowedRole="client">
-                <ClientProfileCompletion />
-              </RoleRoute>
-            }
+            element={<Navigate to="/dashboard?tab=profile" replace />}
           />
-          <Route path="/profile-completion" element={<Navigate to="/client/profile-completion" replace />} />
+          <Route path="/profile-completion" element={<Navigate to="/dashboard?tab=profile" replace />} />
 
           {/* Protected Routes for any authenticated user */}
           <Route element={<ProtectedRoute />}>
@@ -146,9 +142,9 @@ function App() {
             <Route path="/client/home" element={<Navigate to="/" replace />} />
             <Route path="/client" element={<Navigate to="/" replace />} />
             <Route path="/client/lawyers" element={<ClientFindLawyers />} />
-            <Route path="/client/profile" element={<ClientProfile />} />
-            <Route path="/my-profile" element={<Navigate to="/client/profile" replace />} />
-            <Route path="/profile" element={<Navigate to="/client/profile" replace />} />
+            <Route path="/client/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
+            <Route path="/my-profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
+            <Route path="/profile" element={<Navigate to="/dashboard?tab=profile" replace />} />
             <Route path="/book-appointment" element={<BookAppointment />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
           </Route>

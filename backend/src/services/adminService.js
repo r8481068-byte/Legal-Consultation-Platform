@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
 const Lawyer = require("../models/Lawyer");
+const LawyerAvailability = require("../models/LawyerAvailability");
 const Appointment = require("../models/Appointment");
 const Payment = require("../models/Payment");
 const Review = require("../models/Review");
@@ -11,6 +12,7 @@ const AdminLog = require("../models/AdminLog");
 const PlatformSetting = require("../models/PlatformSetting");
 const razorpay = require("../config/razorpay");
 const { logAdminAction } = require("../utils/auditLogger");
+const { escapeRegex } = require("../utils/searchUtils");
 
 // =========================================================================
 // HELPER: Date Range Calculation
@@ -435,10 +437,12 @@ const getAdminClientsService = async (query = {}) => {
   if (query.status === "active") filter.isActive = true;
   if (query.status === "blocked") filter.isActive = false;
 
-  if (query.search) {
-    const term = query.search.trim();
-    const regex = { $regex: term, $options: "i" };
-    filter.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      filter.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+    }
   }
 
   if (query.startDate || query.endDate) {
@@ -614,10 +618,12 @@ const getAdminLawyersService = async (query = {}) => {
   if (query.status === "active") userQuery.isActive = true;
   if (query.status === "blocked") userQuery.isActive = false;
 
-  if (query.search) {
-    const term = query.search.trim();
-    const regex = { $regex: term, $options: "i" };
-    userQuery.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      userQuery.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+    }
   }
 
   let matchedUserIds = null;
@@ -765,15 +771,18 @@ const getAdminVerificationsService = async (query = {}) => {
     filter.verificationStatus = query.status;
   }
 
-  if (query.search) {
-    const regex = { $regex: query.search.trim(), $options: "i" };
-    const matchingUsers = await User.find({ role: "lawyer", $or: [{ name: regex }, { email: regex }] }).select("_id").lean();
-    const userIds = matchingUsers.map((u) => u._id);
-    filter.$or = [
-      { user: { $in: userIds } },
-      { barCouncilId: regex },
-      { city: regex }
-    ];
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      const matchingUsers = await User.find({ role: "lawyer", $or: [{ name: regex }, { email: regex }] }).select("_id").lean();
+      const userIds = matchingUsers.map((u) => u._id);
+      filter.$or = [
+        { user: { $in: userIds } },
+        { barCouncilId: regex },
+        { city: regex }
+      ];
+    }
   }
 
   const [applications, total] = await Promise.all([
@@ -934,17 +943,20 @@ const getAdminAppointmentsService = async (query = {}) => {
   }
 
   // Search by client or lawyer name
-  if (query.search) {
-    const regex = { $regex: query.search.trim(), $options: "i" };
-    const matchingUsers = await User.find({ $or: [{ name: regex }, { email: regex }] }).select("_id").lean();
-    const userIds = matchingUsers.map((u) => u._id);
-    const matchingLawyers = await Lawyer.find({ user: { $in: userIds } }).select("_id").lean();
-    const lawyerIds = matchingLawyers.map((l) => l._id);
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      const matchingUsers = await User.find({ $or: [{ name: regex }, { email: regex }] }).select("_id").lean();
+      const userIds = matchingUsers.map((u) => u._id);
+      const matchingLawyers = await Lawyer.find({ user: { $in: userIds } }).select("_id").lean();
+      const lawyerIds = matchingLawyers.map((l) => l._id);
 
-    filter.$or = [
-      { client: { $in: userIds } },
-      { lawyer: { $in: lawyerIds } }
-    ];
+      filter.$or = [
+        { client: { $in: userIds } },
+        { lawyer: { $in: lawyerIds } }
+      ];
+    }
   }
 
   const [appointments, total] = await Promise.all([
@@ -1006,69 +1018,247 @@ const cancelAdminAppointmentService = async (adminId, appointmentId, { reason },
     throw error;
   }
 
-  const appointment = await Appointment.findById(appointmentId)
-    .populate("client", "name email")
-    .populate({
-      path: "lawyer",
-      populate: { path: "user", select: "name email" }
-    });
-
-  if (!appointment) {
-    const error = new Error("Appointment not found");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  if (appointment.status === "completed") {
-    const error = new Error("Cannot cancel a consultation that has already been marked completed");
+  if (!mongoose.isValidObjectId(appointmentId)) {
+    const error = new Error("Invalid appointment ID");
     error.statusCode = 400;
     throw error;
   }
 
-  if (appointment.status === "cancelled") {
-    const error = new Error("This appointment has already been cancelled");
-    error.statusCode = 400;
-    throw error;
-  }
+  // Session handler for replica set or direct execution for standalone MongoDB / disconnected test env
+  const withOptionalTransaction = async (operation) => {
+    let session = null;
+    let operationExecuted = false;
+    try {
+      if (mongoose.connection?.readyState === 1) {
+        session = await mongoose.startSession();
+        let res;
+        await session.withTransaction(async () => {
+          operationExecuted = true;
+          res = await operation(session);
+        });
+        return res;
+      }
+      return await operation(null);
+    } catch (error) {
+      const isUnsupportedTransactionError =
+        !operationExecuted &&
+        error.message &&
+        (error.message.includes("replica set") ||
+          error.message.includes("Transaction numbers are only allowed") ||
+          error.message.includes("standalone") ||
+          error.message.includes("retryable writes") ||
+          error.message.includes("retryWrites") ||
+          error.code === 20 ||
+          error.codeName === "IllegalOperation");
 
-  appointment.status = "cancelled";
-  appointment.notes = appointment.notes
-    ? `${appointment.notes}\n[Admin Cancelled]: ${reason.trim()}`
-    : `[Admin Cancelled]: ${reason.trim()}`;
-  await appointment.save();
+      if (isUnsupportedTransactionError) {
+        return await operation(null);
+      }
+      throw error;
+    } finally {
+      if (session) {
+        await session.endSession();
+      }
+    }
+  };
 
-  // Notify both parties
-  try {
-    await Notification.create([
+  const appointment = await withOptionalTransaction(async (session) => {
+    const opts = session ? { session } : {};
+
+    // 1. Fetch appointment to validate existence, permissions, and status
+    const existing = await Appointment.findById(appointmentId, null, opts);
+    if (!existing) {
+      const error = new Error("Appointment not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (existing.status === "completed") {
+      const error = new Error("Cannot cancel a consultation that has already been marked completed");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (existing.status === "cancelled") {
+      const error = new Error("This appointment has already been cancelled");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (existing.status === "rejected") {
+      const error = new Error("Cannot cancel an appointment that has already been rejected");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const previousStatus = existing.status;
+    const previousNotes = existing.notes;
+
+    // 2. Atomic status update to prevent race conditions from duplicate cancellation requests
+    const cancellationNote = `[Admin Cancelled]: ${reason.trim()}`;
+    const updatedNotes = existing.notes
+      ? `${existing.notes}\n${cancellationNote}`
+      : cancellationNote;
+
+    const updated = await Appointment.findOneAndUpdate(
       {
+        _id: appointmentId,
+        status: { $in: ["pending", "confirmed"] }
+      },
+      {
+        $set: {
+          status: "cancelled",
+          notes: updatedNotes
+        }
+      },
+      { new: true, ...opts }
+    ).populate("client", "name email")
+     .populate({
+       path: "lawyer",
+       populate: { path: "user", select: "name email" }
+     });
+
+    if (!updated) {
+      const recheck = await Appointment.findById(appointmentId, null, opts);
+      if (recheck?.status === "cancelled") {
+        const error = new Error("This appointment has already been cancelled");
+        error.statusCode = 400;
+        throw error;
+      }
+      const error = new Error("Failed to cancel appointment due to concurrent modification");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    // 3. Release the linked availability slot using existing schema conventions
+    if (updated.slot) {
+      const lawyerId = updated.lawyer?._id || updated.lawyer;
+
+      // Ensure the slot is not currently associated with another active appointment
+      const otherActiveAppointment = await Appointment.findOne(
+        {
+          _id: { $ne: updated._id },
+          slot: updated.slot,
+          status: { $in: ["pending", "confirmed"] }
+        },
+        null,
+        opts
+      );
+
+      if (!otherActiveAppointment) {
+        let slotResult;
+        try {
+          slotResult = await LawyerAvailability.updateOne(
+            {
+              _id: updated.slot,
+              lawyer: lawyerId,
+              status: "booked"
+            },
+            { $set: { status: "available" } },
+            opts
+          );
+        } catch (slotErr) {
+          // In standalone mode without transactions, compensate by reverting the appointment status
+          if (!session) {
+            try {
+              await Appointment.updateOne(
+                { _id: updated._id, status: "cancelled" },
+                { $set: { status: previousStatus, notes: previousNotes } }
+              );
+            } catch (compErr) {
+              console.error("CRITICAL_COMPENSATION_FAILURE: Failed to revert appointment cancellation after slot failure:", compErr.message);
+            }
+          }
+          throw slotErr;
+        }
+
+        // Verify that the expected slot was actually matched and updated
+        if (slotResult.matchedCount === 0) {
+          const existingSlot = await LawyerAvailability.findById(updated.slot, null, opts);
+          if (!existingSlot) {
+            if (!session) {
+              try {
+                await Appointment.updateOne(
+                  { _id: updated._id, status: "cancelled" },
+                  { $set: { status: previousStatus, notes: previousNotes } }
+                );
+              } catch (compErr) {
+                console.error("CRITICAL_COMPENSATION_FAILURE: Failed to revert appointment cancellation after missing slot:", compErr.message);
+              }
+            }
+            const error = new Error("Associated availability slot not found");
+            error.statusCode = 404;
+            error.code = "SLOT_NOT_FOUND";
+            throw error;
+          }
+
+          if (existingSlot.status === "booked") {
+            if (!session) {
+              try {
+                await Appointment.updateOne(
+                  { _id: updated._id, status: "cancelled" },
+                  { $set: { status: previousStatus, notes: previousNotes } }
+                );
+              } catch (compErr) {
+                console.error("CRITICAL_COMPENSATION_FAILURE: Failed to revert appointment cancellation after locked slot:", compErr.message);
+              }
+            }
+            const error = new Error("Failed to release availability slot: slot could not be updated to available");
+            error.statusCode = 409;
+            error.code = "SLOT_RELEASE_FAILED";
+            throw error;
+          }
+          // If existingSlot.status is already 'available', slot is already in desired state
+        }
+      }
+    }
+
+    return updated;
+  });
+
+  // 4. Notify both parties
+  try {
+    const lawyerUser = appointment.lawyer?.user;
+    const lawyerUserId = lawyerUser?._id || lawyerUser;
+
+    const notifications = [];
+    if (appointment.client?._id) {
+      notifications.push({
         recipient: appointment.client._id,
         title: "Appointment Cancelled by Administration",
-        message: `Your appointment scheduled for ${appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString() : "your chosen date"} was cancelled. Reason: ${reason}`,
+        message: `Your appointment scheduled for ${appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString() : "your chosen date"} was cancelled. Reason: ${reason.trim()}`,
         type: "appointment",
         link: "/my-appointments",
         relatedId: appointment._id
-      },
-      {
-        recipient: appointment.lawyer.user._id,
+      });
+    }
+
+    if (lawyerUserId) {
+      notifications.push({
+        recipient: lawyerUserId,
         title: "Appointment Cancelled by Administration",
-        message: `Consultation with ${appointment.client.name} was cancelled by administrator. Reason: ${reason}`,
+        message: `Consultation with ${appointment.client?.name || "Client"} was cancelled by administrator. Reason: ${reason.trim()}`,
         type: "appointment",
         link: "/lawyer-dashboard",
         relatedId: appointment._id
-      }
-    ]);
+      });
+    }
+
+    if (notifications.length > 0) {
+      await Notification.create(notifications);
+    }
   } catch (nErr) {
     console.error("Cancellation notification error:", nErr.message);
   }
 
-  // Audit log
+  // 5. Audit log
   await logAdminAction({
     adminId,
     action: "APPOINTMENT_CANCEL",
     targetType: "Appointment",
     targetId: appointment._id,
-    description: `Cancelled appointment between client ${appointment.client.name} and advocate ${appointment.lawyer.user?.name}. Reason: ${reason}`,
-    details: { reason },
+    description: `Cancelled appointment between client ${appointment.client?.name || "Client"} and advocate ${appointment.lawyer?.user?.name || "Advocate"}. Reason: ${reason.trim()}`,
+    details: { reason: reason.trim() },
     req
   });
 
@@ -1095,9 +1285,12 @@ const getAdminReviewsService = async (query = {}) => {
     filter.rating = Number(query.rating);
   }
 
-  if (query.search) {
-    const regex = { $regex: query.search.trim(), $options: "i" };
-    filter.reviewText = regex;
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      filter.reviewText = regex;
+    }
   }
 
   const [reviews, total] = await Promise.all([
@@ -1198,13 +1391,15 @@ const getAdminPaymentsService = async (query = {}) => {
     if (query.endDate) filter.createdAt.$lte = new Date(query.endDate);
   }
 
-  if (query.search) {
-    const term = query.search.trim();
-    filter.$or = [
-      { razorpayPaymentId: { $regex: term, $options: "i" } },
-      { razorpayOrderId: { $regex: term, $options: "i" } },
-      { refundId: { $regex: term, $options: "i" } }
-    ];
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      filter.$or = [
+        { razorpayPaymentId: { $regex: term, $options: "i" } },
+        { razorpayOrderId: { $regex: term, $options: "i" } },
+        { refundId: { $regex: term, $options: "i" } }
+      ];
+    }
   }
 
   const [payments, total] = await Promise.all([
@@ -1294,56 +1489,192 @@ const processRefundService = async (adminId, paymentId, { reason }, req) => {
     throw error;
   }
 
-  const payment = await Payment.findById(paymentId).populate("appointment client");
+  // 1. Atomic claim: Claim payment by moving status from 'captured'/'authorized' to 'refund_pending'
+  const payment = await Payment.findOneAndUpdate(
+    {
+      _id: paymentId,
+      status: { $in: ["captured", "authorized"] }
+    },
+    {
+      $set: {
+        status: "refund_pending",
+        failureReason: reason ? `Refund initiated: ${reason}` : "Refund initiated by Administrator"
+      }
+    },
+    { new: true }
+  ).populate("appointment client");
+
   if (!payment) {
-    const error = new Error("Payment transaction not found");
-    error.statusCode = 404;
-    throw error;
-  }
+    const existing = await Payment.findById(paymentId);
+    if (!existing) {
+      const error = new Error("Payment transaction not found");
+      error.statusCode = 404;
+      throw error;
+    }
 
-  if (payment.status === "refunded") {
-    const error = new Error("This transaction has already been refunded. Duplicate refunds are strictly prohibited.");
-    error.statusCode = 409;
-    throw error;
-  }
+    if (existing.status === "refunded") {
+      const error = new Error("This transaction has already been refunded. Duplicate refunds are strictly prohibited.");
+      error.statusCode = 409;
+      throw error;
+    }
 
-  if (!["captured", "authorized"].includes(payment.status)) {
-    const error = new Error(`Cannot refund transaction with current status '${payment.status}'. Only captured payments can be refunded.`);
+    if (existing.status === "refund_pending") {
+      const error = new Error("A refund for this transaction is currently in progress or awaiting reconciliation. Duplicate refund requests are prohibited.");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const error = new Error(`Cannot refund transaction with current status '${existing.status}'. Only captured payments can be refunded.`);
     error.statusCode = 400;
     throw error;
   }
 
-  let razorpayRefundId = `ref_adm_${Date.now()}`;
+  // 2. Validate gateway payment ID
+  if (!payment.razorpayPaymentId) {
+    await Payment.updateOne(
+      { _id: payment._id, status: "refund_pending" },
+      { $set: { status: "captured", failureReason: "Missing gateway payment ID" } }
+    );
+    const error = new Error("Payment transaction does not have an associated gateway payment ID");
+    error.statusCode = 400;
+    error.code = "PAYMENT_GATEWAY_ID_MISSING";
+    throw error;
+  }
 
-  // Call Razorpay gateway if live credentials exist
-  if (payment.razorpayPaymentId && !payment.razorpayPaymentId.startsWith("pay_fake")) {
-    try {
-      const refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
-        amount: payment.amount,
-        notes: {
-          reason: reason || "Administrative authorized refund",
-          refundedBy: adminId.toString()
+  // 3. Invoke Razorpay gateway
+  let refund;
+  try {
+    refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
+      amount: payment.amount,
+      notes: {
+        reason: reason || "Administrative authorized refund",
+        refundedBy: adminId.toString(),
+        paymentId: payment._id.toString()
+      }
+    });
+  } catch (err) {
+    // Missing credentials (never reached gateway)
+    if (err.code === "PAYMENT_GATEWAY_UNAVAILABLE" || err.statusCode === 503) {
+      await Payment.updateOne(
+        { _id: payment._id, status: "refund_pending" },
+        { $set: { status: "captured", failureReason: "Gateway credentials unavailable" } }
+      );
+      throw err;
+    }
+
+    // Uncertain outcome: Network timeout or connection drop
+    const isTimeout =
+      err.code === "ETIMEDOUT" ||
+      err.code === "ESOCKETTIMEDOUT" ||
+      err.code === "ECONNRESET" ||
+      err.code === "ECONNABORTED" ||
+      /timeout|timed out|socket hang up|network/i.test(err.message || "");
+
+    if (isTimeout) {
+      await Payment.updateOne(
+        { _id: payment._id, status: "refund_pending" },
+        {
+          $set: {
+            failureReason: `Refund pending reconciliation: Gateway network timeout (${err.message})`
+          }
         }
-      });
-      razorpayRefundId = refund.id;
-    } catch (err) {
-      console.warn("Razorpay gateway refund error:", err.message);
-      // Proceed with simulated reference for sandbox accounts
+      );
+      const timeoutError = new Error(
+        "Razorpay refund request timed out with uncertain gateway outcome. Transaction is held in refund_pending for webhook reconciliation."
+      );
+      timeoutError.statusCode = 502;
+      timeoutError.code = "GATEWAY_TIMEOUT_RECONCILIATION_REQUIRED";
+      throw timeoutError;
+    }
+
+    // Definitive failure: Gateway rejected the refund request
+    await Payment.updateOne(
+      { _id: payment._id, status: "refund_pending" },
+      {
+        $set: {
+          status: "captured",
+          failureReason: `Refund rejected: ${err.error?.description || err.message}`
+        }
+      }
+    );
+
+    const gatewayError = new Error(
+      `Razorpay refund failed: ${err.error?.description || err.message || "Gateway processing error"}`
+    );
+    gatewayError.statusCode = 502;
+    gatewayError.code = "PAYMENT_GATEWAY_ERROR";
+    throw gatewayError;
+  }
+
+  // 4. Validate Gateway Response
+  if (!refund || !refund.id) {
+    const error = new Error("Razorpay refund response did not contain a valid refund ID");
+    error.statusCode = 502;
+    error.code = "INVALID_GATEWAY_RESPONSE";
+    throw error;
+  }
+
+  // 5. Inspect refund status and map lifecycle state correctly
+  const isProcessed = refund.status === "processed";
+  const targetStatus = isProcessed ? "refunded" : "refund_pending";
+
+  // 6. Persist status and real refund ID to database with fallback reconciliation
+  let dbSaveSuccess = true;
+  try {
+    payment.status = targetStatus;
+    payment.refundId = refund.id;
+    payment.failureReason = reason ? `Refund: ${reason}` : (isProcessed ? "Refunded by Administrator" : "Refund initiated and pending settlement");
+    await payment.save();
+  } catch (dbErr) {
+    dbSaveSuccess = false;
+    payment.status = "refund_pending"; // Retain refund_pending in memory to match persisted state
+    console.error(
+      `[RECONCILIATION_REQUIRED] Database write failed after Razorpay refund confirmed. ` +
+      `Payment ID: ${payment._id}, Razorpay Payment ID: ${payment.razorpayPaymentId}, ` +
+      `Refund ID: ${refund.id}, Status: ${targetStatus}, Error: ${dbErr.message}`
+    );
+
+    // Direct update fallback
+    try {
+      await Payment.updateOne(
+        { _id: payment._id },
+        {
+          $set: {
+            status: targetStatus,
+            refundId: refund.id,
+            failureReason: reason ? `Refund: ${reason}` : (isProcessed ? "Refunded by Administrator" : "Refund initiated and pending settlement")
+          }
+        }
+      );
+      dbSaveSuccess = true;
+    } catch (fallbackErr) {
+      console.error(
+        `[RECONCILIATION_FALLBACK_FAILED] Direct update fallback also failed. ` +
+        `State will be recovered via webhook. Payment ID: ${payment._id}, Refund ID: ${refund.id}, Error: ${fallbackErr.message}`
+      );
     }
   }
 
-  payment.status = "refunded";
-  payment.refundId = razorpayRefundId;
-  payment.failureReason = reason ? `Refund: ${reason}` : "Refunded by Administrator";
-  await payment.save();
+  if (!dbSaveSuccess) {
+    const dbError = new Error("Refund confirmed by payment gateway, but database persistence failed. Transaction is preserved in refund_pending for webhook reconciliation.");
+    dbError.statusCode = 500;
+    dbError.code = "DATABASE_RECONCILIATION_DEFERRED";
+    dbError.refundId = refund.id;
+    throw dbError;
+  }
 
-  // Notify client
+  // 7. Client Notification
   try {
     if (payment.client?._id) {
+      const notifTitle = isProcessed ? "Refund Issued" : "Refund Initiated";
+      const notifMessage = isProcessed
+        ? `Your consultation fee of ₹${Math.round(payment.amount / 100)} has been refunded. Reference: ${refund.id}`
+        : `Your consultation fee refund of ₹${Math.round(payment.amount / 100)} has been initiated and is pending bank processing. Reference: ${refund.id}`;
+
       await Notification.create({
         recipient: payment.client._id,
-        title: "Refund Issued",
-        message: `Your consultation fee of ₹${Math.round(payment.amount / 100)} has been refunded. Reference: ${razorpayRefundId}`,
+        title: notifTitle,
+        message: notifMessage,
         type: "payment",
         link: "/my-appointments",
         relatedId: payment._id
@@ -1353,23 +1684,23 @@ const processRefundService = async (adminId, paymentId, { reason }, req) => {
     console.error("Refund notification error:", nErr.message);
   }
 
-  // Audit log
+  // 8. Audit log
   await logAdminAction({
     adminId,
     action: "PAYMENT_REFUND",
     targetType: "Payment",
     targetId: payment._id,
-    description: `Issued refund of ₹${Math.round(payment.amount / 100)} for payment ${payment.razorpayPaymentId || payment._id}. Reason: ${reason || "Dispute resolution"}`,
-    details: { refundId: razorpayRefundId, amountRupees: Math.round(payment.amount / 100), reason },
+    description: `Issued refund of ₹${Math.round(payment.amount / 100)} for payment ${payment.razorpayPaymentId || payment._id}. Status: ${targetStatus}. Reference: ${refund.id}. Reason: ${reason || "Dispute resolution"}`,
+    details: { refundId: refund.id, amountRupees: Math.round(payment.amount / 100), status: targetStatus, reason },
     req
   });
 
   return {
     paymentId: payment._id,
-    refundId: razorpayRefundId,
+    refundId: refund.id,
     amountRupees: Math.round(payment.amount / 100),
-    status: payment.status,
-    message: "Refund processed successfully"
+    status: targetStatus,
+    message: isProcessed ? "Refund processed successfully" : "Refund initiated and pending settlement"
   };
 };
 
@@ -1388,13 +1719,16 @@ const getAdminComplaintsService = async (query = {}) => {
   if (query.priority && query.priority !== "all") {
     filter.priority = query.priority;
   }
-  if (query.search) {
-    const regex = { $regex: query.search.trim(), $options: "i" };
-    filter.$or = [
-      { complaintId: regex },
-      { subject: regex },
-      { description: regex }
-    ];
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      filter.$or = [
+        { complaintId: regex },
+        { subject: regex },
+        { description: regex }
+      ];
+    }
   }
 
   const [complaints, total] = await Promise.all([
@@ -1730,13 +2064,16 @@ const getAdminActivityLogsService = async (query = {}) => {
   if (query.targetType && query.targetType !== "all") {
     filter.targetType = query.targetType;
   }
-  if (query.search) {
-    const regex = { $regex: query.search.trim(), $options: "i" };
-    filter.$or = [
-      { adminName: regex },
-      { adminEmail: regex },
-      { description: regex }
-    ];
+  if (query.search && query.search.trim()) {
+    const term = escapeRegex(query.search.trim());
+    if (term) {
+      const regex = { $regex: term, $options: "i" };
+      filter.$or = [
+        { adminName: regex },
+        { adminEmail: regex },
+        { description: regex }
+      ];
+    }
   }
   if (query.startDate || query.endDate) {
     filter.createdAt = {};

@@ -1,11 +1,4 @@
-const rawBaseUrl =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
-
-const getAuthHeaders = () => {
-  const token = sessionStorage.getItem("accessToken");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
+import { authFetch, API_BASE_URL } from "./apiClient";
 
 const handleResponse = async (response) => {
   const data = await response.json().catch(() => ({}));
@@ -17,9 +10,8 @@ const handleResponse = async (response) => {
 
 // Upload a case document
 export const uploadDocument = async (formData) => {
-  const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+  const response = await authFetch(`${API_BASE_URL}/documents/upload`, {
     method: "POST",
-    headers: getAuthHeaders(), // Let browser set multipart boundary
     body: formData,
   });
   return handleResponse(response);
@@ -27,14 +19,10 @@ export const uploadDocument = async (formData) => {
 
 // Get documents for an appointment
 export const getAppointmentDocuments = async (appointmentId) => {
-  const response = await fetch(
+  const response = await authFetch(
     `${API_BASE_URL}/documents/appointment/${appointmentId}`,
     {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
     }
   );
   return handleResponse(response);
@@ -42,22 +30,20 @@ export const getAppointmentDocuments = async (appointmentId) => {
 
 // Get user's documents
 export const getMyDocuments = async () => {
-  const response = await fetch(`${API_BASE_URL}/documents/my`, {
+  const response = await authFetch(`${API_BASE_URL}/documents/my`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
   });
   return handleResponse(response);
 };
 
 // Download a document securely
 export const downloadDocument = async (documentId, filename = "document") => {
-  const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
+  const response = await authFetch(
+    `${API_BASE_URL}/documents/${documentId}/download`,
+    {
+      method: "GET",
+    }
+  );
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
@@ -77,12 +63,8 @@ export const downloadDocument = async (documentId, filename = "document") => {
 
 // Delete a document
 export const deleteDocument = async (documentId) => {
-  const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+  const response = await authFetch(`${API_BASE_URL}/documents/${documentId}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-    },
   });
   return handleResponse(response);
 };

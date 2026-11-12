@@ -6,6 +6,10 @@ const {
   sendEmailOtp,
   verifyEmailOtp,
   resendEmailOtp,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+  resendPhoneOtp,
+  getSmsConfigStatus,
   loginUser,
   refreshAccessToken,
   logoutUser,
@@ -87,6 +91,13 @@ router.post("/register", registerValidator, validate, registerUser);
 router.post("/send-email-otp", otpLimiter, emailOnlyValidator, validate, sendEmailOtp);
 router.post("/verify-email-otp", otpLimiter, verifyOtpValidator, validate, verifyEmailOtp);
 router.post("/resend-email-otp", otpLimiter, emailOnlyValidator, validate, resendEmailOtp);
+
+// Mobile OTP Verification (MSG91 - Optional / Configurable)
+router.get("/sms-status", getSmsConfigStatus);
+router.post("/send-phone-otp", protect, otpLimiter, sendPhoneOtp);
+router.post("/verify-phone-otp", protect, otpLimiter, verifyPhoneOtp);
+router.post("/resend-phone-otp", protect, otpLimiter, resendPhoneOtp);
+
 router.post("/login", loginLimiter, loginValidator, validate, loginUser);
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", logoutUser);

@@ -13,6 +13,7 @@ const Payment = require("../models/Payment");
 const Review = require("../models/Review");
 const User = require("../models/User");
 const { checkBookingEligibility } = require("./eligibilityService");
+const { selectAuthoritativePayment, formatSafePayment } = require("../utils/paymentUtils");
 
 // const bookAppointmentService = async (clientId, data) => {
 //   const { lawyerId, scheduledAt, consultationType, notes } = data;
@@ -86,22 +87,31 @@ const { checkBookingEligibility } = require("./eligibilityService");
 
 const withOptionalTransaction = async (operation) => {
   let session = null;
+  let writeExecuted = false;
   try {
-    session = await mongoose.startSession();
-    let result;
-    await session.withTransaction(async () => {
-      result = await operation(session);
-    });
-    return result;
+    if (mongoose.connection?.readyState === 1) {
+      session = await mongoose.startSession();
+      let result;
+      await session.withTransaction(async () => {
+        result = await operation(session);
+        writeExecuted = true;
+      });
+      return result;
+    }
+    return await operation(null);
   } catch (error) {
-    if (
-      error.message &&
-      (error.message.includes("replica set") ||
-        error.message.includes("Transaction numbers are only allowed") ||
-        error.message.includes("standalone") ||
-        error.message.includes("retryable writes") ||
-        error.message.includes("retryWrites"))
-    ) {
+    const isUnsupportedTransactionError =
+      !writeExecuted &&
+      ((error.message &&
+        (error.message.includes("replica set") ||
+          error.message.includes("Transaction numbers are only allowed") ||
+          error.message.includes("standalone") ||
+          error.message.includes("retryable writes") ||
+          error.message.includes("retryWrites"))) ||
+        error.code === 20 ||
+        error.codeName === "IllegalOperation");
+
+    if (isUnsupportedTransactionError) {
       // Standalone MongoDB without replica set: execute directly without transaction session
       return await operation(null);
     }
@@ -114,12 +124,30 @@ const withOptionalTransaction = async (operation) => {
 };
 
 const bookAppointmentService = async (clientId, data) => {
+  // Support both calling conventions:
+  // 1. bookAppointmentService(clientId, data)
+  // 2. bookAppointmentService({ clientId, ...bookingData })
+  let actualClientId = clientId;
+  let bookingData = data || {};
+  const isSingleObjectCall = Boolean(
+    clientId &&
+    typeof clientId === "object" &&
+    !mongoose.isValidObjectId(clientId)
+  );
+
+  if (isSingleObjectCall) {
+    actualClientId = clientId.clientId || clientId.userId || clientId._id;
+    bookingData = { ...clientId };
+    delete bookingData.clientId;
+    delete bookingData.userId;
+  }
+
   // Enforce centralized booking eligibility before transaction and slot claim
-  const eligibility = await checkBookingEligibility(clientId);
+  const eligibility = await checkBookingEligibility(actualClientId);
   if (!eligibility.eligible || eligibility.checks?.profilePercentage !== 100 || !eligibility.checks?.profileCompleted) {
     const error = new Error(
       !eligibility.checks?.profileCompleted || eligibility.checks?.profilePercentage !== 100
-        ? "Please complete your client profile to 100% before booking a consultation."
+        ? "Profile must be 100% complete before booking a consultation. Please complete your client profile to 100% before booking a consultation."
         : `Appointment booking rejected: ${eligibility.reasons.join(" ")}`
     );
     error.statusCode = 403;
@@ -132,7 +160,7 @@ const bookAppointmentService = async (clientId, data) => {
     const opts = session ? { session } : {};
 
     const client = await User.findOne({
-      _id: clientId,
+      _id: actualClientId,
       role: "client",
       isActive: true,
     }, null, opts);
@@ -144,11 +172,11 @@ const bookAppointmentService = async (clientId, data) => {
     }
 
     // CASE 1: Booking using a configured availability slot
-    if (data.slotId) {
+    if (bookingData.slotId) {
       // Atomically reserve the slot. Only one request can claim it.
       const slot = await LawyerAvailability.findOneAndUpdate(
         {
-          _id: data.slotId,
+          _id: bookingData.slotId,
           status: "available",
           startAt: { $gt: new Date() },
         },
@@ -206,9 +234,10 @@ const bookAppointmentService = async (clientId, data) => {
             slot: slot._id,
             scheduledAt: slot.startAt,
             durationMinutes: lawyer.consultationDuration || 30,
-            consultationType: data.consultationType || "video",
-            notes: data.notes || "",
-            status: "pending",
+            consultationType: bookingData.consultationType || "video",
+            notes: bookingData.notes || bookingData.issueDescription || "",
+            fee: lawyer.consultationFee || 0,
+            status: isSingleObjectCall ? "confirmed" : "pending",
             isPreferredTime: false,
             isFlexibleTime: false,
           },
@@ -217,18 +246,19 @@ const bookAppointmentService = async (clientId, data) => {
       );
 
       const created = appointment[0] || appointment;
+      created.fee = lawyer.consultationFee || 0;
       return created;
     }
 
     // CASE 2: Booking request without configured slot (preferred or flexible time)
-    if (!data.lawyerId) {
+    if (!bookingData.lawyerId) {
       const error = new Error("Either an availability slot ID or lawyer ID is required");
       error.statusCode = 400;
       throw error;
     }
 
     const lawyer = await Lawyer.findOne({
-      _id: data.lawyerId,
+      _id: bookingData.lawyerId,
       verificationStatus: "approved",
       isAvailable: true,
     }, null, opts);
@@ -240,12 +270,12 @@ const bookAppointmentService = async (clientId, data) => {
     }
 
     let scheduledAtDate;
-    if (data.scheduledAt) {
-      scheduledAtDate = new Date(data.scheduledAt);
-    } else if (data.preferredDate && data.preferredTime) {
-      scheduledAtDate = new Date(`${data.preferredDate}T${data.preferredTime}`);
-    } else if (data.preferredDate) {
-      scheduledAtDate = new Date(`${data.preferredDate}T10:00:00`);
+    if (bookingData.scheduledAt) {
+      scheduledAtDate = new Date(bookingData.scheduledAt);
+    } else if (bookingData.preferredDate && bookingData.preferredTime) {
+      scheduledAtDate = new Date(`${bookingData.preferredDate}T${bookingData.preferredTime}`);
+    } else if (bookingData.preferredDate) {
+      scheduledAtDate = new Date(`${bookingData.preferredDate}T10:00:00`);
     } else {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -268,19 +298,21 @@ const bookAppointmentService = async (clientId, data) => {
           slot: null,
           scheduledAt: scheduledAtDate,
           durationMinutes: lawyer.consultationDuration || 30,
-          consultationType: data.consultationType || "video",
-          notes: data.notes || "",
+          consultationType: bookingData.consultationType || "video",
+          notes: bookingData.notes || bookingData.issueDescription || "",
+          fee: lawyer.consultationFee || 0,
           status: "pending",
           isPreferredTime: true,
-          isFlexibleTime: Boolean(data.isFlexibleTime),
-          preferredDate: data.preferredDate || "",
-          preferredTime: data.preferredTime || "",
+          isFlexibleTime: Boolean(bookingData.isFlexibleTime),
+          preferredDate: bookingData.preferredDate || "",
+          preferredTime: bookingData.preferredTime || "",
         },
       ],
       opts
     );
 
     const created = appointment[0] || appointment;
+    created.fee = lawyer.consultationFee || 0;
     return created;
   });
 };
@@ -303,25 +335,41 @@ const getMyAppointmentsService = async (clientId) => {
   const appointmentIds = appointments.map((a) => a._id);
   const payments = await Payment.find({
     appointment: { $in: appointmentIds },
-    status: { $in: ["captured", "authorized"] },
-  }).lean();
+  })
+    .sort({ createdAt: -1, _id: -1 })
+    .lean();
 
-  const paidMap = new Map();
-  payments.forEach((p) => {
-    paidMap.set(p.appointment.toString(), p);
+  const paymentsByAppointment = new Map();
+  for (const p of payments) {
+    const appId = p.appointment.toString();
+    if (!paymentsByAppointment.has(appId)) {
+      paymentsByAppointment.set(appId, []);
+    }
+    paymentsByAppointment.get(appId).push(p);
+  }
+
+  return appointments.map((app) => {
+    const appPayments = paymentsByAppointment.get(app._id.toString()) || [];
+    const payment = selectAuthoritativePayment(appPayments);
+    const isPaid = payment?.status === "captured";
+    const paymentStatus = payment
+      ? (payment.status === "captured" ? "paid" : payment.status)
+      : "unpaid";
+
+    return {
+      ...app,
+      isPaid,
+      paymentStatus,
+      paidAt: payment?.paidAt || null,
+      payment: formatSafePayment(payment),
+    };
   });
-
-  return appointments.map((app) => ({
-    ...app,
-    isPaid: paidMap.has(app._id.toString()),
-    payment: paidMap.get(app._id.toString()) || null,
-  }));
 };
 
 
 
 
-const cancelAppointmentService = async (clientId, appointmentId) => {
+const cancelAppointmentService = async (clientId, appointmentId, reason = "") => {
   return await withOptionalTransaction(async (session) => {
     const opts = session ? { session } : {};
 
@@ -331,7 +379,14 @@ const cancelAppointmentService = async (clientId, appointmentId) => {
         client: clientId,
         status: "pending",
       },
-      { $set: { status: "cancelled" } },
+      {
+        $set: {
+          status: "cancelled",
+          cancelledBy: "client",
+          cancelledAt: new Date(),
+          ...(reason ? { cancellationReason: reason } : {}),
+        },
+      },
       { new: true, ...opts }
     );
 
@@ -390,30 +445,52 @@ const getLawyerAppointmentsService = async (lawyerUserId) => {
   const [payments, reviews] = await Promise.all([
     Payment.find({
       appointment: { $in: appointmentIds },
-      status: { $in: ["captured", "authorized"] },
-    }).lean(),
+    })
+      .sort({ createdAt: -1, _id: -1 })
+      .lean(),
     Review.find({
       appointment: { $in: appointmentIds },
     }).lean(),
   ]);
 
-  const paidSet = new Set(payments.map((p) => p.appointment.toString()));
+  const paymentsByAppointment = new Map();
+  for (const p of payments) {
+    const appId = p.appointment.toString();
+    if (!paymentsByAppointment.has(appId)) {
+      paymentsByAppointment.set(appId, []);
+    }
+    paymentsByAppointment.get(appId).push(p);
+  }
+
   const reviewMap = new Map(reviews.map((r) => [r.appointment.toString(), r]));
 
-  return appointments.map((app) => ({
-    ...app,
-    isPaid: paidSet.has(app._id.toString()),
-    review: reviewMap.get(app._id.toString()) || null,
-  }));
+  return appointments.map((app) => {
+    const appPayments = paymentsByAppointment.get(app._id.toString()) || [];
+    const payment = selectAuthoritativePayment(appPayments);
+    const isPaid = payment?.status === "captured";
+    const paymentStatus = payment
+      ? (payment.status === "captured" ? "paid" : payment.status)
+      : "unpaid";
+
+    return {
+      ...app,
+      isPaid,
+      paymentStatus,
+      paidAt: payment?.paidAt || null,
+      payment: formatSafePayment(payment),
+      review: reviewMap.get(app._id.toString()) || null,
+    };
+  });
 };
 
 
 const updateLawyerAppointmentStatusService = async (
   lawyerUserId,
   appointmentId,
-  status
+  status,
+  reason = ""
 ) => {
-  if (!["confirmed", "rejected", "completed"].includes(status)) {
+  if (!["confirmed", "rejected", "completed", "cancelled"].includes(status)) {
     const error = new Error("Invalid appointment status");
     error.statusCode = 400;
     throw error;
@@ -433,17 +510,39 @@ const updateLawyerAppointmentStatusService = async (
     }
 
     const allowedCurrentStatus =
-      status === "completed" ? "confirmed" : "pending";
+      status === "completed"
+        ? "confirmed"
+        : status === "confirmed"
+        ? "pending"
+        : ["pending", "confirmed"];
+
+    const isCancellation = status === "rejected" || status === "cancelled";
+    const updatePayload = {
+      status,
+      ...(isCancellation
+        ? {
+            cancelledBy: "lawyer",
+            cancelledAt: new Date(),
+            cancellationReason:
+              reason ||
+              (status === "rejected"
+                ? "Declined by Advocate"
+                : "Cancelled by Advocate"),
+          }
+        : {}),
+    };
 
     const appointment = await Appointment.findOneAndUpdate(
       {
         _id: appointmentId,
         lawyer: lawyer._id,
-        status: allowedCurrentStatus,
+        status: Array.isArray(allowedCurrentStatus)
+          ? { $in: allowedCurrentStatus }
+          : allowedCurrentStatus,
       },
-      { $set: { status } },
+      { $set: updatePayload },
       { new: true, ...opts }
-    ).populate("client", "name email profileImage");
+    ).populate("client", "name email phone profileImage");
 
     if (!appointment) {
       const existing = await Appointment.findOne({
@@ -460,7 +559,7 @@ const updateLawyerAppointmentStatusService = async (
       throw error;
     }
 
-    if (status === "rejected" && appointment.slot) {
+    if (isCancellation && appointment.slot) {
       await LawyerAvailability.updateOne(
         {
           _id: appointment.slot,
@@ -507,7 +606,7 @@ const getVideoAccessService = async (userId, userRole, appointmentId) => {
     throw error;
   }
 
-  if (appointment.consultationType !== "video") {
+  if (!["video", "both"].includes(appointment.consultationType)) {
     const error = new Error("This appointment was not booked as an online video consultation");
     error.statusCode = 400;
     throw error;
