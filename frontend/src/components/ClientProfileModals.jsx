@@ -65,6 +65,8 @@ export function EditClientPersonalModal({
     dob: "",
     addressLine: "",
     cityVillage: "",
+    subDistrict: "",
+    locality: "",
     district: "",
     state: "",
     pincode: "",
@@ -82,6 +84,8 @@ export function EditClientPersonalModal({
         dob: userData.dob ? userData.dob.slice(0, 10) : "",
         addressLine: userData.addressLine || "",
         cityVillage: userData.cityVillage || "",
+        subDistrict: userData.subDistrict || "",
+        locality: userData.locality || "",
         district: userData.district || "",
         state: userData.state || "",
         pincode: userData.pincode || "",
@@ -120,6 +124,8 @@ export function EditClientPersonalModal({
         dob: formData.dob || null,
         addressLine: formData.addressLine.trim() || null,
         cityVillage: formData.cityVillage.trim() || null,
+        subDistrict: formData.subDistrict.trim() || null,
+        locality: formData.locality.trim() || null,
         district: formData.district.trim() || null,
         state: formData.state.trim() || null,
         pincode: formData.pincode.trim() || null,
@@ -277,6 +283,36 @@ export function EditClientPersonalModal({
                     onChange={handleChange}
                     className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition"
                     placeholder="e.g. New Delhi"
+                  />
+                </div>
+
+                {/* Block / Sub-District */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Block / Sub-District
+                  </label>
+                  <input
+                    type="text"
+                    name="subDistrict"
+                    value={formData.subDistrict}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                    placeholder="e.g. Sadar"
+                  />
+                </div>
+
+                {/* Area / Locality */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Area / Locality
+                  </label>
+                  <input
+                    type="text"
+                    name="locality"
+                    value={formData.locality}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                    placeholder="e.g. Badauli Bangar"
                   />
                 </div>
 

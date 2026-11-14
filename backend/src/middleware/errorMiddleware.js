@@ -1,11 +1,21 @@
 const errorHandler = (err, req, res, next) => {
   console.error("Error:", err);
 
-  const statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || 500;
+
+  // Upstream third-party/gateway 401s must never leak to clients as client-auth failures
+  if (statusCode === 401 && (err.code?.startsWith("PAYMENT_GATEWAY") || err.error?.code === "BAD_REQUEST_ERROR" || !err.message)) {
+    statusCode = 502;
+  }
+
+  const message =
+    err.message ||
+    err.error?.description ||
+    "Internal server error";
 
   const payload = {
     success: false,
-    message: err.message || "Internal server error"
+    message
   };
 
   if (err.code) payload.code = err.code;

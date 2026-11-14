@@ -29,7 +29,10 @@ describe("Client Panel API Diagnostics & Verification", () => {
   before(async () => {
     await connectTestDB();
 
-    const stamp = Date.now();
+    const stamp = Date.now() + "_" + Math.floor(Math.random() * 100000);
+
+    // Clean up any stale records from previous interrupted runs
+    await User.deleteMany({ email: { $in: [`client.${stamp}@example.com`, `advocate.${stamp}@example.com`] } });
 
     // Create client user
     clientUser = await User.create({

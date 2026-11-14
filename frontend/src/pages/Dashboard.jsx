@@ -281,18 +281,25 @@ export default function Dashboard() {
       .join("")
       .toUpperCase() || "C";
 
-  // Profile Completeness Calculation
+  // Profile Completeness Calculation (Aligned with backend 10 required fields)
   const calculateCompleteness = (u) => {
     if (!u) return 0;
-    let score = 0;
-    if (u.name) score += 20;
-    if (u.email) score += 20;
-    if (u.phone) score += 15;
-    if (u.profileImage) score += 10;
-    if (u.cityVillage || u.district || u.state) score += 15;
-    if (u.pincode) score += 10;
-    if (u.about && u.about.trim().length > 10) score += 10;
-    return Math.min(100, score);
+    const required = [
+      u.name,
+      u.email,
+      u.phone,
+      u.state,
+      u.district,
+      u.subDistrict,
+      u.locality,
+      u.cityVillage,
+      u.pincode,
+      u.addressLine,
+    ];
+    const filled = required.filter(
+      (val) => typeof val === "string" && val.trim().length > 0
+    ).length;
+    return Math.round((filled / required.length) * 100);
   };
 
   const completenessPercentage =
@@ -2334,6 +2341,24 @@ export default function Dashboard() {
                     </span>
                     <p className="font-bold text-slate-900">
                       {profileData?.cityVillage || "Not provided"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Block / Sub-District
+                    </span>
+                    <p className="font-bold text-slate-900">
+                      {profileData?.subDistrict || "Not provided"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Area / Locality
+                    </span>
+                    <p className="font-bold text-slate-900">
+                      {profileData?.locality || "Not provided"}
                     </p>
                   </div>
 

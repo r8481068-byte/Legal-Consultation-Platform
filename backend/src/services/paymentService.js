@@ -201,7 +201,27 @@ const createPaymentOrderService = async (clientId, appointmentId) => {
           { $set: { orderInProgress: false } }
         );
       } catch (err) {}
-      throw error;
+
+      // Normalize upstream Razorpay gateway errors so they do NOT leak as client HTTP 401
+      const isAuthError =
+        error.statusCode === 401 ||
+        error.error?.description === "Authentication failed" ||
+        error.error?.code === "BAD_REQUEST_ERROR";
+
+      const description =
+        error.error?.description || error.message || "Failed to create Razorpay payment order";
+
+      const gatewayError = new Error(
+        isAuthError
+          ? `Payment gateway authentication failed: ${description}. Please verify server Razorpay API credentials.`
+          : `Payment gateway error: ${description}`
+      );
+      gatewayError.statusCode = 502; // Bad Gateway: Upstream provider failure, not client auth
+      gatewayError.code = isAuthError
+        ? "PAYMENT_GATEWAY_AUTH_FAILED"
+        : "PAYMENT_GATEWAY_ERROR";
+      gatewayError.details = error.error;
+      throw gatewayError;
     }
   })();
 
@@ -282,9 +302,30 @@ const verifyPaymentService = async (clientId, data) => {
   }
 
   // Verify the payment details directly with Razorpay as well.
-  const razorpayPayment = await razorpay.payments.fetch(
-    razorpay_payment_id
-  );
+  let razorpayPayment;
+  try {
+    razorpayPayment = await razorpay.payments.fetch(
+      razorpay_payment_id
+    );
+  } catch (error) {
+    const isAuthError =
+      error.statusCode === 401 ||
+      error.error?.description === "Authentication failed" ||
+      error.error?.code === "BAD_REQUEST_ERROR";
+    const description =
+      error.error?.description || error.message || "Failed to verify payment with gateway";
+    const gatewayError = new Error(
+      isAuthError
+        ? `Payment gateway verification failed: ${description}. Please check server Razorpay credentials.`
+        : `Payment gateway error: ${description}`
+    );
+    gatewayError.statusCode = 502;
+    gatewayError.code = isAuthError
+      ? "PAYMENT_GATEWAY_AUTH_FAILED"
+      : "PAYMENT_GATEWAY_ERROR";
+    gatewayError.details = error.error;
+    throw gatewayError;
+  }
 
   if (
     razorpayPayment.order_id !== razorpay_order_id ||
